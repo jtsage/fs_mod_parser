@@ -1,6 +1,7 @@
 use serde::ser::{Serialize, Serializer};
 
-#[derive(PartialEq, PartialOrd, Eq, Ord, Hash)]
+#[derive(PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
+#[allow(dead_code)]
 pub enum ModError {
 	FileErrorGarbageFile,
 	FileErrorLikelyCopy,

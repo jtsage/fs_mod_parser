@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<l10n>
+	<texts>
+		<!-- color configs -->
+		<text name="colorConfigJTS_gold"                   text="Metallic Gold" />
+        <text name="colorConfigJTS_copper"                 text="Metallic Copper" />
+        <text name="colorConfigJTS_bronze"                 text="Metallic Bronze" />
+        <text name="colorConfigJTS_silver_steel"           text="Silver Steel" />
+        <text name="colorConfigJTS_galv_steel"             text="Galvanized Steel" />
+        <text name="colorConfigJTS_black_steel"            text="Black Steel" />
+        <text name="colorConfigJTS_brush_steel"            text="Dark Brushed Steel" />
+        <text name="colorConfigJTS_brush_silver"           text="Bright Brushed Steel" />
+    </texts>
+</l10n>

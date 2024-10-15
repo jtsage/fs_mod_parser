@@ -1,7 +1,9 @@
 {
 	"cSpell.words": [
 		"actionbinding",
+		"chrono",
 		"CONFIGFILENAME",
+		"ddsfile",
 		"DESCVERSION",
 		"fruittypes",
 		"GRLE",
@@ -9,8 +11,10 @@
 		"inputbinding",
 		"MODDESC",
 		"notmod",
+		"pathdiff",
 		"pconly",
 		"productid",
+		"roxmltree",
 		"SAVEGAME",
 		"storeitem",
 		"storeitems",

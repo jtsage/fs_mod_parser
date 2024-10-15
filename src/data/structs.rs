@@ -41,7 +41,7 @@ pub struct ModFile {
 	pub copy_name     : Option<String>,
 	pub extra_files   : Vec<String>,
 	pub file_date     : String,
-	pub file_size     : u32,
+	pub file_size     : u64,
 	pub full_path     : String,
 	pub i3d_files     : Vec<String>,
 	#[serde(rename = "imageDDS")]

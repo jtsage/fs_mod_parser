@@ -1,40 +1,13 @@
 use super::flags::ModError;
-use std::{fs::File, io::Read};
+use super::super::files::FileDefinition;
+use std::time::SystemTime;
+use std::io::Cursor;
+use chrono::{DateTime, SecondsFormat, Utc};
 use regex::{Regex, RegexBuilder};
-use zip::{result::ZipError, ZipArchive};
-
-pub struct FileDefinition {
-    pub name : String,
-    pub size : u64,
-    pub is_folder : bool,
-}
-
-pub fn zip_file_text(archive : &mut ZipArchive<File>, needle : &str) -> Result<String, ZipError> {
-    let mut file = archive.by_name(needle)?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
-    Ok(contents)
-}
-
-pub fn zip_file_exists(archive : &mut ZipArchive<File>, needle : &str) -> bool {
-	match archive.by_name(&needle) {
-        Ok(..) => true,
-        Err(..) => false,
-	}
-}
-
-pub fn zip_list_files(archive: &mut ZipArchive<File>) -> Vec<FileDefinition> {
-	let mut names: Vec<FileDefinition> = vec![];
-    for i in 0..archive.len() {
-        let file = archive.by_index(i).unwrap();
-        names.push(FileDefinition{
-            name      : file.enclosed_name().unwrap().to_string_lossy().into_owned(),
-            size      : if file.is_dir() {0} else { file.size() },
-            is_folder : file.is_dir()
-        })
-    }
-	names
-}
+use image_dds::ddsfile;
+use webp::*;
+use image::DynamicImage;
+use base64::{Engine as _, engine::general_purpose};
 
 pub fn test_file_name(mod_record : &mut super::structs::ModRecord) -> bool {
     if !mod_record.file_detail.is_folder && ! mod_record.file_detail.full_path.ends_with(".zip") {
@@ -96,22 +69,38 @@ pub fn do_file_counts(mod_record : &mut super::structs::ModRecord, file_list : V
         if file.is_folder { continue }
 
         let this_path = std::path::Path::new(&file.name);
-        let this_ext = this_path.extension().unwrap().to_str().unwrap();
+        let this_ext = match this_path.extension() {
+            Some(val) => val.to_str().unwrap(),
+            None => { continue; }
+        };
 
         if ! known_good.contains(&this_ext) {
             if this_ext == "dat" || this_ext == "l64" {
                 mod_record.issues.insert(ModError::InfoLikelyPiracy);
             }
             mod_record.issues.insert(ModError::PerformanceQuantityExtra);
-            mod_record.file_detail.extra_files.push(file.name);
+            mod_record.file_detail.extra_files.push(file.name.clone());
         } else {
+            if file.name.contains(" ") {
+                mod_record.issues.insert(ModError::PerformanceFileSpaces);
+                mod_record.file_detail.space_files.push(file.name.clone());
+            }
             match this_ext {
-                "png"  => max_png -= 1,
+                "png"  => {
+                    if ! file.name.ends_with("_weight.png") {
+                        mod_record.file_detail.image_non_dds.push(file.name.clone());
+                        mod_record.file_detail.png_texture.push(file.name.clone());
+                    }
+                    max_png -= 1
+                },
                 "pdf"  => max_pdf -= 1,
                 "grle" => max_grle -= 1,
                 "txt"  => max_txt -= 1,
                 "cache"  => if file.size > size_cache { mod_record.issues.insert(ModError::PerformanceOversizeI3D); },
-                "dds"    => if file.size > size_dds { mod_record.issues.insert(ModError::PerformanceOversizeDDS); },
+                "dds"    => {
+                    mod_record.file_detail.image_dds.push(file.name.clone());
+                    if file.size > size_dds { mod_record.issues.insert(ModError::PerformanceOversizeDDS); }
+                },
                 "gdm"    => if file.size > size_gdm { mod_record.issues.insert(ModError::PerformanceOversizeGDM); },
                 "shapes" => if file.size > size_shapes { mod_record.issues.insert(ModError::PerformanceOversizeSHAPES); },
                 "xml"    => if file.size > size_xml { mod_record.issues.insert(ModError::PerformanceOversizeXML); },
@@ -124,4 +113,86 @@ pub fn do_file_counts(mod_record : &mut super::structs::ModRecord, file_list : V
             if max_txt < 0 { mod_record.issues.insert(ModError::PerformanceQuantityTXT); }
         }
     }
+}
+
+pub fn sys_time_to_string(now: SystemTime) -> String {
+    let now: DateTime<Utc> = now.into();
+    now.to_rfc3339_opts(SecondsFormat::Secs, true)
+}
+
+pub fn mod_desc_basics(mod_record : &mut super::structs::ModRecord, mod_desc : &roxmltree::Document) {
+    match mod_desc.root_element().attribute("descVersion") {
+        Some(val) => mod_record.mod_desc.desc_version = val.parse().unwrap(),
+        None => { mod_record.issues.insert(ModError::ModDescVersionOldOrMissing); },
+    }
+
+    match mod_desc.descendants().find(|n| n.has_tag_name("version")) {
+        Some(node) => mod_record.mod_desc.version = node.text().unwrap().to_owned(),
+        None => { mod_record.issues.insert(ModError::ModDescNoModVersion); }
+    }
+
+    match mod_desc.descendants().find(|n| n.has_tag_name("author")) {
+        Some(node) => mod_record.mod_desc.author = node.text().unwrap_or_else(|| {"--"}).to_owned(),
+        None => {}
+    }
+
+    match mod_desc.descendants().find(|n| n.has_tag_name("multiplayer")) {
+        Some(node) => match node.attribute("supported") {
+            Some(val) => mod_record.mod_desc.multi_player = val.parse().unwrap(),
+            None => {}
+        },
+        None => {}
+    }
+
+    mod_record.mod_desc.store_items = mod_desc.descendants().filter(|n| n.has_tag_name("storeItem")).count() as u32;
+
+    match mod_desc.descendants().find(|n| n.has_tag_name("map")) {
+        Some(node) => match node.attribute("configFilename") {
+            Some(val) => mod_record.mod_desc.map_config_file = Some(val.to_owned()),
+            None => {}
+        },
+        None => {}
+    }
+
+    for depend in mod_desc.descendants().filter(|n| n.has_tag_name("dependency")) {
+        mod_record.mod_desc.depend.push(depend.text().unwrap_or_else(|| {"--"}).to_owned())
+    }
+
+    match mod_desc.descendants().find(|n| n.has_tag_name("productId")) {
+        Some(..) => { mod_record.issues.insert(ModError::InfoLikelyPiracy); },
+        None => {}
+    }
+
+    match mod_desc.descendants().find(|n| n.has_tag_name("iconFilename")) {
+        Some(node) => {
+            match node.text() {
+                Some(val) => {
+                    let mut value_string = val.to_string();
+                    match value_string.find(".png") {
+                        Some(index) => { value_string.replace_range(index..value_string.len(), ".dds"); },
+                        None => {}
+                    }
+                    if mod_record.file_detail.image_dds.contains(&value_string) {
+                        mod_record.mod_desc.icon_file_name = Some(value_string);
+                    } else {
+                        mod_record.issues.insert(ModError::ModDescNoModIcon);
+                    }
+                },
+                None => { mod_record.issues.insert(ModError::ModDescNoModIcon); }
+            }
+        },
+        None => { mod_record.issues.insert(ModError::ModDescNoModIcon); }
+    }
+}
+
+pub fn load_mod_icon(bin_file: Vec<u8>) -> Option<String> {
+    let input_vector = Cursor::new(bin_file);
+    let dds = ddsfile::Dds::read(input_vector).unwrap();
+    let original_image = image_dds::image_from_dds(&dds, 0).unwrap();
+    let unscaled_image = DynamicImage::ImageRgba8(original_image);
+    let encoder: Encoder = Encoder::from_image(&unscaled_image).unwrap();
+    let webp: WebPMemory = encoder.encode(75f32);
+    let b64 = general_purpose::STANDARD.encode(webp.as_ref());
+
+    Some(format!("data:image/webp;base64, {b64}"))
 }
