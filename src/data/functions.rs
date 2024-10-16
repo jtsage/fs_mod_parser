@@ -9,6 +9,10 @@ use webp::*;
 use image::DynamicImage;
 use base64::{Engine as _, engine::general_purpose};
 
+pub fn parse_xml(content: &str) -> Result<roxmltree::Document<'_>, roxmltree::Error> {
+    roxmltree::Document::parse(content)
+}
+
 pub fn test_file_name(mod_record : &mut super::structs::ModRecord) -> bool {
     if !mod_record.file_detail.is_folder && ! mod_record.file_detail.full_path.ends_with(".zip") {
         if mod_record.file_detail.full_path.ends_with(".rar") {
@@ -51,7 +55,7 @@ pub fn test_file_name(mod_record : &mut super::structs::ModRecord) -> bool {
     true
 }
 
-pub fn do_file_counts(mod_record : &mut super::structs::ModRecord, file_list : Vec<FileDefinition>) {
+pub fn do_file_counts(mod_record : &mut super::structs::ModRecord, file_list : &Vec<FileDefinition>) {
     let mut max_grle = 10;
     let mut max_pdf = 1;
     let mut max_png = 128;
@@ -182,6 +186,74 @@ pub fn mod_desc_basics(mod_record : &mut super::structs::ModRecord, mod_desc : &
             }
         },
         None => { mod_record.issues.insert(ModError::ModDescNoModIcon); }
+    }
+
+    for action in mod_desc.descendants().filter(|n| n.has_tag_name("action")) {
+        match action.attribute("name") {
+            Some(name) => {
+                mod_record.mod_desc.actions.insert(name.to_owned(), match action.attribute("category"){
+                    Some(cat) => cat.to_owned(),
+                    None => "ALL".to_string(),
+                });
+            },
+            None => {}
+        }
+    }
+
+    for action in mod_desc.descendants().filter(|n| n.has_tag_name("actionBinding")) {
+        match action.attribute("action") {
+            Some(name) => {
+                mod_record.mod_desc.binds.insert(
+                    name.to_owned(),
+                    action
+                        .children()
+                        .filter(|n|n.has_tag_name("binding") && n.attribute("device") == Some("KB_MOUSE_DEFAULT") && n.has_attribute("input"))
+                        .map(|x| x.attribute("input").unwrap().to_string())
+                        .collect()
+                );
+            },
+            None => {}
+        }
+    }
+
+    match mod_desc.descendants().find(|n| n.has_tag_name("title")) {
+        Some(titles) => {
+            if titles.is_text() {
+                mod_record.l10n.title.insert(
+                    "en".to_string(),
+                    titles.text().unwrap_or_else(||"--").to_string()
+                );
+                mod_record.issues.insert(ModError::PerformanceMissingL10N);
+            } else {
+                for title in titles.children().filter(|n|n.is_element()) {
+                    mod_record.l10n.title.insert(
+                        title.tag_name().name().to_string(),
+                        title.text().unwrap_or_else(||"--").to_string()
+                    );
+                }
+            }
+        },
+        None => { mod_record.issues.insert(ModError::PerformanceMissingL10N); },
+    }
+
+    match mod_desc.descendants().find(|n| n.has_tag_name("description")) {
+        Some(descriptions) => {
+            if descriptions.is_text() {
+                mod_record.l10n.description.insert(
+                    "en".to_string(),
+                    descriptions.text().unwrap_or_else(||"").to_string()
+                );
+                mod_record.issues.insert(ModError::PerformanceMissingL10N);
+            } else {
+                for description in descriptions.children().filter(|n|n.is_element()) {
+                    mod_record.l10n.description.insert(
+                        description.tag_name().name().to_string(),
+                        description.text().unwrap_or_else(||"").to_string()
+                    );
+                }
+            }
+        },
+        None => { mod_record.issues.insert(ModError::PerformanceMissingL10N); },
     }
 }
 

@@ -71,7 +71,7 @@ impl AbstractFileHandle for AbstractFolder<'_> {
             };
             
             names.push(FileDefinition{
-                name : relative_path,
+                name : relative_path.replace("\\", "/"),
                 size : file_metadata.len(),
                 is_folder : file_metadata.is_dir(),
             })
@@ -108,7 +108,7 @@ impl AbstractFileHandle for AbstractZipFile {
         for i in 0..self.archive.len() {
             let file = self.archive.by_index(i).unwrap();
             names.push(FileDefinition{
-                name      : file.mangled_name().to_string_lossy().into_owned(),
+                name      : file.mangled_name().to_string_lossy().into_owned().replace("\\", "/"),
                 size      : if file.is_dir() {0} else { file.size() },
                 is_folder : file.is_dir()
             })

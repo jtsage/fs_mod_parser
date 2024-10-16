@@ -234,50 +234,11 @@ class modFileChecker {
 	}
 
 	async #doStep_fileCounts() {
-		for ( const checkFile of this.#modHandle.list ) {
-			
-			const fileInfo = this.#modHandle.fileInfo(checkFile)
-			const fileName = checkFile
-			const fullName = this.fileDetail.isFolder ? this.#modHandle.relativeFolder(checkFile) : checkFile
-
-			if ( fileName.includes(' ') ) {
-				this.fileDetail.spaceFiles.push(fileName)
-				this.#util_raiseFlag_problem('PERF_SPACE_IN_FILE')
-			}
-
-			if ( fileInfo.isFolder ) { continue }
-
-			/* eslint-disable no-await-in-loop */
-			await this.#util_countFile(
-				path.extname(fileName),
-				fileName,
-				fileInfo.size,
-				fullName
-			)
-			/* eslint-enable no-await-in-loop */
-		}
-
-		this.#flag_problem.PERF_GRLE_TOO_MANY = ( this.#maxFilesType.grle < 1 )
-		this.#flag_problem.PERF_PNG_TOO_MANY  = ( this.#maxFilesType.png < 1 )
-		this.#flag_problem.PERF_PDF_TOO_MANY  = ( this.#maxFilesType.pdf < 1 )
-		this.#flag_problem.PERF_TXT_TOO_MANY  = ( this.#maxFilesType.txt < 1 )
 	}
 
-	get #doStep_canUse() {
-		return this.fileDetail.isSaveGame ? true : Object.entries(this.#flag_broken).some((x) => x[1] === true)
-	}
+	get #doStep_canUse() { return true }
 
-	#doStep_l10n() {
-		const title = this.#modDesc_localString('title', '--')
-		const desc  = this.#modDesc_localString('description')
-
-		this.#flag_info.PERF_L10N_NOT_SET  = ( title === '--' || desc === '' )
-
-		this.#l10n = {
-			title       : title,
-			description : desc,
-		}
-	}
+	#doStep_l10n() {}
 
 	get #doStep_badges() {
 		const badges = {
@@ -294,133 +255,14 @@ class modFileChecker {
 		return Object.entries(badges).filter((x) => x[1] === true).map((x) => x[0])
 	}
 
-	get #doStep_validFileName() {
-		const fullModPath = this.fileDetail.fullPath
-		const shortName   = this.fileDetail.shortName
+	get #doStep_validFileName() { return true }
 
-		if ( ! this.fileDetail.isFolder && ! fullModPath.endsWith('.zip') ) {
-			if ( fullModPath.endsWith('.rar') || fullModPath.endsWith('.7z') ) {
-				this.#util_raiseFlag_broken('FILE_ERROR_UNSUPPORTED_ARCHIVE')
-			} else {
-				this.#util_raiseFlag_broken('FILE_ERROR_GARBAGE_FILE')
-			}
-			return false
-		}
-
-		if ( shortName.match(/unzip/i) ) {
-			this.#util_raiseFlag_broken('FILE_ERROR_LIKELY_ZIP_PACK')
-		}
-
-		if ( shortName.match(/^\d/) ) {
-			this.#util_raiseFlag_broken('FILE_ERROR_NAME_STARTS_DIGIT')
-			return false
-		}
-
-		if ( ! shortName.match(/^[A-Z_a-z]\w+$/) ) {
-			const copyName = shortName.match(/^([A-Za-z]\w+)(?: - .+$| \(.+$)/)
-
-			if ( copyName !== null ) {
-				this.#util_raiseFlag_broken('FILE_ERROR_LIKELY_COPY')
-				this.fileDetail.copyName    = copyName[1]
-			}
-			return false
-		}
-		return true
-	}
-
-	#modDesc_localString(key, fallback = '') {
-		const searchTree = this.modDescParsed?.[key.toLowerCase()] ?? fallback
-
-		if ( searchTree === null ) { return fallback }
-
-		try {
-			return searchTree?.[this.#locale] ?? searchTree?.en ?? searchTree?.de ?? fallback
-		} catch (err) {
-			this.#log.warning(`Caught odd entry: ${key} :: ${err}`)
-			return fallback
-		}
-	}
-
-	#modDesc_default(key, fallback = null) { return key ?? fallback }
 
 	/* eslint-disable-next-line complexity */
 	async #doStep_parseModDesc() {
 		this.modDescParsed = await this.#modHandle.readXML('modDesc.xml', 'moddesc', 'moddesc')
-		
-		if ( this.modDescParsed === false ) {
-			this.#util_raiseFlag_broken('NOT_MOD_MODDESC_PARSE_ERROR')
-			return
-		}
-
-		if ( this.modDescParsed === null ) {
-			this.#util_raiseFlag_broken('NOT_MOD_MODDESC_MISSING')
-			return
-		}
-
-		/* Get modDesc.xml version */
-		this.modDesc.descVersion   = this.#modDesc_default(this.modDescParsed?.$?.DESCVERSION, 0)
-		this.#flag_broken.NOT_MOD_MODDESC_VERSION_OLD_OR_MISSING = ( this.modDesc.descVersion === 0 )
-	
-		/* Get MOD Version */
-		this.modDesc.version       = this.#modDesc_default(this.modDescParsed?.version?.toString?.(), '0.0.0.0')
-		this.#flag_broken.MOD_ERROR_NO_MOD_VERSION = ( this.modDesc.version === '0.0.0.0' )
-
-		this.modDesc.author        = this.#modDesc_default(this.modDescParsed?.author, '--')
-		this.modDesc.multiPlayer   = this.#modDesc_default(this.modDescParsed?.multiplayer?.$?.SUPPORTED, false)
-		this.modDesc.storeItems    = this.#modDesc_default(this.modDescParsed?.storeitems?.storeitem?.length, 0)
-		this.modDesc.mapConfigFile = this.#modDesc_default(this.modDescParsed?.maps?.map?.[0]?.$?.CONFIGFILENAME)
-		this.modDesc.depend        = this.#modDesc_default(this.modDescParsed?.dependencies?.dependency, [])
-		
-		this.#flag_problem.INFO_MIGHT_BE_PIRACY = Object.hasOwn(this.modDescParsed, 'productid')
-
-		/* Get icon filename */
-		let iconFileName = ''
-		
-		if ( typeof this.modDescParsed?.iconfilename ==='string' ) {
-			iconFileName = this.modDescParsed.iconfilename
-		} else if ( typeof this.modDescParsed?.iconfilename?.[0] ==='string' ) {
-			iconFileName = this.modDescParsed.iconfilename[0]
-		}
-		
-		if ( typeof iconFileName?.endsWith === 'function' && ! iconFileName.endsWith('.dds') ) {
-			iconFileName = `${iconFileName.slice(0, -4)}.dds`
-		}
-
-		if ( this.fileDetail.imageDDS.includes(iconFileName) ) {
-			this.modDesc.iconFileName = iconFileName
-		} else {
-			
-			this.#util_raiseFlag_problem('MOD_ERROR_NO_MOD_ICON')
-		}
-		
-		this.#doStep_parseActions()
 	}
 
-	#doStep_parseActions() {
-		try {
-			if ( Array.isArray(this.modDescParsed?.actions?.action) ) {
-				for ( const action of this.modDescParsed.actions.action ) {
-					this.modDesc.actions[action.$.NAME] = action.$.CATEGORY || 'ALL'
-				}
-			}
-			if ( Array.isArray(this.modDescParsed?.inputbinding?.actionbinding) ) {
-				for ( const action of this.modDescParsed.inputbinding.actionbinding ) {
-					const thisActionName = action.$.ACTION
-
-					if ( Array.isArray(action.binding) ) {
-						for ( const binding of action.binding ) {
-							if ( binding.$.DEVICE === 'KB_MOUSE_DEFAULT' ) {
-								this.modDesc.binds[thisActionName] ??= []
-								this.modDesc.binds[thisActionName].push(binding.$.INPUT)
-							}
-						}
-					}
-				}
-			}
-		} catch (err) {
-			this.#log.warning(`Key binding read failed : ${err}`)
-		}
-	}
 
 	async #doStep_parseMapXML(fileName) {
 		const mapConfigParsed = await this.#modHandle.readXML(fileName, 'moddesc', 'map')
@@ -440,87 +282,6 @@ class modFileChecker {
 	#util_raiseFlag_problem(flag) { this.#flag_problem[flag] = true }
 	#util_raiseFlag_broken(flag)  { this.#flag_broken[flag] = true }
 	#util_raiseFlag_info(flag)    { this.#flag_info[flag] = true }
-
-	#util_size_check(size, type, fileName, flagPart) {
-		if ( size > this.#fileSizeMap[type] ) {
-			this.fileDetail.tooBigFiles.push(fileName)
-			this.#util_raiseFlag_problem(`PERF_${flagPart}_TOO_BIG`)
-		}
-	}
-	#util_tick_count(type) { this.#maxFilesType[type]-- }
-
-	#util_countUnknown(shortSuffix, fileName) {
-		const knownGood   = new Set(['', 'png', 'dds', 'i3d', 'shapes', 'lua', 'gdm', 'cache', 'xml', 'grle', 'pdf', 'txt', 'gls', 'anim', 'ogg'])
-
-		if ( !knownGood.has(shortSuffix) ) {
-			if ( shortSuffix === 'l64' || shortSuffix === 'dat' ) {
-				this.#util_raiseFlag_problem('INFO_MIGHT_BE_PIRACY')
-			}
-			this.#util_raiseFlag_problem('PERF_HAS_EXTRA')
-			this.fileDetail.extraFiles.push(fileName)
-			return true
-		}
-		return false
-	}
-
-	async #util_checkLUA(fileName) {
-		if ( malwareFalse.has(this.fileDetail.shortName)) { return }
-
-		const luaContents = await this.#modHandle.readText(fileName)
-
-		if ( typeof luaContents !== 'string' ) { return }
-
-		if ( luaContents.match(/\.deleteFolder/) ) {
-			this.#util_raiseFlag_info('MALICIOUS_CODE')
-		} else if ( luaContents.match(/\.deleteFile/) ) {
-			this.#util_raiseFlag_info('MALICIOUS_CODE')
-		}
-		// console.log(luaContents)
-	}
-
-	async #util_countFile(suffix, fileName, size, fullFileName) {
-		const shortSuffix = suffix.substring(1)
-
-		if ( this.#util_countUnknown(shortSuffix, fileName) ) { return }
-
-		switch (shortSuffix) {
-			case 'png' : {
-				this.#util_tick_count('png')
-				if ( ! fileName.endsWith('_weight.png') ) {
-					this.fileDetail.imageNonDDS.push(fileName)
-					this.fileDetail.pngTexture.push(fileName)
-				}
-				break
-			}
-			case 'dds' :
-				this.fileDetail.imageDDS.push(fileName)
-				this.#util_size_check(size, 'dds', fileName, 'DDS')
-				break
-			case 'i3d' :
-				this.fileDetail.i3dFiles.push(fileName)
-				break
-			case 'lua' :
-				this.modDesc.scriptFiles++
-				await this.#util_checkLUA(fullFileName)
-				break
-			case 'cache' :
-				this.#util_size_check(size, shortSuffix, fileName, 'I3D')
-				break
-			case 'gdm' :
-			case 'xml' :
-			case 'shapes' :
-				this.#util_size_check(size, shortSuffix, fileName, shortSuffix.toUpperCase())
-				break
-			case '.grle' :
-			case '.pdf' :
-			case '.txt' :
-				this.#util_tick_count(shortSuffix)
-				break
-			default :
-				break
-		}
-		
-	}
 
 	#util_nullBaseGameFile(fileName) {
 		return ( typeof fileName === 'string' && !fileName.startsWith('$') ) ? fileName : null

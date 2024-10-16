@@ -1,7 +1,32 @@
 use std::{collections::HashSet, path::Path};
-use serde::Serialize;
+// use serde::Serialize;
+use std::collections::HashMap;
+// use serde::ser::{Serialize, SerializeMap, SerializeStruct, Serializer};
 
-#[derive(Serialize)]
+
+pub const NOT_MALWARE: [&str; 11] = [
+	"FS22_001_NoDelete",
+	"FS22_AutoDrive",
+	"FS22_Courseplay",
+	"FS22_FSG_Companion",
+	"FS22_VehicleControlAddon",
+	"MultiOverlayV3", // Happylooser
+	"MultiOverlayV4", // Happylooser
+	"VehicleInspector", // Happylooser
+	"FS19_AutoDrive",
+	"FS19_Courseplay",
+	"FS19_GlobalCompany",
+];
+
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModDescL10N {
+	pub title : HashMap<String, String>,
+	pub description : HashMap<String, String>,
+}
+
+#[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModRecord {
 	pub badge_array        : Vec<String>,
@@ -9,17 +34,17 @@ pub struct ModRecord {
 	pub current_collection : String,
 	pub file_detail        : ModFile,
 	pub issues             : HashSet<super::flags::ModError>,
-	// pub l10n               : this.#l10n,
+	pub l10n               : ModDescL10N,
 	pub md5_sum            : Option<String>,
 	pub mod_desc           : ModDesc,
 	pub uuid               : String,
 }
 
-#[derive(Serialize)]
+#[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModDesc {
-	// actions : Vec<Actions>,
-	//binds          : Vec<Binds>,
+	pub actions         : HashMap<String, String>,
+	pub binds           : HashMap<String, Vec<String>>,
 	pub author          : String,
 	pub script_files    : u32,
 	pub store_items     : u32,
@@ -35,7 +60,7 @@ pub struct ModDesc {
 	pub version         : String,
 }
 
-#[derive(Serialize)]
+#[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModFile {
 	pub copy_name     : Option<String>,
@@ -66,7 +91,10 @@ pub fn new_record(full_path: &Path, is_folder : bool) -> ModRecord {
 		current_collection : "".to_owned(),
 		file_detail        : file_detail_new_record(full_path, is_folder),
 		issues             : HashSet::new(),
-		// l10n               : this.#l10n,
+		l10n               : ModDescL10N{
+			title       : HashMap::from([("en".to_string(), "--".to_string())]),
+			description : HashMap::from([("en".to_string(), "--".to_string())])
+		},
 		md5_sum            : None,
 		mod_desc           : mod_desc_new_record(),
 		uuid               : format!("{:?}", md5::compute(full_path.to_str().unwrap()))
@@ -94,9 +122,9 @@ fn file_detail_new_record(file : &Path, is_folder : bool) -> ModFile {
 }
 fn mod_desc_new_record() -> ModDesc {
 	ModDesc {
+		actions         : HashMap::new(),
 		author          : "--".to_owned(),
-		script_files    : 0,
-		store_items     : 0,
+		binds           : HashMap::new(),
 		crop_info       : false,
 		crop_weather    : None,
 		depend          : vec![],
@@ -106,6 +134,8 @@ fn mod_desc_new_record() -> ModDesc {
 		map_config_file : None,
 		map_is_south    : false,
 		multi_player    : false,
+		script_files    : 0,
+		store_items     : 0,
 		version         : "--".to_owned(),
 	}
 }
