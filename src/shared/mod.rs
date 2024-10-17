@@ -1,3 +1,4 @@
+//! Shared data
 use std::io::Cursor;
 use base64::{engine::general_purpose, Engine as _};
 use image::{DynamicImage, imageops::FilterType};
@@ -26,6 +27,12 @@ pub fn convert_mod_icon(bin_file: Vec<u8>) -> Option<String> {
     Some(format!("data:image/webp;base64, {b64}"))
 }
 
+/// Load the map image resize, crop, and convert to webp
+/// 
+/// Returns the webp as a base64 string suitable for use
+/// with an `<image src="...">` tag.
+/// 
+/// Supports DDS BC1-BC7 in one pass, in-memory
 pub fn convert_map_image(bin_file: Vec<u8>) -> Option<String> {
     let input_vector = Cursor::new(bin_file);
     let dds = ddsfile::Dds::read(input_vector).unwrap();

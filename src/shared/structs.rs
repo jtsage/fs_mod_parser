@@ -64,10 +64,10 @@ impl ModRecord {
         } else {
             self.badge_array.savegame = false;
             self.badge_array.folder = self.file_detail.is_folder;
-            self.badge_array.no_mp  = !self.badge_array.notmod && (self.file_detail.is_folder || ! self.mod_desc.multi_player);
             self.badge_array.malware = self.issues.contains(&ModError::InfoMaliciousCode);
             self.badge_array.broken = BADGE_BROKEN.iter().any(|x| self.issues.contains(x));
             self.badge_array.problem = BADGE_ISSUE.iter().any(|x| self.issues.contains(x));
+            self.badge_array.no_mp  = !self.badge_array.notmod && !self.badge_array.broken && (self.file_detail.is_folder || ! self.mod_desc.multi_player);
         }
         self
     }

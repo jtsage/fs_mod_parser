@@ -1,3 +1,6 @@
+//! Map file parsing
+//! 
+//! Reads crop data, weather data, and the map overview image
 use std::collections::HashMap;
 use regex::Regex;
 use crate::shared::convert_map_image;
@@ -86,6 +89,7 @@ fn fruits_from_base_game() -> Vec<CropTypeStateBuilder> {
     collector
 }
 
+// Return basegame weather by key
 fn weather_from_base_game(mod_record : &mut ModRecord, base_game_key:Option<String>) {
     let mut weather_map:CropWeatherType = HashMap::new();
 

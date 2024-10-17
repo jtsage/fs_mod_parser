@@ -1,9 +1,10 @@
+//! Map data structures
 use std::collections::HashMap;
 
 /// Shared nested hashmap for map weather
 pub type CropWeatherType = HashMap<String, HashMap<String, i8>>;
 
-// Static version of the crop types
+/// Static version of the crop types
 pub struct CropTypeState {
     pub name        : &'static str,
     pub max_harvest : u8,
@@ -11,7 +12,7 @@ pub struct CropTypeState {
     pub states      : u8,
 }
 
-// Dynamic version of the crop types
+/// Dynamic version of the crop types
 pub struct CropTypeStateBuilder {
     pub max_harvest : u8,
     pub min_harvest : u8,
@@ -19,36 +20,21 @@ pub struct CropTypeStateBuilder {
     pub states      : u8,
 }
 
+/// Static season definition
 pub struct CropSeason {
     pub name : &'static str,
     pub min : i8,
     pub max : i8,
 }
 
+/// Static weather definition
 pub struct CropWeather {
     pub name : &'static str,
     pub seasons : [CropSeason; 4],
 }
 
-// impl Serialize for CropWeather {
-//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-//     where
-//         S: Serializer,
-//     {
-//         let mut map = serializer.serialize_map(Some(1))?;
-//         let mut min_max: HashMap<&str, HashMap<&str, i8>> = HashMap::new();
 
-//         for item in &self.seasons {
-//             min_max.insert(item.name, HashMap::from([
-//                 ("min", item.min),
-//                 ("max", item.max)
-//             ]));
-//         }
-//         map.serialize_entry(&self.name, &min_max)?;
-//         map.end()
-//     }
-// }
-
+/// Static crop definition
 #[derive(Clone)]
 pub struct Crop {
     pub name : &'static str,
@@ -57,6 +43,7 @@ pub struct Crop {
     pub plant_periods : [bool;12],
 }
 
+/// Dynamic crop definition
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CropOutput {

@@ -1,4 +1,4 @@
-//! Utility functions for parsers
+//! Parser functions for basic mod reading
 use crate::shared::errors::ModError;
 use crate::shared::files::{AbstractFileHandle, AbstractFolder, AbstractZipFile, FileDefinition};
 use crate::shared::structs::ModRecord;
