@@ -72,9 +72,12 @@ pub const BADGE_ISSUE: [&ModError; 17] = [
 ];
 
 /// ModErrors that denote it's not actually a mod
-pub const BADGE_NOT_MOD: [&ModError; 3] = [
+pub const BADGE_NOT_MOD: [&ModError; 6] = [
 	&ModError::FileErrorGarbageFile,
 	&ModError::FileErrorLikelySaveGame,
+	&ModError::FileErrorLikelyZipPack,
+	&ModError::FileErrorUnreadableZip,
+	&ModError::FileErrorUnsupportedArchive,
 	&ModError::ModDescMissing,
 ];
 

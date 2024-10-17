@@ -173,6 +173,7 @@ impl ModFile {
 }
 
 /// Badge information for a mod
+#[derive(PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
 pub struct ModBadges {
     pub broken   : bool,
     pub folder   : bool,

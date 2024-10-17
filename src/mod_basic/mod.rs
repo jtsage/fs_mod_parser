@@ -203,6 +203,7 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
 
     if abstract_file.exists("careerSavegame.xml") {
         mod_record.file_detail.is_save_game = true;
+        mod_record.can_not_use = true;
         mod_record.add_issue(ModError::FileErrorLikelySaveGame);
         mod_record.update_badges();
         return mod_record;
@@ -211,6 +212,7 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
     if ! abstract_file.is_folder() {
         if abstract_file_list.iter().all(|x| x.name.ends_with(".zip")) {
             mod_record.file_detail.is_mod_pack = true;
+            mod_record.can_not_use = true;
             mod_record.add_issue(ModError::FileErrorLikelyZipPack);
             mod_record.update_badges();
             return mod_record;
@@ -221,6 +223,7 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
         Ok(content) => content,
         Err(..) => {
             mod_record.add_issue(ModError::ModDescMissing);
+            mod_record.can_not_use = true;
             mod_record.update_badges();
             return mod_record;
         },
@@ -230,6 +233,7 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
         Ok(tree) => tree,
         Err(..) => {
             mod_record.add_issue(ModError::ModDescParseError);
+            mod_record.can_not_use = true;
             mod_record.update_badges();
             return mod_record;
         }
@@ -266,6 +270,7 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
 
     crate::maps::read_map_basics(&mut mod_record, &mut abstract_file);
 
+    mod_record.update_badges();
     mod_record
 }
 
@@ -386,23 +391,23 @@ fn sys_time_to_string(now: SystemTime) -> String {
 /// Load basic details from the modDesc.xml file
 fn mod_desc_basics(mod_record : &mut ModRecord, mod_desc : &roxmltree::Document) {
     match mod_desc.root_element().attribute("descVersion") {
-        Some(val) => mod_record.mod_desc.desc_version = val.parse().unwrap(),
+        Some(val) => mod_record.mod_desc.desc_version = val.parse().unwrap_or(0_u32),
         None => { mod_record.add_issue(ModError::ModDescVersionOldOrMissing); },
     }
 
     match mod_desc.descendants().find(|n| n.has_tag_name("version")) {
-        Some(node) => mod_record.mod_desc.version = node.text().unwrap().to_owned(),
+        Some(node) => mod_record.mod_desc.version = node.text().unwrap_or("1.0.0.0").to_owned(),
         None => { mod_record.add_issue(ModError::ModDescNoModVersion); }
     }
 
     match mod_desc.descendants().find(|n| n.has_tag_name("author")) {
-        Some(node) => mod_record.mod_desc.author = node.text().unwrap_or_else(|| {"--"}).to_owned(),
+        Some(node) => mod_record.mod_desc.author = node.text().unwrap_or("--").to_owned(),
         None => {}
     }
 
     match mod_desc.descendants().find(|n| n.has_tag_name("multiplayer")) {
         Some(node) => match node.attribute("supported") {
-            Some(val) => mod_record.mod_desc.multi_player = val.parse().unwrap(),
+            Some(val) => mod_record.mod_desc.multi_player = val.parse().unwrap_or(false),
             None => {}
         },
         None => {}
@@ -418,8 +423,8 @@ fn mod_desc_basics(mod_record : &mut ModRecord, mod_desc : &roxmltree::Document)
         None => {}
     }
 
-    for depend in mod_desc.descendants().filter(|n| n.has_tag_name("dependency")) {
-        mod_record.mod_desc.depend.push(depend.text().unwrap_or_else(|| {"--"}).to_owned())
+    for depend in mod_desc.descendants().filter(|n| n.has_tag_name("dependency") && n.is_text()) {
+        mod_record.mod_desc.depend.push(depend.text().unwrap_or("--").to_owned())
     }
 
     match mod_desc.descendants().find(|n| n.has_tag_name("productId")) {
@@ -481,14 +486,14 @@ fn mod_desc_basics(mod_record : &mut ModRecord, mod_desc : &roxmltree::Document)
             if titles.is_text() {
                 mod_record.l10n.title.insert(
                     "en".to_string(),
-                    titles.text().unwrap_or_else(||"--").to_string()
+                    titles.text().unwrap_or("--").to_string()
                 );
                 mod_record.add_issue(ModError::PerformanceMissingL10N);
             } else {
                 for title in titles.children().filter(|n|n.is_element()) {
                     mod_record.l10n.title.insert(
                         title.tag_name().name().to_string(),
-                        title.text().unwrap_or_else(||"--").to_string()
+                        title.text().unwrap_or("--").to_string()
                     );
                 }
             }
@@ -501,14 +506,14 @@ fn mod_desc_basics(mod_record : &mut ModRecord, mod_desc : &roxmltree::Document)
             if descriptions.is_text() {
                 mod_record.l10n.description.insert(
                     "en".to_string(),
-                    descriptions.text().unwrap_or_else(||"").to_string()
+                    descriptions.text().unwrap_or("").to_string()
                 );
                 mod_record.add_issue(ModError::PerformanceMissingL10N);
             } else {
                 for description in descriptions.children().filter(|n|n.is_element()) {
                     mod_record.l10n.description.insert(
                         description.tag_name().name().to_string(),
-                        description.text().unwrap_or_else(||"").to_string()
+                        description.text().unwrap_or("").to_string()
                     );
                 }
             }
