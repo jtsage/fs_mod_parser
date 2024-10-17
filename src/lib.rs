@@ -1,6 +1,5 @@
 #![doc = include_str!("../README.md")]
 
-
 pub mod maps;
 pub mod mod_basic;
 pub mod shared;

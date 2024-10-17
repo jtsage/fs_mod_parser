@@ -13,6 +13,6 @@ Checks the file name, and returns:
 - map information (if applicable)
 - mod content tests
 
-```rust
+```rust ignore
 fs_mod_parser::parse_basic_mod(file : &Path, is_folder : bool) -> <String>
 ```
