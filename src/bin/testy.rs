@@ -7,19 +7,16 @@
 use std::path::{self};
 use std::time::Instant;
 use glob::glob;
-
-mod data;
-mod files;
-mod parsers;
+use fs_mod_parser::parse_basic_mod;
 
 fn main() {
     let start_time = Instant::now();
     let mut counter: u64 = 0;
     let mut last_duration;
 
-    let pattern = "./test_mods/FS22_*";
+    // let pattern = "./test_mods/FS22_*";
     // let pattern = "C:\\Users\\jtsag\\Documents\\My Games\\FarmingSimulator2022\\mods\\*\\*";
-    // let pattern = "C:\\Users\\jtsag\\Documents\\My Games\\FarmingSimulator2022\\mods\\fsg_realism\\*";
+    let pattern = "C:\\Users\\jtsag\\Documents\\My Games\\FarmingSimulator2022\\mods\\maps_test\\*";
 
     for entry in glob(pattern).unwrap().filter_map(Result::ok) {
         last_duration = start_time.elapsed();
@@ -27,10 +24,10 @@ fn main() {
 
         match path::absolute(entry.clone()) {
             Ok(abs_path) => {
-                let _output = parsers::parse_base_mod(abs_path.as_path(), file_metadata.is_dir());
+                let _output = parse_basic_mod(abs_path.as_path(), file_metadata.is_dir());
                 counter += 1;
                 print!("{} in {:.2?}\n", entry.clone().to_str().unwrap(), start_time.elapsed() - last_duration);
-                print!("{}\n", _output);
+                // print!("{}\n", _output);
             },
             Err(e) => panic!("{}", e),
         };

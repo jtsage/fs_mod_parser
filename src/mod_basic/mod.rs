@@ -1,33 +1,276 @@
 //! Utility functions for parsers
-use super::flags::ModError;
-use super::super::files::FileDefinition;
+use crate::shared::errors::ModError;
+use crate::shared::files::{AbstractFileHandle, AbstractFolder, AbstractZipFile, FileDefinition};
+use crate::shared::structs::ModRecord;
+use crate::shared::convert_mod_icon;
 
-use std::time::SystemTime;
-use std::io::Cursor;
+use std::{time::SystemTime, path::Path};
 use chrono::{DateTime, SecondsFormat, Utc};
 use regex::{Regex, RegexBuilder};
-use image_dds::ddsfile;
-use webp::*;
-use image::DynamicImage;
-use base64::{Engine as _, engine::general_purpose};
 
-/// Parse an XML string into a roxmltree::Document
-pub fn parse_xml(content: &str) -> Result<roxmltree::Document<'_>, roxmltree::Error> {
-    roxmltree::Document::parse(content)
+/// Known false positives for the malware check
+pub const NOT_MALWARE: [&str; 11] = [
+    "FS22_001_NoDelete",
+    "FS22_AutoDrive",
+    "FS22_Courseplay",
+    "FS22_FSG_Companion",
+    "FS22_VehicleControlAddon",
+    "MultiOverlayV3", // Happylooser
+    "MultiOverlayV4", // Happylooser
+    "VehicleInspector", // Happylooser
+    "FS19_AutoDrive",
+    "FS19_Courseplay",
+    "FS19_GlobalCompany",
+];
+
+/* cSpell: disable */
+/// Get the JSON representation of a mod in one shot
+/// 
+/// # Sample Output
+/// 
+/// ```json
+/// {
+///  "badgeArray": [ "problem" ],
+///  "canNotUse": false,
+///  "currentCollection": "",
+///  "fileDetail": {
+///    "copyName": null,
+///    "extraFiles": [],
+///    "fileDate": "2024-10-17T02:57:15Z",
+///    "fileSize": 461383317,
+///    "fullPath": "C:\\...\\FS22_Test.zip",
+///    "i3dFiles": [],
+///    "imageDDS": [
+///      "icon_eldoradoMap.dds",
+///    ],
+///    "imageNonDDS": [
+///      "maps/data/map_dem.png"
+///    ],
+///    "isFolder": false,
+///    "isSaveGame": false,
+///    "isModPack": false,
+///    "pngTexture": [
+///      "maps/data/map_dem.png"
+///    ],
+///    "shortName": "FS22_EldoradoMap",
+///    "spaceFiles": [],
+///    "tooBigFiles": []
+///  },
+///  "issues": [ "PERF_GRLE_TOO_MANY" ],
+///  "l10n": {
+///    "title": {
+///      "en": "Eldorado"
+///    },
+///    "description": {
+///      "en": "The Eldorado map is a Brazilian...",
+///      "de": "Die Eldorado-Karte ist eine ...",
+///      "br": "O mapa Eldorado é um mapa ..."
+///    }
+///  },
+///  "md5Sum": null,
+///  "modDesc": {
+///    "actions": {},
+///    "binds": {},
+///    "author": "Case IH Brasil, Connect Modding",
+///    "scriptFiles": 0,
+///    "storeItems": 41,
+///    "cropInfo": [
+///      {
+///        "name": "wheat",
+///        "growthTime": 8,
+///        "harvestPeriods": [],
+///        "plantPeriods": [ 7, 8 ]
+///      },
+///    ],
+///    "cropWeather": {
+///      "spring": { "max": 32, "min": 16 },
+///      "autumn": { "min": 14, "max": 30 },
+///      "winter": { "max": 30, "min": 13
+///      },
+///      "summer": { "max": 31, "min": 21 }
+///    },
+///    "depend": [
+///      "FS22_Cerca_BR"
+///    ],
+///    "descVersion": 79,
+///    "iconFileName": "icon_eldoradoMap.dds",
+///    "iconImage": "data:image/webp;base64, ...",
+///    "mapConfigFile": "xml/map.xml",
+///    "mapIsSouth": true,
+///    "multiPlayer": true,
+///    "version": "1.0.0.0"
+///  },
+///  "uuid": "e4d48eaebd40e7f8d160081dad9c8802"
+///}
+/// ```
+/* cSpell: enable */
+pub fn parse_to_json(full_path :&Path, is_folder: bool) -> String {
+    parser(full_path, is_folder).to_string()
 }
 
-/// Test a mod file name against known game limitations
+
+/// Test a mod file against known game limitations
 /// 
-/// Requires an existing mutable [ModRecord](crate::data::structs::ModRecord)
-/// and returns a boolean
+/// Returns a [ModRecord]
 /// 
-/// # Checks
+/// captured information includes version, l10n title and description,
+/// key bindings, multiplayer status, if it's a map,
+/// icon, abd some simple piracy detection - see [ModRecord] for more details
+/// 
+/// # File Name Checks
 /// 
 /// - Filename must start with a letter (not a number)
 /// - Filename must not contain spaces
 /// - Filename can only contain A-Z, a-z, 0-9, and underscore.
 /// - Non-Folders must end with a .zip extension
-pub fn test_file_name(mod_record : &mut super::structs::ModRecord) -> bool {
+/// 
+/// # Valid file types
+/// ```
+/// vec!["png", "dds", "i3d", "shapes", "lua", "gdm", "cache", "xml", "grle", "pdf", "txt", "gls", "anim", "ogg"];
+/// ```
+/// 
+/// # Quantity Limits
+/// ```
+/// let mut max_grle = 10;
+/// let mut max_pdf = 1;
+/// let mut max_png = 128;
+/// let mut max_txt = 2;
+/// ```
+/// 
+/// # Size Limits (in bytes)
+/// ```
+/// let size_cache :u64  = 10_485_760;
+/// let size_dds :u64    = 12_582_912;
+/// let size_gdm :u64    = 18_874_368;
+/// let size_shapes :u64 = 268_435_456;
+/// let size_xml :u64    = 262_144;
+/// ```
+pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
+    let mut mod_record = ModRecord::new(&full_path, is_folder);
+
+    mod_record.can_not_use = !test_file_name(&mut mod_record);
+
+    if mod_record.can_not_use {
+        mod_record.add_issue(ModError::FileErrorNameInvalid);
+        mod_record.update_badges();
+        return mod_record;
+    }
+
+    let mut abstract_file: Box<dyn AbstractFileHandle> = if is_folder 
+        {
+            mod_record.add_issue(ModError::InfoNoMultiplayerUnzipped);
+            match AbstractFolder::new(&full_path) {
+                Ok(archive) => Box::new(archive),
+                Err(e) => {
+                    mod_record.add_issue(e);
+                    mod_record.can_not_use = true;
+                    mod_record.update_badges();
+                    return mod_record;
+                }
+            }
+        } else {
+            match AbstractZipFile::new(&full_path) {
+                Ok(archive) => Box::new(archive),
+                Err(e) => {
+                    mod_record.add_issue(e);
+                    mod_record.can_not_use = true;
+                    mod_record.update_badges();
+                    return mod_record
+                } 
+            }
+        };
+
+    let abstract_file_list = abstract_file.list();
+
+    match std::fs::metadata(&full_path) {
+        Ok(meta) => {
+            match meta.created() {
+                Ok(time) => mod_record.file_detail.file_date = sys_time_to_string(time),
+                Err(..) => {},
+            }
+            if ! abstract_file.is_folder() {
+                mod_record.file_detail.file_size = meta.len();
+            } else {
+                let mut full_size:u64 = 0;
+                for entry in &abstract_file_list {
+                    full_size += entry.size;
+                }
+                mod_record.file_detail.file_size = full_size;
+            }
+        },
+        Err(..) => {},
+    }
+
+    if abstract_file.exists("careerSavegame.xml") {
+        mod_record.file_detail.is_save_game = true;
+        mod_record.add_issue(ModError::FileErrorLikelySaveGame);
+        mod_record.update_badges();
+        return mod_record;
+    }
+
+    if ! abstract_file.is_folder() {
+        if abstract_file_list.iter().all(|x| x.name.ends_with(".zip")) {
+            mod_record.file_detail.is_mod_pack = true;
+            mod_record.add_issue(ModError::FileErrorLikelyZipPack);
+            mod_record.update_badges();
+            return mod_record;
+        }
+    }
+
+    let mod_desc_content = match abstract_file.as_text("modDesc.xml") {
+        Ok(content) => content,
+        Err(..) => {
+            mod_record.add_issue(ModError::ModDescMissing);
+            mod_record.update_badges();
+            return mod_record;
+        },
+    };
+
+    let mod_desc_doc = match roxmltree::Document::parse(&mod_desc_content) {
+        Ok(tree) => tree,
+        Err(..) => {
+            mod_record.add_issue(ModError::ModDescParseError);
+            mod_record.update_badges();
+            return mod_record;
+        }
+    };
+
+    do_file_counts(&mut mod_record, &abstract_file_list);
+    mod_desc_basics(&mut mod_record, &mod_desc_doc);
+
+    mod_record.mod_desc.icon_image = match &mod_record.mod_desc.icon_file_name {
+        Some(filename) => convert_mod_icon(abstract_file.as_bin(&filename).unwrap()),
+        None => None,
+    };
+
+    if ! NOT_MALWARE.contains(&mod_record.file_detail.short_name.clone().as_str()) {
+        let re_1 = RegexBuilder::new(r"\.deleteFolder")
+            .multi_line(true)
+            .build()
+            .unwrap();
+        let re_2 = RegexBuilder::new(r"\.deleteFile")
+            .multi_line(true)
+            .build()
+            .unwrap();
+
+        for lua_file in abstract_file_list.iter().filter(|n|n.name.ends_with(".lua")) {
+            match abstract_file.as_text(&lua_file.name) {
+                Ok(content) => {
+                    if re_1.is_match(&content.as_str()) { mod_record.add_issue(ModError::InfoMaliciousCode); }
+                    if re_2.is_match(&content.as_str()) { mod_record.add_issue(ModError::InfoMaliciousCode); }
+                },
+                Err(..) => {},
+            }
+        }
+    }
+
+    crate::maps::read_map_basics(&mut mod_record, &mut abstract_file);
+
+    mod_record
+}
+
+/// Test a mod file name against known game limitations
+fn test_file_name(mod_record : &mut ModRecord) -> bool {
     if !mod_record.file_detail.is_folder && ! mod_record.file_detail.full_path.ends_with(".zip") {
         if mod_record.file_detail.full_path.ends_with(".rar") {
             mod_record.add_issue(ModError::FileErrorUnsupportedArchive);
@@ -70,31 +313,7 @@ pub fn test_file_name(mod_record : &mut super::structs::ModRecord) -> bool {
 }
 
 /// Count contained files in the mod
-/// 
-/// This also allows us to enforce the recommendations / rules from giants.
-/// 
-/// # Valid file types
-/// ```
-/// vec!["png", "dds", "i3d", "shapes", "lua", "gdm", "cache", "xml", "grle", "pdf", "txt", "gls", "anim", "ogg"];
-/// ```
-/// 
-/// # Quantity Limits
-/// ```
-/// let mut max_grle = 10;
-/// let mut max_pdf = 1;
-/// let mut max_png = 128;
-/// let mut max_txt = 2;
-/// ```
-/// 
-/// # Size Limits (in bytes)
-/// ```
-/// let size_cache :u64  = 10_485_760;
-/// let size_dds :u64    = 12_582_912;
-/// let size_gdm :u64    = 18_874_368;
-/// let size_shapes :u64 = 268_435_456;
-/// let size_xml :u64    = 262_144;
-/// ```
-pub fn do_file_counts(mod_record : &mut super::structs::ModRecord, file_list : &Vec<FileDefinition>) {
+fn do_file_counts(mod_record : &mut ModRecord, file_list : &Vec<FileDefinition>) {
     let mut max_grle = 10;
     let mut max_pdf = 1;
     let mut max_png = 128;
@@ -159,17 +378,13 @@ pub fn do_file_counts(mod_record : &mut super::structs::ModRecord, file_list : &
 }
 
 /// Convert a system time to a ISO JSON string
-pub fn sys_time_to_string(now: SystemTime) -> String {
+fn sys_time_to_string(now: SystemTime) -> String {
     let now: DateTime<Utc> = now.into();
     now.to_rfc3339_opts(SecondsFormat::Secs, true)
 }
 
 /// Load basic details from the modDesc.xml file
-/// 
-/// This includes version, l10n title and description,
-/// key bindings, multiplayer status, if it's a map,
-/// icon file name, abd some simple piracy detection
-pub fn mod_desc_basics(mod_record : &mut super::structs::ModRecord, mod_desc : &roxmltree::Document) {
+fn mod_desc_basics(mod_record : &mut ModRecord, mod_desc : &roxmltree::Document) {
     match mod_desc.root_element().attribute("descVersion") {
         Some(val) => mod_record.mod_desc.desc_version = val.parse().unwrap(),
         None => { mod_record.add_issue(ModError::ModDescVersionOldOrMissing); },
@@ -301,78 +516,3 @@ pub fn mod_desc_basics(mod_record : &mut super::structs::ModRecord, mod_desc : &
         None => { mod_record.add_issue(ModError::PerformanceMissingL10N); },
     }
 }
-
-/// Load the mod icon, and convert to webp
-/// 
-/// Returns the webp as a base64 string suitable for use
-/// with an `<image src="...">` tag.
-/// 
-/// Supports DDS BC1-BC7 in one pass, in-memory
-pub fn load_mod_icon(bin_file: Vec<u8>) -> Option<String> {
-    let input_vector = Cursor::new(bin_file);
-    let dds = ddsfile::Dds::read(input_vector).unwrap();
-    let original_image = image_dds::image_from_dds(&dds, 0).unwrap();
-    let unscaled_image = DynamicImage::ImageRgba8(original_image);
-    let encoder: Encoder = Encoder::from_image(&unscaled_image).unwrap();
-    let webp: WebPMemory = encoder.encode(75f32);
-    let b64 = general_purpose::STANDARD.encode(webp.as_ref());
-
-    Some(format!("data:image/webp;base64, {b64}"))
-}
-
-/// Get an included map support XML file
-/// 
-/// If a base game file is included, return None instead.
-/// 
-/// /// # Example
-/// ```xml
-/// <environment filename="$data/maps/mapUS/environment.xml" />
-/// <growth filename="maps/mapUS/maps_growth.xml" />
-/// ```
-/// 
-/// ```
-/// let file = get_base_game_entry_key(&roxmltree::Document, "environment");
-/// assert_eq!(file, None);
-/// 
-/// let file = get_base_game_entry_key(&roxmltree::Document, "growth");
-/// assert_eq!(file, Some("maps/mapUS/maps_growth.xml"));
-/// ```
-pub fn nullify_base_game_entry(xml_tree: &roxmltree::Document, tag : &str) -> Option<String> {
-    match xml_tree.descendants().find(|n| n.has_tag_name(tag)) {
-        Some(node) => match node.attribute("filename") {
-            Some(val) => if val.starts_with("$data") { None } else { Some(val.to_string()) },
-            None => None
-        },
-        None => None
-    }
-}
-/// Get a map base game entry key
-/// 
-/// This returns to the pointer to the included weather
-/// definitions when a mod references the base game files
-/// 
-/// # Example
-/// ```xml
-/// <environment filename="$data/maps/mapUS/environment.xml" />
-/// ```
-/// 
-/// ```
-/// let key = get_base_game_entry_key(&roxmltree::Document)
-/// assert_eq!(key, Some("mapUS"));
-/// ```
-pub fn get_base_game_entry_key(xml_tree: &roxmltree::Document) -> Option<String> {
-    match xml_tree.descendants().find(|n| n.has_tag_name("environment")) {
-        Some(node) => match node.attribute("filename") {
-            Some(val) => if ! val.starts_with("$data") { None } else {
-                let re = Regex::new(r"(map[A-Z][A-Za-z]+)").unwrap();
-                match re.captures(val) {
-                    Some(capture) => Some(capture.get(0).unwrap().as_str().to_owned()),
-                    None => None
-                }
-            },
-            None => None
-        },
-        None => None
-    }
-}
-
