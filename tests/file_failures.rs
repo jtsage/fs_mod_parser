@@ -101,6 +101,30 @@ fn missing_desc_version() {
 	});
 }
 
+#[test]
+fn missing_moddesc() {
+	let test_file_path = Path::new("./tests/test_mods/FAILURE_Missing_ModDesc.zip");
+	assert!(test_file_path.exists());
+
+	let mod_record = parser(test_file_path, false);
+
+	assert_eq!(mod_record.can_not_use, true);
+
+	let expected_errors:HashSet<ModError> = HashSet::from([ModError::ModDescMissing]);
+	assert_eq!(mod_record.issues, expected_errors);
+
+	assert_eq!(mod_record.badge_array, ModBadges {
+		broken   : true,
+		folder   : false,
+		malware  : false,
+		no_mp    : false,
+		notmod   : true,
+		pconly   : false,
+		problem  : false,
+		savegame : false,
+	});
+}
+
 
 #[test]
 fn invalid_file_copy() {
