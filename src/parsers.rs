@@ -2,7 +2,6 @@ use std::path::Path;
 use super::data::{flags::ModError, functions::*, structs::{new_record, NOT_MALWARE}};
 use regex::RegexBuilder;
 
-
 pub fn parse_base_mod(full_path :&Path, is_folder: bool) -> String {
     let mut mod_record = new_record(&full_path, is_folder);
 
@@ -116,28 +115,6 @@ pub fn parse_base_mod(full_path :&Path, is_folder: bool) -> String {
     }
 
     super::data::maps::read_map_basics(&mut mod_record, &mut abstract_file);
-
-    // match &mod_record.mod_desc.map_config_file {
-    //     Some(filename) => {
-    //         match abstract_file.as_text(filename) {
-    //             Ok(content) => {
-    //                 match parse_xml(&content) {
-    //                     Ok(map_config_tree) => {
-    //                         let fruit_types = nullify_base_game_entry(&map_config_tree, "fruitTypes");
-    //                         let growth = nullify_base_game_entry(&map_config_tree, "growth");
-    //                         let environment_included = nullify_base_game_entry(&map_config_tree, "environment");
-    //                         let environment_base = get_base_game_entry_key(&map_config_tree);
-                            
-
-    //                     },
-    //                     Err(..) => {}
-    //                 };
-    //             },
-    //             Err(..) => {},
-    //         }
-    //     },
-    //     None => {},
-    // }
 
     mod_record.update_badges().to_string()
 }

@@ -1,5 +1,7 @@
+//! Passable Error flags
 use serde::ser::{Serialize, Serializer};
 
+/// Possible Detectable Mod Errors
 #[derive(PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
 #[allow(dead_code)]
 pub enum ModError {
@@ -34,6 +36,7 @@ pub enum ModError {
 	PerformanceQuantityTXT,
 }
 
+/// ModErrors the mean a mod is broken (won't work)
 pub const BADGE_BROKEN: [&ModError; 10] = [
 	&ModError::FileErrorGarbageFile,
 	&ModError::FileErrorLikelySaveGame,
@@ -46,6 +49,8 @@ pub const BADGE_BROKEN: [&ModError; 10] = [
 	&ModError::ModDescVersionOldOrMissing,
 	&ModError::ModDescMissing,
 ];
+
+/// ModErrors that should be fixed, but probably still work
 pub const BADGE_ISSUE: [&ModError; 17] = [
 	&ModError::InfoLikelyPiracy,
 	&ModError::InfoMaliciousCode,
@@ -66,6 +71,7 @@ pub const BADGE_ISSUE: [&ModError; 17] = [
 	&ModError::PerformanceQuantityTXT,
 ];
 
+/// ModErrors that denote it's not actually a mod
 pub const BADGE_NOT_MOD: [&ModError; 3] = [
 	&ModError::FileErrorGarbageFile,
 	&ModError::FileErrorLikelySaveGame,

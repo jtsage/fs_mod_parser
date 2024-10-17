@@ -280,7 +280,7 @@ impl Serialize for Crop {
 
 pub fn read_map_basics(mod_record : &mut super::structs::ModRecord, file_handle: &mut Box<dyn super::super::files::AbstractFileHandle> ) {
     if mod_record.mod_desc.map_config_file.is_none() { return (); }
-        
+
     let (fruits, growth, env_in, env_base) = match file_handle.as_text( &mod_record.mod_desc.map_config_file.clone().unwrap().as_str()) {
         Ok(contents) => {
             match super::functions::parse_xml(&contents) {

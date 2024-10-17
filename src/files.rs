@@ -1,23 +1,38 @@
+//! Abstract file handler
+//! 
+//! This allows treating zipped mods and unzipped mods
+//! the same by the parsers
 use std::{fs::{self, File}, io::Read, path::{self, Path, PathBuf}};
 use glob::glob;
 use super::data::flags::*;
 
+/// Used to represent a file contained inside an [AbstractFileHandle]
 #[derive(Debug)]
 pub struct FileDefinition {
     pub name : String,
     pub size : u64,
     pub is_folder : bool,
 }
+/// Open a zip file as an [AbstractFileHandle]
 pub struct AbstractZipFile { is_folder: bool, archive : zip::ZipArchive<File> }
+/// Open a folder as an [AbstractFileHandle]
 pub struct AbstractFolder { is_folder : bool, path : PathBuf }
+/// Use a folder or zip file interchangeably
 pub trait AbstractFileHandle {
+    /// Check if a file exists in the zip/folder
     fn exists(&mut self, needle : &str) -> bool;
+    /// Is this a folder (or a zip file)
     fn is_folder(&self) -> bool;
+    /// List contained files
     fn list(&mut self) -> Vec<FileDefinition>;
+    /// Open a contained file as text
     fn as_text(&mut self, needle : &str) -> Result<String, std::io::Error>;
+    /// Open a contained file as binary
     fn as_bin(&mut self, needle : &str) -> Result<Vec<u8>, std::io::Error>;
 }
 
+
+/// Create a new [AbstractFileHandle] record from a folder [std::path::Path]
 pub fn new_abstract_folder(input_path: &Path) -> Result<AbstractFolder, ModError> {
     if input_path.exists() {
         Ok(AbstractFolder { is_folder : true, path : input_path.to_path_buf() })
@@ -26,6 +41,7 @@ pub fn new_abstract_folder(input_path: &Path) -> Result<AbstractFolder, ModError
     }
 }
 
+/// Create a new [AbstractFileHandle] record from a zip file [std::path::Path]
 pub fn new_abstract_zip_file(path: &Path) -> Result<AbstractZipFile, ModError> {
     match std::fs::File::open(path) {
         Ok(file) => {

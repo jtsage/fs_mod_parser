@@ -1,3 +1,4 @@
+//! Structs used to collect data for JSON export
 use std::{collections::HashSet, path::Path};
 // use serde::Serialize;
 use std::collections::HashMap;
@@ -7,6 +8,7 @@ use super::maps::CropOutput;
 use serde::ser::{Serialize, Serializer};
 
 
+/// Known false positives for the malware check
 pub const NOT_MALWARE: [&str; 11] = [
     "FS22_001_NoDelete",
     "FS22_AutoDrive",
@@ -21,7 +23,7 @@ pub const NOT_MALWARE: [&str; 11] = [
     "FS19_GlobalCompany",
 ];
 
-
+/// Translatable modDesc entries
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModDescL10N {
@@ -29,6 +31,7 @@ pub struct ModDescL10N {
     pub description : HashMap<String, String>,
 }
 
+/// Master mod record
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModRecord {
@@ -44,9 +47,11 @@ pub struct ModRecord {
 }
 
 impl ModRecord {
+    /// raise an error on the mod
     pub fn add_issue(&mut self, issue : ModError) {
         self.issues.insert(issue);
     }
+    /// update the badge array from other data
     pub fn update_badges(&mut self) -> &mut ModRecord{
         self.badge_array.notmod = BADGE_NOT_MOD.iter().any(|x| self.issues.contains(x));
         self.badge_array.pconly = self.mod_desc.script_files > 0;
@@ -72,8 +77,10 @@ impl std::fmt::Display for ModRecord {
     }
 }
 
+/// Shared nested hashmap for map weather
 pub type CropWeatherType = HashMap<String, HashMap<String, i8>>;
 
+/// ModDesc specific fields from a mod
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModDesc {
@@ -94,6 +101,7 @@ pub struct ModDesc {
     pub version         : String,
 }
 
+/// File related metadata for a mod
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModFile {
@@ -116,6 +124,7 @@ pub struct ModFile {
     pub too_big_files : Vec<String>,
 }
 
+/// Badge information for a mod
 pub struct ModBadges {
     pub broken   : bool,
     pub folder   : bool,
@@ -145,6 +154,7 @@ impl Serialize for ModBadges {
     }
 }
 
+/// Create an empty badge record
 fn badge_new_record() -> ModBadges {
     ModBadges {
         broken   : false,
@@ -158,7 +168,9 @@ fn badge_new_record() -> ModBadges {
     }
 }
 
-
+/// Create a new mod record from a full_path<&Path>
+/// 
+/// You must define if it's a folder or not
 pub fn new_record(full_path: &Path, is_folder : bool) -> ModRecord {
     ModRecord {
         badge_array        : badge_new_record(),
@@ -176,6 +188,7 @@ pub fn new_record(full_path: &Path, is_folder : bool) -> ModRecord {
     }
 }
 
+/// Create an empty file metadata record
 fn file_detail_new_record(file : &Path, is_folder : bool) -> ModFile {
     ModFile {
         copy_name     : None,
@@ -195,6 +208,7 @@ fn file_detail_new_record(file : &Path, is_folder : bool) -> ModFile {
         too_big_files : vec![],
     }
 }
+/// Create an empty moddesc record
 fn mod_desc_new_record() -> ModDesc {
     ModDesc {
         actions         : HashMap::new(),

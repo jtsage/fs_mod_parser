@@ -1,3 +1,4 @@
+//! Utility functions for parsers
 use super::flags::ModError;
 use super::super::files::FileDefinition;
 
@@ -10,10 +11,22 @@ use webp::*;
 use image::DynamicImage;
 use base64::{Engine as _, engine::general_purpose};
 
+/// Parse an XML string into a roxmltree::Document
 pub fn parse_xml(content: &str) -> Result<roxmltree::Document<'_>, roxmltree::Error> {
     roxmltree::Document::parse(content)
 }
 
+/// Test a mod file name against known game limitations
+/// 
+/// Requires an existing mutable [ModRecord](crate::data::structs::ModRecord)
+/// and returns a boolean
+/// 
+/// # Checks
+/// 
+/// - Filename must start with a letter (not a number)
+/// - Filename must not contain spaces
+/// - Filename can only contain A-Z, a-z, 0-9, and underscore.
+/// - Non-Folders must end with a .zip extension
 pub fn test_file_name(mod_record : &mut super::structs::ModRecord) -> bool {
     if !mod_record.file_detail.is_folder && ! mod_record.file_detail.full_path.ends_with(".zip") {
         if mod_record.file_detail.full_path.ends_with(".rar") {
@@ -56,17 +69,42 @@ pub fn test_file_name(mod_record : &mut super::structs::ModRecord) -> bool {
     true
 }
 
+/// Count contained files in the mod
+/// 
+/// This also allows us to enforce the recommendations / rules from giants.
+/// 
+/// # Valid file types
+/// ```
+/// vec!["png", "dds", "i3d", "shapes", "lua", "gdm", "cache", "xml", "grle", "pdf", "txt", "gls", "anim", "ogg"];
+/// ```
+/// 
+/// # Quantity Limits
+/// ```
+/// let mut max_grle = 10;
+/// let mut max_pdf = 1;
+/// let mut max_png = 128;
+/// let mut max_txt = 2;
+/// ```
+/// 
+/// # Size Limits (in bytes)
+/// ```
+/// let size_cache :u64  = 10_485_760;
+/// let size_dds :u64    = 12_582_912;
+/// let size_gdm :u64    = 18_874_368;
+/// let size_shapes :u64 = 268_435_456;
+/// let size_xml :u64    = 262_144;
+/// ```
 pub fn do_file_counts(mod_record : &mut super::structs::ModRecord, file_list : &Vec<FileDefinition>) {
     let mut max_grle = 10;
     let mut max_pdf = 1;
     let mut max_png = 128;
     let mut max_txt = 2;
 
-    let size_cache :u64 = 10485760;
-    let size_dds :u64 = 12582912;
-    let size_gdm :u64 = 18874368;
-    let size_shapes :u64 = 268435456;
-    let size_xml :u64 = 262144;
+    let size_cache :u64  = 10_485_760;
+    let size_dds :u64    = 12_582_912;
+    let size_gdm :u64    = 18_874_368;
+    let size_shapes :u64 = 268_435_456;
+    let size_xml :u64    = 262_144;
 
     let known_good = vec!["png", "dds", "i3d", "shapes", "lua", "gdm", "cache", "xml", "grle", "pdf", "txt", "gls", "anim", "ogg"];
 
@@ -120,11 +158,17 @@ pub fn do_file_counts(mod_record : &mut super::structs::ModRecord, file_list : &
     }
 }
 
+/// Convert a system time to a ISO JSON string
 pub fn sys_time_to_string(now: SystemTime) -> String {
     let now: DateTime<Utc> = now.into();
     now.to_rfc3339_opts(SecondsFormat::Secs, true)
 }
 
+/// Load basic details from the modDesc.xml file
+/// 
+/// This includes version, l10n title and description,
+/// key bindings, multiplayer status, if it's a map,
+/// icon file name, abd some simple piracy detection
 pub fn mod_desc_basics(mod_record : &mut super::structs::ModRecord, mod_desc : &roxmltree::Document) {
     match mod_desc.root_element().attribute("descVersion") {
         Some(val) => mod_record.mod_desc.desc_version = val.parse().unwrap(),
@@ -258,6 +302,12 @@ pub fn mod_desc_basics(mod_record : &mut super::structs::ModRecord, mod_desc : &
     }
 }
 
+/// Load the mod icon, and convert to webp
+/// 
+/// Returns the webp as a base64 string suitable for use
+/// with an `<image src="...">` tag.
+/// 
+/// Supports DDS BC1-BC7 in one pass, in-memory
 pub fn load_mod_icon(bin_file: Vec<u8>) -> Option<String> {
     let input_vector = Cursor::new(bin_file);
     let dds = ddsfile::Dds::read(input_vector).unwrap();
@@ -270,6 +320,23 @@ pub fn load_mod_icon(bin_file: Vec<u8>) -> Option<String> {
     Some(format!("data:image/webp;base64, {b64}"))
 }
 
+/// Get an included map support XML file
+/// 
+/// If a base game file is included, return None instead.
+/// 
+/// /// # Example
+/// ```xml
+/// <environment filename="$data/maps/mapUS/environment.xml" />
+/// <growth filename="maps/mapUS/maps_growth.xml" />
+/// ```
+/// 
+/// ```
+/// let file = get_base_game_entry_key(&roxmltree::Document, "environment");
+/// assert_eq!(file, None);
+/// 
+/// let file = get_base_game_entry_key(&roxmltree::Document, "growth");
+/// assert_eq!(file, Some("maps/mapUS/maps_growth.xml"));
+/// ```
 pub fn nullify_base_game_entry(xml_tree: &roxmltree::Document, tag : &str) -> Option<String> {
     match xml_tree.descendants().find(|n| n.has_tag_name(tag)) {
         Some(node) => match node.attribute("filename") {
@@ -279,6 +346,20 @@ pub fn nullify_base_game_entry(xml_tree: &roxmltree::Document, tag : &str) -> Op
         None => None
     }
 }
+/// Get a map base game entry key
+/// 
+/// This returns to the pointer to the included weather
+/// definitions when a mod references the base game files
+/// 
+/// # Example
+/// ```xml
+/// <environment filename="$data/maps/mapUS/environment.xml" />
+/// ```
+/// 
+/// ```
+/// let key = get_base_game_entry_key(&roxmltree::Document)
+/// assert_eq!(key, Some("mapUS"));
+/// ```
 pub fn get_base_game_entry_key(xml_tree: &roxmltree::Document) -> Option<String> {
     match xml_tree.descendants().find(|n| n.has_tag_name("environment")) {
         Some(node) => match node.attribute("filename") {
