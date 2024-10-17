@@ -1,41 +1,36 @@
 use std::path::Path;
-use super::data::{flags::ModError, functions::*, structs::{new_record, ModRecord, NOT_MALWARE}};
+use super::data::{flags::ModError, functions::*, structs::{new_record, NOT_MALWARE}};
 use regex::RegexBuilder;
 
 
-pub fn badge_and_output(mod_record: &mut ModRecord) -> String {
-    serde_json::to_string_pretty(&mod_record).unwrap()
-}
-
-
-pub fn open_file_or_folder(full_path :&Path, is_folder: bool) -> String {
+pub fn parse_base_mod(full_path :&Path, is_folder: bool) -> String {
     let mut mod_record = new_record(&full_path, is_folder);
 
     mod_record.can_not_use = !test_file_name(&mut mod_record);
 
     if mod_record.can_not_use {
-        mod_record.issues.insert(ModError::FileErrorNameInvalid);
-        return badge_and_output(&mut mod_record)
+        mod_record.add_issue(ModError::FileErrorNameInvalid);
+        return mod_record.update_badges().to_string();
     }
 
     let mut abstract_file: Box<dyn super::files::AbstractFileHandle> = if is_folder 
         {
-            mod_record.issues.insert(ModError::InfoNoMultiplayerUnzipped);
+            mod_record.add_issue(ModError::InfoNoMultiplayerUnzipped);
             match super::files::new_abstract_folder(&full_path) {
                 Ok(archive) => Box::new(archive),
                 Err(e) => {
-                    mod_record.issues.insert(e);
+                    mod_record.add_issue(e);
                     mod_record.can_not_use = true;
-                    return badge_and_output(&mut mod_record);
+                    return mod_record.update_badges().to_string();
                 }
             }
         } else {
             match super::files::new_abstract_zip_file(&full_path) {
                 Ok(archive) => Box::new(archive),
                 Err(e) => {
-                    mod_record.issues.insert(e);
+                    mod_record.add_issue(e);
                     mod_record.can_not_use = true;
-                    return badge_and_output(&mut mod_record);
+                    return mod_record.update_badges().to_string();
                 } 
             }
         };
@@ -63,31 +58,31 @@ pub fn open_file_or_folder(full_path :&Path, is_folder: bool) -> String {
 
     if abstract_file.exists("careerSavegame.xml") {
         mod_record.file_detail.is_save_game = true;
-        mod_record.issues.insert(ModError::FileErrorLikelySaveGame);
-        return badge_and_output(&mut mod_record)
+        mod_record.add_issue(ModError::FileErrorLikelySaveGame);
+        return mod_record.update_badges().to_string();
     }
 
     if ! abstract_file.is_folder() {
         if abstract_file_list.iter().all(|x| x.name.ends_with(".zip")) {
             mod_record.file_detail.is_mod_pack = true;
-            mod_record.issues.insert(ModError::FileErrorLikelyZipPack);
-            return badge_and_output(&mut mod_record);
+            mod_record.add_issue(ModError::FileErrorLikelyZipPack);
+            return mod_record.update_badges().to_string();
         }
     }
 
     let mod_desc_content = match abstract_file.as_text("modDesc.xml") {
         Ok(content) => content,
         Err(..) => {
-            mod_record.issues.insert(ModError::ModDescMissing);
-            return badge_and_output(&mut mod_record);
+            mod_record.add_issue(ModError::ModDescMissing);
+            return mod_record.update_badges().to_string();
         },
     };
 
     let mod_desc_doc = match parse_xml(&mod_desc_content) {
         Ok(tree) => tree,
         Err(..) => {
-            mod_record.issues.insert(ModError::ModDescParseError);
-            return badge_and_output(&mut mod_record);
+            mod_record.add_issue(ModError::ModDescParseError);
+            return mod_record.update_badges().to_string();
         }
     };
 
@@ -112,15 +107,39 @@ pub fn open_file_or_folder(full_path :&Path, is_folder: bool) -> String {
         for lua_file in abstract_file_list.iter().filter(|n|n.name.ends_with(".lua")) {
             match abstract_file.as_text(&lua_file.name) {
                 Ok(content) => {
-                    if re_1.is_match(&content.as_str()) { mod_record.issues.insert(ModError::InfoMaliciousCode); }
-                    if re_2.is_match(&content.as_str()) { mod_record.issues.insert(ModError::InfoMaliciousCode); }
+                    if re_1.is_match(&content.as_str()) { mod_record.add_issue(ModError::InfoMaliciousCode); }
+                    if re_2.is_match(&content.as_str()) { mod_record.add_issue(ModError::InfoMaliciousCode); }
                 },
                 Err(..) => {},
             }
         }
     }
 
-    badge_and_output(&mut mod_record)
+    super::data::maps::read_map_basics(&mut mod_record, &mut abstract_file);
+
+    // match &mod_record.mod_desc.map_config_file {
+    //     Some(filename) => {
+    //         match abstract_file.as_text(filename) {
+    //             Ok(content) => {
+    //                 match parse_xml(&content) {
+    //                     Ok(map_config_tree) => {
+    //                         let fruit_types = nullify_base_game_entry(&map_config_tree, "fruitTypes");
+    //                         let growth = nullify_base_game_entry(&map_config_tree, "growth");
+    //                         let environment_included = nullify_base_game_entry(&map_config_tree, "environment");
+    //                         let environment_base = get_base_game_entry_key(&map_config_tree);
+                            
+
+    //                     },
+    //                     Err(..) => {}
+    //                 };
+    //             },
+    //             Err(..) => {},
+    //         }
+    //     },
+    //     None => {},
+    // }
+
+    mod_record.update_badges().to_string()
 }
 
 

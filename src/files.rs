@@ -1,4 +1,4 @@
-use std::{fs::{self, File}, io::Read, path::{self, Path}};
+use std::{fs::{self, File}, io::Read, path::{self, Path, PathBuf}};
 use glob::glob;
 use super::data::flags::*;
 
@@ -9,7 +9,7 @@ pub struct FileDefinition {
     pub is_folder : bool,
 }
 pub struct AbstractZipFile { is_folder: bool, archive : zip::ZipArchive<File> }
-pub struct AbstractFolder<'a> { is_folder : bool, path : &'a Path }
+pub struct AbstractFolder { is_folder : bool, path : PathBuf }
 pub trait AbstractFileHandle {
     fn exists(&mut self, needle : &str) -> bool;
     fn is_folder(&self) -> bool;
@@ -20,7 +20,7 @@ pub trait AbstractFileHandle {
 
 pub fn new_abstract_folder(input_path: &Path) -> Result<AbstractFolder, ModError> {
     if input_path.exists() {
-        Ok(AbstractFolder { is_folder : true, path : input_path })
+        Ok(AbstractFolder { is_folder : true, path : input_path.to_path_buf() })
     } else {
         Err(ModError::FileErrorUnreadableZip)
     }
@@ -47,13 +47,13 @@ pub fn new_abstract_zip_file(path: &Path) -> Result<AbstractZipFile, ModError> {
     }
 }
 
-impl AbstractFileHandle for AbstractFolder<'_> {
+impl AbstractFileHandle for AbstractFolder {
     fn as_text(&mut self, needle : &str) -> Result<String, std::io::Error> {
-        let search_path = Path::new(self.path).join(needle);
+        let search_path = Path::new(&self.path).join(needle);
         fs::read_to_string(search_path)
     }
     fn as_bin(&mut self, needle : &str) -> Result<Vec<u8>, std::io::Error> {
-        let search_path = Path::new(self.path).join(needle);
+        let search_path = Path::new(&self.path).join(needle);
         fs::read(search_path)
     }
     fn is_folder(&self) -> bool {
@@ -65,7 +65,7 @@ impl AbstractFileHandle for AbstractFolder<'_> {
         for entry in glob(format!("{}/**/*", self.path.to_string_lossy()).as_str()).unwrap().filter_map(Result::ok) {
             let file_metadata = std::fs::metadata(&entry).unwrap();
             let full_path = path::absolute(entry).unwrap();
-            let relative_path = match pathdiff::diff_paths(&full_path, self.path) {
+            let relative_path = match pathdiff::diff_paths(&full_path, &self.path) {
                 Some(good_path) => good_path.to_str().unwrap().to_owned(),
                 None => full_path.to_str().unwrap().to_owned(),
             };
@@ -80,7 +80,7 @@ impl AbstractFileHandle for AbstractFolder<'_> {
         names
     }
     fn exists(&mut self, needle : &str) -> bool {
-        let search_path = Path::new(self.path).join(needle);
+        let search_path = Path::new(&self.path).join(needle);
 
         search_path.exists()
     }

@@ -1,5 +1,6 @@
 use super::flags::ModError;
 use super::super::files::FileDefinition;
+
 use std::time::SystemTime;
 use std::io::Cursor;
 use chrono::{DateTime, SecondsFormat, Utc};
@@ -16,11 +17,11 @@ pub fn parse_xml(content: &str) -> Result<roxmltree::Document<'_>, roxmltree::Er
 pub fn test_file_name(mod_record : &mut super::structs::ModRecord) -> bool {
     if !mod_record.file_detail.is_folder && ! mod_record.file_detail.full_path.ends_with(".zip") {
         if mod_record.file_detail.full_path.ends_with(".rar") {
-            mod_record.issues.insert(ModError::FileErrorUnsupportedArchive);
+            mod_record.add_issue(ModError::FileErrorUnsupportedArchive);
         } else if mod_record.file_detail.full_path.ends_with(".7z") {
-            mod_record.issues.insert(ModError::FileErrorUnsupportedArchive);
+            mod_record.add_issue(ModError::FileErrorUnsupportedArchive);
         } else {
-            mod_record.issues.insert(ModError::FileErrorGarbageFile);
+            mod_record.add_issue(ModError::FileErrorGarbageFile);
         }
         return false
     }
@@ -31,13 +32,13 @@ pub fn test_file_name(mod_record : &mut super::structs::ModRecord) -> bool {
         .unwrap();
 
     if regex_zip_pack.is_match(&mod_record.file_detail.short_name) {
-        mod_record.issues.insert(ModError::FileErrorLikelyZipPack);
+        mod_record.add_issue(ModError::FileErrorLikelyZipPack);
     }
 
     let regex_digit = Regex::new(r"^\d").unwrap();
 
     if regex_digit.is_match(&mod_record.file_detail.short_name) {
-        mod_record.issues.insert(ModError::FileErrorNameStartsDigit);
+        mod_record.add_issue(ModError::FileErrorNameStartsDigit);
     }
 
     let regex_good_file = Regex::new(r"^[A-Z_a-z]\w+$").unwrap();
@@ -80,13 +81,13 @@ pub fn do_file_counts(mod_record : &mut super::structs::ModRecord, file_list : &
 
         if ! known_good.contains(&this_ext) {
             if this_ext == "dat" || this_ext == "l64" {
-                mod_record.issues.insert(ModError::InfoLikelyPiracy);
+                mod_record.add_issue(ModError::InfoLikelyPiracy);
             }
-            mod_record.issues.insert(ModError::PerformanceQuantityExtra);
+            mod_record.add_issue(ModError::PerformanceQuantityExtra);
             mod_record.file_detail.extra_files.push(file.name.clone());
         } else {
             if file.name.contains(" ") {
-                mod_record.issues.insert(ModError::PerformanceFileSpaces);
+                mod_record.add_issue(ModError::PerformanceFileSpaces);
                 mod_record.file_detail.space_files.push(file.name.clone());
             }
             match this_ext {
@@ -100,21 +101,21 @@ pub fn do_file_counts(mod_record : &mut super::structs::ModRecord, file_list : &
                 "pdf"  => max_pdf -= 1,
                 "grle" => max_grle -= 1,
                 "txt"  => max_txt -= 1,
-                "cache"  => if file.size > size_cache { mod_record.issues.insert(ModError::PerformanceOversizeI3D); },
+                "cache"  => if file.size > size_cache { mod_record.add_issue(ModError::PerformanceOversizeI3D); },
                 "dds"    => {
                     mod_record.file_detail.image_dds.push(file.name.clone());
-                    if file.size > size_dds { mod_record.issues.insert(ModError::PerformanceOversizeDDS); }
+                    if file.size > size_dds { mod_record.add_issue(ModError::PerformanceOversizeDDS); }
                 },
-                "gdm"    => if file.size > size_gdm { mod_record.issues.insert(ModError::PerformanceOversizeGDM); },
-                "shapes" => if file.size > size_shapes { mod_record.issues.insert(ModError::PerformanceOversizeSHAPES); },
-                "xml"    => if file.size > size_xml { mod_record.issues.insert(ModError::PerformanceOversizeXML); },
+                "gdm"    => if file.size > size_gdm { mod_record.add_issue(ModError::PerformanceOversizeGDM); },
+                "shapes" => if file.size > size_shapes { mod_record.add_issue(ModError::PerformanceOversizeSHAPES); },
+                "xml"    => if file.size > size_xml { mod_record.add_issue(ModError::PerformanceOversizeXML); },
                 _ => {},
             }
 
-            if max_grle < 0 { mod_record.issues.insert(ModError::PerformanceQuantityGRLE); }
-            if max_pdf < 0 { mod_record.issues.insert(ModError::PerformanceQuantityPDF); }
-            if max_png < 0 { mod_record.issues.insert(ModError::PerformanceQuantityPNG); }
-            if max_txt < 0 { mod_record.issues.insert(ModError::PerformanceQuantityTXT); }
+            if max_grle < 0 { mod_record.add_issue(ModError::PerformanceQuantityGRLE); }
+            if max_pdf < 0 { mod_record.add_issue(ModError::PerformanceQuantityPDF); }
+            if max_png < 0 { mod_record.add_issue(ModError::PerformanceQuantityPNG); }
+            if max_txt < 0 { mod_record.add_issue(ModError::PerformanceQuantityTXT); }
         }
     }
 }
@@ -127,12 +128,12 @@ pub fn sys_time_to_string(now: SystemTime) -> String {
 pub fn mod_desc_basics(mod_record : &mut super::structs::ModRecord, mod_desc : &roxmltree::Document) {
     match mod_desc.root_element().attribute("descVersion") {
         Some(val) => mod_record.mod_desc.desc_version = val.parse().unwrap(),
-        None => { mod_record.issues.insert(ModError::ModDescVersionOldOrMissing); },
+        None => { mod_record.add_issue(ModError::ModDescVersionOldOrMissing); },
     }
 
     match mod_desc.descendants().find(|n| n.has_tag_name("version")) {
         Some(node) => mod_record.mod_desc.version = node.text().unwrap().to_owned(),
-        None => { mod_record.issues.insert(ModError::ModDescNoModVersion); }
+        None => { mod_record.add_issue(ModError::ModDescNoModVersion); }
     }
 
     match mod_desc.descendants().find(|n| n.has_tag_name("author")) {
@@ -163,7 +164,7 @@ pub fn mod_desc_basics(mod_record : &mut super::structs::ModRecord, mod_desc : &
     }
 
     match mod_desc.descendants().find(|n| n.has_tag_name("productId")) {
-        Some(..) => { mod_record.issues.insert(ModError::InfoLikelyPiracy); },
+        Some(..) => { mod_record.add_issue(ModError::InfoLikelyPiracy); },
         None => {}
     }
 
@@ -179,13 +180,13 @@ pub fn mod_desc_basics(mod_record : &mut super::structs::ModRecord, mod_desc : &
                     if mod_record.file_detail.image_dds.contains(&value_string) {
                         mod_record.mod_desc.icon_file_name = Some(value_string);
                     } else {
-                        mod_record.issues.insert(ModError::ModDescNoModIcon);
+                        mod_record.add_issue(ModError::ModDescNoModIcon);
                     }
                 },
-                None => { mod_record.issues.insert(ModError::ModDescNoModIcon); }
+                None => { mod_record.add_issue(ModError::ModDescNoModIcon); }
             }
         },
-        None => { mod_record.issues.insert(ModError::ModDescNoModIcon); }
+        None => { mod_record.add_issue(ModError::ModDescNoModIcon); }
     }
 
     for action in mod_desc.descendants().filter(|n| n.has_tag_name("action")) {
@@ -223,7 +224,7 @@ pub fn mod_desc_basics(mod_record : &mut super::structs::ModRecord, mod_desc : &
                     "en".to_string(),
                     titles.text().unwrap_or_else(||"--").to_string()
                 );
-                mod_record.issues.insert(ModError::PerformanceMissingL10N);
+                mod_record.add_issue(ModError::PerformanceMissingL10N);
             } else {
                 for title in titles.children().filter(|n|n.is_element()) {
                     mod_record.l10n.title.insert(
@@ -233,7 +234,7 @@ pub fn mod_desc_basics(mod_record : &mut super::structs::ModRecord, mod_desc : &
                 }
             }
         },
-        None => { mod_record.issues.insert(ModError::PerformanceMissingL10N); },
+        None => { mod_record.add_issue(ModError::PerformanceMissingL10N); },
     }
 
     match mod_desc.descendants().find(|n| n.has_tag_name("description")) {
@@ -243,7 +244,7 @@ pub fn mod_desc_basics(mod_record : &mut super::structs::ModRecord, mod_desc : &
                     "en".to_string(),
                     descriptions.text().unwrap_or_else(||"").to_string()
                 );
-                mod_record.issues.insert(ModError::PerformanceMissingL10N);
+                mod_record.add_issue(ModError::PerformanceMissingL10N);
             } else {
                 for description in descriptions.children().filter(|n|n.is_element()) {
                     mod_record.l10n.description.insert(
@@ -253,7 +254,7 @@ pub fn mod_desc_basics(mod_record : &mut super::structs::ModRecord, mod_desc : &
                 }
             }
         },
-        None => { mod_record.issues.insert(ModError::PerformanceMissingL10N); },
+        None => { mod_record.add_issue(ModError::PerformanceMissingL10N); },
     }
 }
 
@@ -268,3 +269,29 @@ pub fn load_mod_icon(bin_file: Vec<u8>) -> Option<String> {
 
     Some(format!("data:image/webp;base64, {b64}"))
 }
+
+pub fn nullify_base_game_entry(xml_tree: &roxmltree::Document, tag : &str) -> Option<String> {
+    match xml_tree.descendants().find(|n| n.has_tag_name(tag)) {
+        Some(node) => match node.attribute("filename") {
+            Some(val) => if val.starts_with("$data") { None } else { Some(val.to_string()) },
+            None => None
+        },
+        None => None
+    }
+}
+pub fn get_base_game_entry_key(xml_tree: &roxmltree::Document) -> Option<String> {
+    match xml_tree.descendants().find(|n| n.has_tag_name("environment")) {
+        Some(node) => match node.attribute("filename") {
+            Some(val) => if ! val.starts_with("$data") { None } else {
+                let re = Regex::new(r"(map[A-Z][A-Za-z]+)").unwrap();
+                match re.captures(val) {
+                    Some(capture) => Some(capture.get(0).unwrap().as_str().to_owned()),
+                    None => None
+                }
+            },
+            None => None
+        },
+        None => None
+    }
+}
+

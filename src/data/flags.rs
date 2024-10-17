@@ -33,6 +33,45 @@ pub enum ModError {
 	PerformanceQuantityPNG,
 	PerformanceQuantityTXT,
 }
+
+pub const BADGE_BROKEN: [&ModError; 10] = [
+	&ModError::FileErrorGarbageFile,
+	&ModError::FileErrorLikelySaveGame,
+	&ModError::FileErrorLikelyZipPack,
+	&ModError::FileErrorNameInvalid,
+	&ModError::FileErrorNameStartsDigit,
+	&ModError::FileErrorUnreadableZip,
+	&ModError::FileErrorUnsupportedArchive,
+	&ModError::ModDescParseError,
+	&ModError::ModDescVersionOldOrMissing,
+	&ModError::ModDescMissing,
+];
+pub const BADGE_ISSUE: [&ModError; 17] = [
+	&ModError::InfoLikelyPiracy,
+	&ModError::InfoMaliciousCode,
+	&ModError::ModDescNoModIcon,
+	&ModError::ModDescNoModVersion,
+	&ModError::ModDescDamaged,
+	&ModError::PerformanceFileSpaces,
+	&ModError::PerformanceMissingL10N,
+	&ModError::PerformanceOversizeDDS,
+	&ModError::PerformanceOversizeGDM,
+	&ModError::PerformanceOversizeI3D,
+	&ModError::PerformanceOversizeSHAPES,
+	&ModError::PerformanceOversizeXML,
+	&ModError::PerformanceQuantityExtra,
+	&ModError::PerformanceQuantityGRLE,
+	&ModError::PerformanceQuantityPDF,
+	&ModError::PerformanceQuantityPNG,
+	&ModError::PerformanceQuantityTXT,
+];
+
+pub const BADGE_NOT_MOD: [&ModError; 3] = [
+	&ModError::FileErrorGarbageFile,
+	&ModError::FileErrorLikelySaveGame,
+	&ModError::ModDescMissing,
+];
+
 impl Serialize for ModError {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer

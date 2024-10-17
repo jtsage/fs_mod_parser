@@ -13,6 +13,7 @@
 		"inputbinding",
 		"MODDESC",
 		"notmod",
+		"oilseedradish",
 		"pathdiff",
 		"pconly",
 		"productid",
@@ -21,6 +22,7 @@
 		"SAVEGAME",
 		"storeitem",
 		"storeitems",
+		"sugarbeet",
 		"zipfile"
 	]
 }
