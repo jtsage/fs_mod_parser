@@ -71,10 +71,13 @@ impl ModRecord {
         }
         self
     }
+    pub fn pretty_print(&self) -> String {
+        serde_json::to_string_pretty(&self).unwrap()
+    }
 }
 impl std::fmt::Display for ModRecord {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&serde_json::to_string_pretty(&self).unwrap())
+        f.write_str(&serde_json::to_string(&self).unwrap())
     }
 }
 
