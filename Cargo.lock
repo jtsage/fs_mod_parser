@@ -375,6 +375,7 @@ dependencies = [
  "image_dds",
  "md5",
  "pathdiff",
+ "rayon",
  "regex",
  "roxmltree",
  "serde",

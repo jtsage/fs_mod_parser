@@ -17,3 +17,4 @@ image = { version = "0.25.2", default-features = false, features = ["rayon"] }
 image_dds = "0.6.0"
 base64 = "0.22.1"
 webp = "0.3.0"
+rayon = "1.10.0"
