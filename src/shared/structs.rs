@@ -90,7 +90,7 @@ pub struct ModDesc {
     pub binds           : HashMap<String, Vec<String>>,
     pub author          : String,
     pub script_files    : u32,
-    pub store_items     : u32,
+    pub store_items     : usize,
     pub crop_info       : Option<Vec<CropOutput>>,
     pub crop_weather    : Option<CropWeatherType>,
     pub depend          : Vec<String>,

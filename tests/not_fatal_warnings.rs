@@ -72,7 +72,7 @@ fn malicious_code_check() {
 		malware  : true,
 		no_mp    : false,
 		notmod   : false,
-		pconly   : false,
+		pconly   : true,
 		problem  : true,
 		savegame : false,
 	});

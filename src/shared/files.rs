@@ -9,6 +9,7 @@ use crate::shared::errors::ModError;
 /// Used to represent a file contained inside an [`AbstractFileHandle`]
 #[derive(Debug)]
 pub struct FileDefinition {
+    pub extension : String,
     pub name : String,
     pub size : u64,
     pub is_folder : bool,
@@ -81,8 +82,14 @@ impl AbstractFileHandle for AbstractFolder {
                 Some(good_path) => good_path.to_str().unwrap().to_owned(),
                 None => full_path.to_str().unwrap().to_owned(),
             };
-            
+
+            let extension = match full_path.extension() {
+                Some(ext) => ext.to_str().unwrap().to_owned().to_ascii_lowercase(),
+                None => String::new(),
+            };
+
             names.push(FileDefinition{
+                extension,
                 name : relative_path.replace('\\', "/"),
                 size : file_metadata.len(),
                 is_folder : file_metadata.is_dir(),
@@ -149,8 +156,16 @@ impl AbstractFileHandle for AbstractZipFile {
         let mut names: Vec<FileDefinition> = vec![];
         for i in 0..self.archive.len() {
             let file = self.archive.by_index(i).unwrap();
+            let name = file.mangled_name().to_string_lossy().into_owned().replace('\\', "/");
+
+            let extension = match Path::new(&name).extension() {
+                Some(ext) => ext.to_str().unwrap().to_owned().to_ascii_lowercase(),
+                None => String::new(),
+            };
+
             names.push(FileDefinition{
-                name      : file.mangled_name().to_string_lossy().into_owned().replace('\\', "/"),
+                extension,
+                name,
                 size      : if file.is_dir() {0} else { file.size() },
                 is_folder : file.is_dir()
             });

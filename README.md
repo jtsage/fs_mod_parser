@@ -13,6 +13,7 @@ Checks the file name, and returns:
 - map information (if applicable)
 - mod content tests
 
-```rust ignore
-fs_mod_parser::parse_basic_mod(file : &Path, is_folder : bool) -> <String>
+```rust
+let path_to_mod = std::path::Path::new("FS22_Mod_File.zip");
+let json_representation = fs_mod_parser::parse_basic_mod(path_to_mod, false);
 ```

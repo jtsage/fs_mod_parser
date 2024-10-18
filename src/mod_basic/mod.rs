@@ -205,8 +205,7 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
         return mod_record;
     }
 
-    if ! abstract_file.is_folder() && abstract_file_list.iter().all(|x| x.name.ends_with(".zip")) {
-        // TODO: fix case sensitive extension
+    if ! abstract_file.is_folder() && abstract_file_list.iter().all(|x| x.extension == "zip") {
         mod_record.file_detail.is_mod_pack = true;
         mod_record.can_not_use = true;
         mod_record.add_issue(ModError::FileErrorLikelyZipPack);
@@ -231,26 +230,23 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
     do_file_counts(&mut mod_record, &abstract_file_list);
     mod_desc_basics(&mut mod_record, &mod_desc_doc);
 
-    mod_record.mod_desc.icon_image = match &mod_record.mod_desc.icon_file_name {
-        Some(filename) => convert_mod_icon(abstract_file.as_bin(filename).unwrap()),
-        None => None,
-    };
+    if let Some(filename) = &mod_record.mod_desc.icon_file_name {
+        if let Ok(binary_file) = abstract_file.as_bin(filename) {
+            mod_record.mod_desc.icon_image = convert_mod_icon(binary_file);
+        }
+    }
 
     if ! NOT_MALWARE.contains(&mod_record.file_detail.short_name.clone().as_str()) {
-        let re_1 = RegexBuilder::new(r"\.deleteFolder")
+        let re = RegexBuilder::new(r"\.delete(File|Folder)")
             .multi_line(true)
-            .build()
-            .unwrap();
-        let re_2 = RegexBuilder::new(r"\.deleteFile")
-            .multi_line(true)
-            .build()
-            .unwrap();
+            .build();
 
-        for lua_file in abstract_file_list.iter().filter(|n|n.name.ends_with(".lua")) {
-            // TODO: File extension case
-            if let Ok(content) = abstract_file.as_text(&lua_file.name) {
-                if re_1.is_match(content.as_str()) || re_2.is_match(content.as_str()) {
-                    mod_record.add_issue(ModError::InfoMaliciousCode);
+        if let Ok(re) = re {
+            for lua_file in abstract_file_list.iter().filter(|n|n.extension == "lua" ) {
+                if let Ok(content) = abstract_file.as_text(&lua_file.name) {
+                    if re.is_match(content.as_str()) {
+                        mod_record.add_issue(ModError::InfoMaliciousCode);
+                    }
                 }
             }
         }
@@ -265,13 +261,21 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
 /// Test a mod file name against known game limitations
 fn test_file_name(mod_record : &mut ModRecord) -> bool {
     // TODO: fix case sensitive extension
-    if !mod_record.file_detail.is_folder && ! mod_record.file_detail.full_path.ends_with(".zip") {
-        if mod_record.file_detail.full_path.ends_with(".rar") || mod_record.file_detail.full_path.ends_with(".7z") {
-            mod_record.add_issue(ModError::FileErrorUnsupportedArchive);
-        } else {
-            mod_record.add_issue(ModError::FileErrorGarbageFile);
+    if !mod_record.file_detail.is_folder {
+        let file_path = Path::new(&mod_record.file_detail.full_path);
+        let extension = match file_path.extension() {
+            Some(ext) => ext.to_str().unwrap().to_owned().to_ascii_lowercase(),
+            None => String::new(),
+        };
+
+        if ! extension.eq_ignore_ascii_case("zip") {
+            if extension.eq_ignore_ascii_case("rar") || extension.eq_ignore_ascii_case("7z") {
+                mod_record.add_issue(ModError::FileErrorUnsupportedArchive);
+            } else {
+                mod_record.add_issue(ModError::FileErrorGarbageFile);
+            }
+            return false
         }
-        return false
     }
 
     let regex_zip_pack = RegexBuilder::new(r"unzip")
@@ -307,9 +311,9 @@ fn test_file_name(mod_record : &mut ModRecord) -> bool {
 /// Count contained files in the mod
 fn do_file_counts(mod_record : &mut ModRecord, file_list : &Vec<FileDefinition>) {
     let mut max_grle = 10;
-    let mut max_pdf = 1;
-    let mut max_png = 128;
-    let mut max_txt = 2;
+    let mut max_pdf  = 1;
+    let mut max_png  = 128;
+    let mut max_txt  = 2;
 
     let size_cache :u64  = 10_485_760;
     let size_dds :u64    = 12_582_912;
@@ -324,24 +328,13 @@ fn do_file_counts(mod_record : &mut ModRecord, file_list : &Vec<FileDefinition>)
     for file in file_list {
         if file.is_folder { continue }
 
-        let this_path = std::path::Path::new(&file.name);
-        let this_ext = match this_path.extension() {
-            Some(val) => val.to_str().unwrap(),
-            None => { continue; }
-        };
-
-        if ! known_good.contains(&this_ext) {
-            if this_ext == "dat" || this_ext == "l64" {
-                mod_record.add_issue(ModError::InfoLikelyPiracy);
-            }
-            mod_record.add_issue(ModError::PerformanceQuantityExtra);
-            mod_record.file_detail.extra_files.push(file.name.clone());
-        } else {
+        if known_good.contains(&file.extension.as_str()) {
             if file.name.contains(' ') {
                 mod_record.add_issue(ModError::PerformanceFileSpaces);
                 mod_record.file_detail.space_files.push(file.name.clone());
             }
-            match this_ext {
+            match file.extension.as_str() {
+                "lua"  => mod_record.mod_desc.script_files += 1,
                 "png"  => {
                     if ! file.name.ends_with("_weight.png") {
                         mod_record.file_detail.image_non_dds.push(file.name.clone());
@@ -367,6 +360,13 @@ fn do_file_counts(mod_record : &mut ModRecord, file_list : &Vec<FileDefinition>)
             if max_pdf < 0 { mod_record.add_issue(ModError::PerformanceQuantityPDF); }
             if max_png < 0 { mod_record.add_issue(ModError::PerformanceQuantityPNG); }
             if max_txt < 0 { mod_record.add_issue(ModError::PerformanceQuantityTXT); }
+
+        } else {
+            if file.extension == "dat" || file.extension == "l64" {
+                mod_record.add_issue(ModError::InfoLikelyPiracy);
+            }
+            mod_record.add_issue(ModError::PerformanceQuantityExtra);
+            mod_record.file_detail.extra_files.push(file.name.clone());
         }
     }
 }
@@ -385,12 +385,12 @@ fn mod_desc_basics(mod_record : &mut ModRecord, mod_desc : &roxmltree::Document)
     }
 
     match mod_desc.descendants().find(|n| n.has_tag_name("version")) {
-        Some(node) => mod_record.mod_desc.version = node.text().unwrap_or("1.0.0.0").to_owned(),
+        Some(node) =>  node.text().unwrap_or("1.0.0.0").clone_into(&mut mod_record.mod_desc.version),
         None => { mod_record.add_issue(ModError::ModDescNoModVersion); }
     }
 
     if let Some(node) = mod_desc.descendants().find(|n| n.has_tag_name("author") && n.is_text() ) {
-        mod_record.mod_desc.author = node.text().unwrap_or("--").to_owned();
+        node.text().unwrap_or("--").clone_into(&mut mod_record.mod_desc.author);
     }
 
     if let Some(node) = mod_desc.descendants().find(|n| n.has_tag_name("multiplayer")) {
@@ -399,7 +399,7 @@ fn mod_desc_basics(mod_record : &mut ModRecord, mod_desc : &roxmltree::Document)
         }
     }
 
-    mod_record.mod_desc.store_items = mod_desc.descendants().filter(|n| n.has_tag_name("storeItem")).count() as u32;
+    mod_record.mod_desc.store_items = mod_desc.descendants().filter(|n| n.has_tag_name("storeItem")).count();
 
     if let Some(node) = mod_desc.descendants().find(|n| n.has_tag_name("map")) {
         if let Some(val) = node.attribute("configFilename") {
@@ -415,24 +415,10 @@ fn mod_desc_basics(mod_record : &mut ModRecord, mod_desc : &roxmltree::Document)
         mod_record.add_issue(ModError::InfoLikelyPiracy); 
     }
 
-    match mod_desc.descendants().find(|n| n.has_tag_name("iconFilename")) {
-        Some(node) => {
-            match node.text() {
-                Some(val) => {
-                    let mut value_string = val.to_string();
-                    if let Some(index) = value_string.find(".png") {
-                        value_string.replace_range(index..value_string.len(), ".dds");
-                    }
-                    if mod_record.file_detail.image_dds.contains(&value_string) {
-                        mod_record.mod_desc.icon_file_name = Some(value_string);
-                    } else {
-                        mod_record.add_issue(ModError::ModDescNoModIcon);
-                    }
-                },
-                None => { mod_record.add_issue(ModError::ModDescNoModIcon); }
-            }
-        },
-        None => { mod_record.add_issue(ModError::ModDescNoModIcon); }
+    mod_record.mod_desc.icon_file_name = read_mod_filename(mod_desc.descendants().find(|n| n.has_tag_name("iconFilename")), mod_record);
+
+    if mod_record.mod_desc.icon_file_name.is_none() {
+        mod_record.add_issue(ModError::ModDescNoModIcon);
     }
 
     for action in mod_desc.descendants().filter(|n| n.has_tag_name("action")) {
@@ -469,7 +455,7 @@ fn mod_desc_basics(mod_record : &mut ModRecord, mod_desc : &roxmltree::Document)
                 );
                 mod_record.add_issue(ModError::PerformanceMissingL10N);
             } else {
-                for title in titles.children().filter(|n|n.is_element()) {
+                for title in titles.children().filter(roxmltree::Node::is_element) {
                     mod_record.l10n.title.insert(
                         title.tag_name().name().to_string(),
                         title.text().unwrap_or("--").to_string()
@@ -489,7 +475,7 @@ fn mod_desc_basics(mod_record : &mut ModRecord, mod_desc : &roxmltree::Document)
                 );
                 mod_record.add_issue(ModError::PerformanceMissingL10N);
             } else {
-                for description in descriptions.children().filter(|n|n.is_element()) {
+                for description in descriptions.children().filter(roxmltree::Node::is_element) {
                     mod_record.l10n.description.insert(
                         description.tag_name().name().to_string(),
                         description.text().unwrap_or("").to_string()
@@ -498,5 +484,27 @@ fn mod_desc_basics(mod_record : &mut ModRecord, mod_desc : &roxmltree::Document)
             }
         },
         None => { mod_record.add_issue(ModError::PerformanceMissingL10N); },
+    }
+}
+
+fn read_mod_filename(node : Option<roxmltree::Node>, mod_record : &mut ModRecord) -> Option<String> {
+    match node {
+        Some(node) => {
+            match node.text() {
+                Some(val) => {
+                    let mut value_string = val.to_string();
+                    if let Some(index) = value_string.find(".png") {
+                        value_string.replace_range(index..value_string.len(), ".dds");
+                    }
+                    if mod_record.file_detail.image_dds.contains(&value_string) {
+                        Some(value_string)
+                    } else {
+                        None
+                    }
+                },
+                None => None
+            }
+        },
+        None => None
     }
 }
