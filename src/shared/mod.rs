@@ -16,11 +16,11 @@ pub mod files;
 /// 
 /// Supports DDS BC1-BC7 in one pass, in-memory
 pub fn convert_mod_icon(bin_file: Vec<u8>) -> Option<String> {
-    let input_vector = Cursor::new(bin_file);
-    let dds = ddsfile::Dds::read(input_vector).unwrap();
-    let original_image = image_dds::image_from_dds(&dds, 0).unwrap();
-    let unscaled_image = DynamicImage::ImageRgba8(original_image);
-    let encoder: Encoder = Encoder::from_image(&unscaled_image).unwrap();
+    let input_vector: Cursor<Vec<u8>> = Cursor::new(bin_file);
+    let dds = ddsfile::Dds::read(input_vector).ok()?;
+    let original_image = image_dds::image_from_dds(&dds, 0).ok()?;
+    let unscaled_image: DynamicImage = DynamicImage::ImageRgba8(original_image);
+    let encoder: Encoder = Encoder::from_image(&unscaled_image).ok()?;
     let webp: WebPMemory = encoder.encode(75f32);
     let b64 = general_purpose::STANDARD.encode(webp.as_ref());
 
@@ -35,13 +35,13 @@ pub fn convert_mod_icon(bin_file: Vec<u8>) -> Option<String> {
 /// Supports DDS BC1-BC7 in one pass, in-memory
 pub fn convert_map_image(bin_file: Vec<u8>) -> Option<String> {
     let input_vector = Cursor::new(bin_file);
-    let dds = ddsfile::Dds::read(input_vector).unwrap();
-    let original_image = image_dds::image_from_dds(&dds, 0).unwrap();
+    let dds = ddsfile::Dds::read(input_vector).ok()?;
+    let original_image = image_dds::image_from_dds(&dds, 0).ok()?;
     let unscaled_image = DynamicImage::ImageRgba8(original_image);
     let cropped_image = unscaled_image
         .resize(1024, 1024, FilterType::Nearest)
         .crop(256, 256, 512, 512);
-    let encoder: Encoder = Encoder::from_image(&cropped_image).unwrap();
+    let encoder: Encoder = Encoder::from_image(&cropped_image).ok()?;
     let webp: WebPMemory = encoder.encode(75f32);
     let b64 = general_purpose::STANDARD.encode(webp.as_ref());
 

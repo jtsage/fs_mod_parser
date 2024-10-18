@@ -36,7 +36,7 @@ pub enum ModError {
 	PerformanceQuantityTXT,
 }
 
-/// ModErrors the mean a mod is broken (won't work)
+/// `ModErrors` the mean a mod is broken (won't work)
 pub const BADGE_BROKEN: [&ModError; 10] = [
 	&ModError::FileErrorGarbageFile,
 	&ModError::FileErrorLikelySaveGame,
@@ -50,7 +50,7 @@ pub const BADGE_BROKEN: [&ModError; 10] = [
 	&ModError::ModDescMissing,
 ];
 
-/// ModErrors that should be fixed, but probably still work
+/// `ModErrors` that should be fixed, but probably still work
 pub const BADGE_ISSUE: [&ModError; 17] = [
 	&ModError::InfoLikelyPiracy,
 	&ModError::InfoMaliciousCode,
@@ -71,7 +71,7 @@ pub const BADGE_ISSUE: [&ModError; 17] = [
 	&ModError::PerformanceQuantityTXT,
 ];
 
-/// ModErrors that denote it's not actually a mod
+/// `ModErrors` that denote it's not actually a mod
 pub const BADGE_NOT_MOD: [&ModError; 6] = [
 	&ModError::FileErrorGarbageFile,
 	&ModError::FileErrorLikelySaveGame,

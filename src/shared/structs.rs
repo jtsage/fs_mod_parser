@@ -1,7 +1,7 @@
 //! Structs used to collect data for JSON export
 use std::{collections::{HashMap, HashSet}, path::Path};
 
-use crate::shared::errors::*;
+use crate::shared::errors::{ModError, BADGE_BROKEN, BADGE_ISSUE, BADGE_NOT_MOD};
 use crate::maps::structs::{CropWeatherType, CropOutput};
 use serde::ser::{Serialize, Serializer};
 
@@ -29,14 +29,14 @@ pub struct ModRecord {
 }
 
 impl ModRecord {
-    /// Create a new mod record from a full_path<&Path>
+    /// Create a new mod record from a full path
     /// 
     /// You must define if it's a folder or not
     pub fn new(full_path: &Path, is_folder : bool) -> ModRecord {
         ModRecord {
             badge_array        : ModBadges::new(),
             can_not_use        : true,
-            current_collection : "".to_owned(),
+            current_collection : String::new(),
             file_detail        : ModFile::new(full_path, is_folder),
             issues             : HashSet::new(),
             l10n               : ModDescL10N{
@@ -45,7 +45,7 @@ impl ModRecord {
             },
             md5_sum            : None,
             mod_desc           : ModDesc::new(),
-            uuid               : format!("{:?}", md5::compute(full_path.to_str().unwrap()))
+            uuid               : format!("{:?}", md5::compute(full_path.to_str().unwrap_or("")))
         }
     }
     /// raise an error on the mod
@@ -72,7 +72,7 @@ impl ModRecord {
         self
     }
     pub fn pretty_print(&self) -> String {
-        serde_json::to_string_pretty(&self).unwrap()
+        serde_json::to_string_pretty(&self).unwrap_or("{}".to_string())
     }
 }
 impl std::fmt::Display for ModRecord {
@@ -82,7 +82,7 @@ impl std::fmt::Display for ModRecord {
 }
 
 
-/// ModDesc specific fields from a mod
+/// ModDesc.xml specific fields from a mod
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModDesc {
@@ -158,7 +158,7 @@ impl ModFile {
         ModFile {
             copy_name     : None,
             extra_files   : vec![],
-            file_date     : "".to_owned(),
+            file_date     : String::new(),
             file_size     : 0,
             full_path     : file.to_str().unwrap().to_string(),
             i3d_files     : vec![],
@@ -176,6 +176,7 @@ impl ModFile {
 }
 
 /// Badge information for a mod
+#[allow(clippy::struct_excessive_bools)]
 #[derive(PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
 pub struct ModBadges {
     pub broken   : bool,

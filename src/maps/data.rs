@@ -1,4 +1,4 @@
-use super::structs::*;
+use super::structs::{Crop, CropSeason, CropTypeState, CropWeather};
 
 pub const SKIP_CROP_TYPES: [&str; 2] = [
     "meadow",

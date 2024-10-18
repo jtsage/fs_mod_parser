@@ -10,8 +10,8 @@ use crate::shared::files::AbstractFileHandle;
 pub mod structs;
 mod data;
 
-use structs::*;
-use data::*;
+use structs::{CropOutput, CropTypeStateBuilder, CropWeatherType};
+use data::{BG_CROPS, BG_CROP_TYPES, BG_CROP_WEATHER, SKIP_CROP_TYPES};
 
 #[cfg(test)]
 mod tests {
@@ -63,7 +63,7 @@ fn bool_array_to_vector(input_array:[bool;12]) -> Vec<u8> {
 fn crops_from_base_game() -> std::option::Option<Vec<CropOutput>> {
     let mut crop_list:Vec<CropOutput> = vec![];
 
-    for crop in BG_CROPS.iter() {
+    for crop in &BG_CROPS {
         crop_list.push(CropOutput {
             name : crop.name.to_owned(),
             growth_time : crop.growth_time,
@@ -131,7 +131,7 @@ pub fn read_map_basics(mod_record : &mut ModRecord, file_handle: &mut Box<dyn Ab
                         }
                         if mod_record.file_detail.image_dds.contains(&value_string) {
                             if let Ok(content) = file_handle.as_bin(&value_string) {
-                                mod_record.mod_desc.map_image = convert_map_image(content)
+                                mod_record.mod_desc.map_image = convert_map_image(content);
                             }
                         }
                     }
@@ -161,7 +161,7 @@ pub fn read_map_basics(mod_record : &mut ModRecord, file_handle: &mut Box<dyn Ab
 
                             if let Some(node) = tree.descendants().find(|n|n.has_tag_name("latitude") && n.is_text()) {
                                 if node.text().unwrap().parse::<f32>().unwrap_or(0.1) < 0.0 {
-                                    mod_record.mod_desc.map_is_south = true
+                                    mod_record.mod_desc.map_is_south = true;
                                 }
                             }
 
@@ -227,10 +227,10 @@ pub fn read_map_basics(mod_record : &mut ModRecord, file_handle: &mut Box<dyn Ab
 
                             if let Some(prep_node) = item.children().find(|n|n.has_tag_name("preparing") && ( n.has_attribute("minGrowthState") || n.has_attribute("maxGrowthState"))) {
                                 if let Some(val) = prep_node.attribute("minGrowthState") {
-                                    item_struct.min_harvest = val.parse::<u8>().unwrap_or(item_struct.min_harvest)
+                                    item_struct.min_harvest = val.parse::<u8>().unwrap_or(item_struct.min_harvest);
                                 }
                                 if let Some(val) = prep_node.attribute("maxGrowthState") {
-                                    item_struct.max_harvest = val.parse::<u8>().unwrap_or(item_struct.max_harvest)
+                                    item_struct.max_harvest = val.parse::<u8>().unwrap_or(item_struct.max_harvest);
                                 }
                             }
                             new_build.push(item_struct);
@@ -279,7 +279,7 @@ pub fn read_map_basics(mod_record : &mut ModRecord, file_handle: &mut Box<dyn Ab
 
                                 if let Some(value) = period.attribute("plantingAllowed") {
                                     if value == "true" {
-                                        crop_def.plant_periods.push(current_period_index)
+                                        crop_def.plant_periods.push(current_period_index);
                                     }
                                 }
 
@@ -306,7 +306,7 @@ pub fn read_map_basics(mod_record : &mut ModRecord, file_handle: &mut Box<dyn Ab
                                             if let Some(add_value) = update.attribute("add") {
                                                 let mut new_possible_max = decode_max_range(update.attribute("range"));
                                                 new_possible_max += add_value.parse::<u8>().unwrap_or(0_u8);
-                                                last_maximum_state = std::cmp::max(last_maximum_state, new_possible_max)
+                                                last_maximum_state = std::cmp::max(last_maximum_state, new_possible_max);
                                             }
                                         }
                                     }
@@ -332,8 +332,8 @@ pub fn read_map_basics(mod_record : &mut ModRecord, file_handle: &mut Box<dyn Ab
 fn decode_max_range(range:Option<&str>) -> u8 {
     match range {
         Some(value) => { 
-            if value.contains("-") {
-                let ( _, end ) = value.split_at(value.find("-").unwrap()+1);
+            if value.contains('-') {
+                let ( _, end ) = value.split_at(value.find('-').unwrap()+1);
                 end.parse::<u8>().unwrap_or(0_u8)
             } else {
                 value.parse::<u8>().unwrap_or(0_u8)
@@ -357,10 +357,10 @@ pub fn nullify_base_game_entry(xml_tree: &roxmltree::Document, tag : &str) -> Op
 fn get_base_game_entry_key(xml_tree: &roxmltree::Document) -> Option<String> {
     match xml_tree.descendants().find(|n| n.has_tag_name("environment")) {
         Some(node) => match node.attribute("filename") {
-            Some(val) => if ! val.starts_with("$data") { None } else {
+            Some(val) => if val.starts_with("$data") {
                 let re = Regex::new(r"(map[A-Z][A-Za-z]+)").unwrap();
                 re.captures(val).map(|capture| capture.get(0).unwrap().as_str().to_owned())
-            },
+            } else { None },
             None => None
         },
         None => None

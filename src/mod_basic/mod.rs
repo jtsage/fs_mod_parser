@@ -111,11 +111,11 @@ pub fn parse_to_json(full_path :&Path, is_folder: bool) -> String {
 
 /// Test a mod file against known game limitations
 /// 
-/// Returns a [ModRecord]
+/// Returns a [`ModRecord`]
 /// 
 /// captured information includes version, l10n title and description,
 /// key bindings, multiplayer status, if it's a map,
-/// icon, abd some simple piracy detection - see [ModRecord] for more details
+/// icon, abd some simple piracy detection - see [`ModRecord`] for more details
 /// 
 /// # File Name Checks
 /// 
@@ -184,16 +184,16 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
 
     if let Ok(meta) = std::fs::metadata(full_path) {
         if let Ok(time) = meta.created() {
-            mod_record.file_detail.file_date = sys_time_to_string(time)
+            mod_record.file_detail.file_date = sys_time_to_string(time);
         }
-        if ! abstract_file.is_folder() {
-            mod_record.file_detail.file_size = meta.len();
-        } else {
+        if abstract_file.is_folder() {
             let mut full_size:u64 = 0;
             for entry in &abstract_file_list {
                 full_size += entry.size;
             }
             mod_record.file_detail.file_size = full_size;
+        } else {
+            mod_record.file_detail.file_size = meta.len();
         }
     }
 
@@ -206,6 +206,7 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
     }
 
     if ! abstract_file.is_folder() && abstract_file_list.iter().all(|x| x.name.ends_with(".zip")) {
+        // TODO: fix case sensitive extension
         mod_record.file_detail.is_mod_pack = true;
         mod_record.can_not_use = true;
         mod_record.add_issue(ModError::FileErrorLikelyZipPack);
@@ -213,24 +214,18 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
         return mod_record;
     }
 
-    let mod_desc_content = match abstract_file.as_text("modDesc.xml") {
-        Ok(content) => content,
-        Err(..) => {
-            mod_record.add_issue(ModError::ModDescMissing);
-            mod_record.can_not_use = true;
-            mod_record.update_badges();
-            return mod_record;
-        },
+    let Ok(mod_desc_content) = abstract_file.as_text("modDesc.xml") else {
+        mod_record.add_issue(ModError::ModDescMissing);
+        mod_record.can_not_use = true;
+        mod_record.update_badges();
+        return mod_record;
     };
 
-    let mod_desc_doc = match roxmltree::Document::parse(&mod_desc_content) {
-        Ok(tree) => tree,
-        Err(..) => {
-            mod_record.add_issue(ModError::ModDescParseError);
-            mod_record.can_not_use = true;
-            mod_record.update_badges();
-            return mod_record;
-        }
+    let Ok(mod_desc_doc) = roxmltree::Document::parse(&mod_desc_content) else {
+        mod_record.add_issue(ModError::ModDescParseError);
+        mod_record.can_not_use = true;
+        mod_record.update_badges();
+        return mod_record;
     };
 
     do_file_counts(&mut mod_record, &abstract_file_list);
@@ -252,6 +247,7 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
             .unwrap();
 
         for lua_file in abstract_file_list.iter().filter(|n|n.name.ends_with(".lua")) {
+            // TODO: File extension case
             if let Ok(content) = abstract_file.as_text(&lua_file.name) {
                 if re_1.is_match(content.as_str()) || re_2.is_match(content.as_str()) {
                     mod_record.add_issue(ModError::InfoMaliciousCode);
@@ -268,6 +264,7 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
 
 /// Test a mod file name against known game limitations
 fn test_file_name(mod_record : &mut ModRecord) -> bool {
+    // TODO: fix case sensitive extension
     if !mod_record.file_detail.is_folder && ! mod_record.file_detail.full_path.ends_with(".zip") {
         if mod_record.file_detail.full_path.ends_with(".rar") || mod_record.file_detail.full_path.ends_with(".7z") {
             mod_record.add_issue(ModError::FileErrorUnsupportedArchive);
@@ -320,6 +317,8 @@ fn do_file_counts(mod_record : &mut ModRecord, file_list : &Vec<FileDefinition>)
     let size_shapes :u64 = 268_435_456;
     let size_xml :u64    = 262_144;
 
+    // TODO: fix case sensitive extension
+
     let known_good = vec!["png", "dds", "i3d", "shapes", "lua", "gdm", "cache", "xml", "grle", "pdf", "txt", "gls", "anim", "ogg"];
 
     for file in file_list {
@@ -338,7 +337,7 @@ fn do_file_counts(mod_record : &mut ModRecord, file_list : &Vec<FileDefinition>)
             mod_record.add_issue(ModError::PerformanceQuantityExtra);
             mod_record.file_detail.extra_files.push(file.name.clone());
         } else {
-            if file.name.contains(" ") {
+            if file.name.contains(' ') {
                 mod_record.add_issue(ModError::PerformanceFileSpaces);
                 mod_record.file_detail.space_files.push(file.name.clone());
             }
@@ -348,7 +347,7 @@ fn do_file_counts(mod_record : &mut ModRecord, file_list : &Vec<FileDefinition>)
                         mod_record.file_detail.image_non_dds.push(file.name.clone());
                         mod_record.file_detail.png_texture.push(file.name.clone());
                     }
-                    max_png -= 1
+                    max_png -= 1;
                 },
                 "pdf"  => max_pdf -= 1,
                 "grle" => max_grle -= 1,
@@ -396,7 +395,7 @@ fn mod_desc_basics(mod_record : &mut ModRecord, mod_desc : &roxmltree::Document)
 
     if let Some(node) = mod_desc.descendants().find(|n| n.has_tag_name("multiplayer")) {
         if let Some(val) = node.attribute("supported") {
-            mod_record.mod_desc.multi_player = val.parse().unwrap_or(false)
+            mod_record.mod_desc.multi_player = val.parse().unwrap_or(false);
         }
     }
 
@@ -404,12 +403,12 @@ fn mod_desc_basics(mod_record : &mut ModRecord, mod_desc : &roxmltree::Document)
 
     if let Some(node) = mod_desc.descendants().find(|n| n.has_tag_name("map")) {
         if let Some(val) = node.attribute("configFilename") {
-            mod_record.mod_desc.map_config_file = Some(val.to_owned())
+            mod_record.mod_desc.map_config_file = Some(val.to_owned());
         }
     }
 
     for depend in mod_desc.descendants().filter(|n| n.has_tag_name("dependency") && n.is_text()) {
-        mod_record.mod_desc.depend.push(depend.text().unwrap_or("--").to_owned())
+        mod_record.mod_desc.depend.push(depend.text().unwrap_or("--").to_owned());
     }
 
     if mod_desc.descendants().any(|n| n.has_tag_name("productId")) {
