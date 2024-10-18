@@ -22,13 +22,13 @@ fn main() {
 
     file_list.par_iter().for_each(|entry|{
         let this_file_start = Instant::now();
-        let file_metadata = std::fs::metadata(&entry).unwrap();
+        let file_metadata = std::fs::metadata(entry).unwrap();
 
         match path::absolute(entry.clone()) {
             Ok(abs_path) => {
                 let _output = parse_basic_mod(abs_path.as_path(), file_metadata.is_dir());
-                // counter += 1;
-                print!("{} in {:.2?}\n", entry.clone().to_str().unwrap(), this_file_start.elapsed());
+
+                println!("{} in {:.2?}", entry.clone().to_str().unwrap(), this_file_start.elapsed());
                 // print!("{}\n", _output);
             },
             Err(e) => panic!("{}", e),

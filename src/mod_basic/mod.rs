@@ -146,7 +146,7 @@ pub fn parse_to_json(full_path :&Path, is_folder: bool) -> String {
 /// let size_xml :u64    = 262_144;
 /// ```
 pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
-    let mut mod_record = ModRecord::new(&full_path, is_folder);
+    let mut mod_record = ModRecord::new(full_path, is_folder);
 
     mod_record.can_not_use = !test_file_name(&mut mod_record);
 
@@ -159,7 +159,7 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
     let mut abstract_file: Box<dyn AbstractFileHandle> = if is_folder 
         {
             mod_record.add_issue(ModError::InfoNoMultiplayerUnzipped);
-            match AbstractFolder::new(&full_path) {
+            match AbstractFolder::new(full_path) {
                 Ok(archive) => Box::new(archive),
                 Err(e) => {
                     mod_record.add_issue(e);
@@ -169,7 +169,7 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
                 }
             }
         } else {
-            match AbstractZipFile::new(&full_path) {
+            match AbstractZipFile::new(full_path) {
                 Ok(archive) => Box::new(archive),
                 Err(e) => {
                     mod_record.add_issue(e);
@@ -182,23 +182,19 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
 
     let abstract_file_list = abstract_file.list();
 
-    match std::fs::metadata(&full_path) {
-        Ok(meta) => {
-            match meta.created() {
-                Ok(time) => mod_record.file_detail.file_date = sys_time_to_string(time),
-                Err(..) => {},
+    if let Ok(meta) = std::fs::metadata(full_path) {
+        if let Ok(time) = meta.created() {
+            mod_record.file_detail.file_date = sys_time_to_string(time)
+        }
+        if ! abstract_file.is_folder() {
+            mod_record.file_detail.file_size = meta.len();
+        } else {
+            let mut full_size:u64 = 0;
+            for entry in &abstract_file_list {
+                full_size += entry.size;
             }
-            if ! abstract_file.is_folder() {
-                mod_record.file_detail.file_size = meta.len();
-            } else {
-                let mut full_size:u64 = 0;
-                for entry in &abstract_file_list {
-                    full_size += entry.size;
-                }
-                mod_record.file_detail.file_size = full_size;
-            }
-        },
-        Err(..) => {},
+            mod_record.file_detail.file_size = full_size;
+        }
     }
 
     if abstract_file.exists("careerSavegame.xml") {
@@ -209,14 +205,12 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
         return mod_record;
     }
 
-    if ! abstract_file.is_folder() {
-        if abstract_file_list.iter().all(|x| x.name.ends_with(".zip")) {
-            mod_record.file_detail.is_mod_pack = true;
-            mod_record.can_not_use = true;
-            mod_record.add_issue(ModError::FileErrorLikelyZipPack);
-            mod_record.update_badges();
-            return mod_record;
-        }
+    if ! abstract_file.is_folder() && abstract_file_list.iter().all(|x| x.name.ends_with(".zip")) {
+        mod_record.file_detail.is_mod_pack = true;
+        mod_record.can_not_use = true;
+        mod_record.add_issue(ModError::FileErrorLikelyZipPack);
+        mod_record.update_badges();
+        return mod_record;
     }
 
     let mod_desc_content = match abstract_file.as_text("modDesc.xml") {
@@ -243,7 +237,7 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
     mod_desc_basics(&mut mod_record, &mod_desc_doc);
 
     mod_record.mod_desc.icon_image = match &mod_record.mod_desc.icon_file_name {
-        Some(filename) => convert_mod_icon(abstract_file.as_bin(&filename).unwrap()),
+        Some(filename) => convert_mod_icon(abstract_file.as_bin(filename).unwrap()),
         None => None,
     };
 
@@ -258,12 +252,10 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
             .unwrap();
 
         for lua_file in abstract_file_list.iter().filter(|n|n.name.ends_with(".lua")) {
-            match abstract_file.as_text(&lua_file.name) {
-                Ok(content) => {
-                    if re_1.is_match(&content.as_str()) { mod_record.add_issue(ModError::InfoMaliciousCode); }
-                    if re_2.is_match(&content.as_str()) { mod_record.add_issue(ModError::InfoMaliciousCode); }
-                },
-                Err(..) => {},
+            if let Ok(content) = abstract_file.as_text(&lua_file.name) {
+                if re_1.is_match(content.as_str()) || re_2.is_match(content.as_str()) {
+                    mod_record.add_issue(ModError::InfoMaliciousCode);
+                }
             }
         }
     }
@@ -277,9 +269,7 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
 /// Test a mod file name against known game limitations
 fn test_file_name(mod_record : &mut ModRecord) -> bool {
     if !mod_record.file_detail.is_folder && ! mod_record.file_detail.full_path.ends_with(".zip") {
-        if mod_record.file_detail.full_path.ends_with(".rar") {
-            mod_record.add_issue(ModError::FileErrorUnsupportedArchive);
-        } else if mod_record.file_detail.full_path.ends_with(".7z") {
+        if mod_record.file_detail.full_path.ends_with(".rar") || mod_record.file_detail.full_path.ends_with(".7z") {
             mod_record.add_issue(ModError::FileErrorUnsupportedArchive);
         } else {
             mod_record.add_issue(ModError::FileErrorGarbageFile);
@@ -400,36 +390,30 @@ fn mod_desc_basics(mod_record : &mut ModRecord, mod_desc : &roxmltree::Document)
         None => { mod_record.add_issue(ModError::ModDescNoModVersion); }
     }
 
-    match mod_desc.descendants().find(|n| n.has_tag_name("author")) {
-        Some(node) => mod_record.mod_desc.author = node.text().unwrap_or("--").to_owned(),
-        None => {}
+    if let Some(node) = mod_desc.descendants().find(|n| n.has_tag_name("author") && n.is_text() ) {
+        mod_record.mod_desc.author = node.text().unwrap_or("--").to_owned();
     }
 
-    match mod_desc.descendants().find(|n| n.has_tag_name("multiplayer")) {
-        Some(node) => match node.attribute("supported") {
-            Some(val) => mod_record.mod_desc.multi_player = val.parse().unwrap_or(false),
-            None => {}
-        },
-        None => {}
+    if let Some(node) = mod_desc.descendants().find(|n| n.has_tag_name("multiplayer")) {
+        if let Some(val) = node.attribute("supported") {
+            mod_record.mod_desc.multi_player = val.parse().unwrap_or(false)
+        }
     }
 
     mod_record.mod_desc.store_items = mod_desc.descendants().filter(|n| n.has_tag_name("storeItem")).count() as u32;
 
-    match mod_desc.descendants().find(|n| n.has_tag_name("map")) {
-        Some(node) => match node.attribute("configFilename") {
-            Some(val) => mod_record.mod_desc.map_config_file = Some(val.to_owned()),
-            None => {}
-        },
-        None => {}
+    if let Some(node) = mod_desc.descendants().find(|n| n.has_tag_name("map")) {
+        if let Some(val) = node.attribute("configFilename") {
+            mod_record.mod_desc.map_config_file = Some(val.to_owned())
+        }
     }
 
     for depend in mod_desc.descendants().filter(|n| n.has_tag_name("dependency") && n.is_text()) {
         mod_record.mod_desc.depend.push(depend.text().unwrap_or("--").to_owned())
     }
 
-    match mod_desc.descendants().find(|n| n.has_tag_name("productId")) {
-        Some(..) => { mod_record.add_issue(ModError::InfoLikelyPiracy); },
-        None => {}
+    if mod_desc.descendants().any(|n| n.has_tag_name("productId")) {
+        mod_record.add_issue(ModError::InfoLikelyPiracy); 
     }
 
     match mod_desc.descendants().find(|n| n.has_tag_name("iconFilename")) {
@@ -437,9 +421,8 @@ fn mod_desc_basics(mod_record : &mut ModRecord, mod_desc : &roxmltree::Document)
             match node.text() {
                 Some(val) => {
                     let mut value_string = val.to_string();
-                    match value_string.find(".png") {
-                        Some(index) => { value_string.replace_range(index..value_string.len(), ".dds"); },
-                        None => {}
+                    if let Some(index) = value_string.find(".png") {
+                        value_string.replace_range(index..value_string.len(), ".dds");
                     }
                     if mod_record.file_detail.image_dds.contains(&value_string) {
                         mod_record.mod_desc.icon_file_name = Some(value_string);
@@ -454,30 +437,27 @@ fn mod_desc_basics(mod_record : &mut ModRecord, mod_desc : &roxmltree::Document)
     }
 
     for action in mod_desc.descendants().filter(|n| n.has_tag_name("action")) {
-        match action.attribute("name") {
-            Some(name) => {
-                mod_record.mod_desc.actions.insert(name.to_owned(), match action.attribute("category"){
+        if let Some(name) = action.attribute("name") {
+            mod_record.mod_desc.actions.insert(
+                name.to_owned(),
+                match action.attribute("category") {
                     Some(cat) => cat.to_owned(),
                     None => "ALL".to_string(),
-                });
-            },
-            None => {}
+                }
+            );
         }
     }
 
     for action in mod_desc.descendants().filter(|n| n.has_tag_name("actionBinding")) {
-        match action.attribute("action") {
-            Some(name) => {
-                mod_record.mod_desc.binds.insert(
-                    name.to_owned(),
-                    action
-                        .children()
-                        .filter(|n|n.has_tag_name("binding") && n.attribute("device") == Some("KB_MOUSE_DEFAULT") && n.has_attribute("input"))
-                        .map(|x| x.attribute("input").unwrap().to_string())
-                        .collect()
-                );
-            },
-            None => {}
+        if let Some(name) = action.attribute("action") {
+            mod_record.mod_desc.binds.insert(
+                name.to_owned(),
+                action
+                    .children()
+                    .filter(|n|n.has_tag_name("binding") && n.attribute("device") == Some("KB_MOUSE_DEFAULT") && n.has_attribute("input"))
+                    .map(|x| x.attribute("input").unwrap().to_string())
+                    .collect()
+            );
         }
     }
 

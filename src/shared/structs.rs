@@ -160,7 +160,7 @@ impl ModFile {
             extra_files   : vec![],
             file_date     : "".to_owned(),
             file_size     : 0,
-            full_path     : format!("{}", file.to_str().unwrap()),
+            full_path     : file.to_str().unwrap().to_string(),
             i3d_files     : vec![],
             image_dds     : vec![],
             image_non_dds : vec![],

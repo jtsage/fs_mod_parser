@@ -136,7 +136,7 @@ impl AbstractFileHandle for AbstractZipFile {
         names
     }
     fn exists(&mut self, needle : &str) -> bool {
-        match self.archive.by_name(&needle) {
+        match self.archive.by_name(needle) {
             Ok(..) => true,
             Err(..) => false,
         }
