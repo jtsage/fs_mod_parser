@@ -1,7 +1,7 @@
 //! Parser functions for basic mod reading
 use crate::shared::errors::ModError;
 use crate::shared::files::{AbstractFileHandle, AbstractFolder, AbstractZipFile, FileDefinition};
-use crate::shared::structs::ModRecord;
+use crate::shared::structs::{ModRecord, ZipPackFile};
 use crate::shared::convert_mod_icon;
 
 use std::{time::SystemTime, path::Path};
@@ -256,8 +256,8 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
 }
 
 
-fn test_mod_pack(file_list : &Vec<FileDefinition>) -> Option<Vec<String>> {
-    let mut zip_list:Vec<String> = vec![];
+fn test_mod_pack(file_list : &Vec<FileDefinition>) -> Option<Vec<ZipPackFile>> {
+    let mut zip_list:Vec<ZipPackFile> = vec![];
     let mut max_non_zip_files = 2;
 
     for file in file_list {
@@ -265,7 +265,10 @@ fn test_mod_pack(file_list : &Vec<FileDefinition>) -> Option<Vec<String>> {
 
         match file.extension.as_str() {
             "xml" => return None,
-            "zip" => zip_list.push(file.name.clone()),
+            "zip" => zip_list.push(ZipPackFile{
+                name : file.name.clone(),
+                size : file.size
+            }),
             _ => max_non_zip_files -= 1
         }
     }
@@ -278,7 +281,6 @@ fn test_mod_pack(file_list : &Vec<FileDefinition>) -> Option<Vec<String>> {
 }
 /// Test a mod file name against known game limitations
 fn test_file_name(mod_record : &mut ModRecord) -> bool {
-    // TODO: fix case sensitive extension
     if !mod_record.file_detail.is_folder {
         let file_path = Path::new(&mod_record.file_detail.full_path);
         let extension = match file_path.extension() {

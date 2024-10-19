@@ -134,6 +134,12 @@ impl ModDesc {
 }
 
 
+#[derive(serde::Serialize, PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
+pub struct ZipPackFile {
+    pub name : String,
+    pub size : u64,
+}
+
 /// File related metadata for a mod
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -155,7 +161,7 @@ pub struct ModFile {
     pub short_name    : String,
     pub space_files   : Vec<String>,
     pub too_big_files : Vec<String>,
-    pub zip_files     : Vec<String>,
+    pub zip_files     : Vec<ZipPackFile>,
 }
 
 impl ModFile {
