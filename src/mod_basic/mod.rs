@@ -259,21 +259,25 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
 fn test_mod_pack(file_list : &Vec<FileDefinition>) -> Option<Vec<ZipPackFile>> {
     let mut zip_list:Vec<ZipPackFile> = vec![];
     let mut max_non_zip_files = 2;
+    let mut zip_files = false;
 
     for file in file_list {
         if file.is_folder { return None }
 
         match file.extension.as_str() {
             "xml" => return None,
-            "zip" => zip_list.push(ZipPackFile{
-                name : file.name.clone(),
-                size : file.size
-            }),
+            "zip" => {
+                zip_files = true;
+                zip_list.push(ZipPackFile{
+                    name : file.name.clone(),
+                    size : file.size
+                });
+            },
             _ => max_non_zip_files -= 1
         }
     }
 
-    if max_non_zip_files <= 0 {
+    if max_non_zip_files <= 0 || ! zip_files {
         return None
     }
     

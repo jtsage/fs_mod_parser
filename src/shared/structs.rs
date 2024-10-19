@@ -134,6 +134,7 @@ impl ModDesc {
 }
 
 
+// Entry for zip files inside a "mod" file.
 #[derive(serde::Serialize, PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
 pub struct ZipPackFile {
     pub name : String,

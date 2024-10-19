@@ -1,6 +1,7 @@
 use std::path::Path;
+use fs_mod_parser::mod_basic::parser;
 use fs_mod_parser::shared::structs::{ModBadges, ModRecord};
-use assert_json_diff::assert_json_eq;
+use assert_json_diff::{assert_json_eq, assert_json_include};
 use serde_json::json;
 
 #[test]
@@ -92,5 +93,85 @@ fn check_json_badges() {
 		"savegame"
 	]);
 
-	assert_eq!(json!(mod_badges), expected)
+	assert_json_eq!(json!(mod_badges), expected)
+}
+
+#[test]
+fn simple_good_mod() {
+	let test_file_path = Path::new("./tests/test_mods/PASS_Good_Simple_Mod.zip");
+	assert!(test_file_path.exists());
+
+	let mod_record = parser(test_file_path, false);
+
+	assert_eq!(mod_record.can_not_use, false);
+	assert_eq!(mod_record.issues.len(), 0);
+
+	assert_eq!(mod_record.badge_array, ModBadges {
+		broken   : false,
+		folder   : false,
+		malware  : false,
+		no_mp    : false,
+		notmod   : false,
+		pconly   : false,
+		problem  : false,
+		savegame : false,
+	});
+
+	assert_ne!(mod_record.mod_desc.icon_image, None);
+
+	let expected = json!({
+		"badgeArray": [],
+		"canNotUse": false,
+		"currentCollection": "",
+		"fileDetail": {
+			"copyName": null,
+			"extraFiles": [],
+			"fileDate": "2024-10-14T17:02:40Z",
+			"fileSize": 12529,
+			"fullPath": "./tests/test_mods/PASS_Good_Simple_Mod.zip",
+			"i3dFiles": [],
+			"imageDDS": [
+				"modIcon.dds"
+			],
+			"imageNonDDS": [],
+			"isFolder": false,
+			"isSaveGame": false,
+			"isModPack": false,
+			"pngTexture": [],
+			"shortName": "PASS_Good_Simple_Mod",
+			"spaceFiles": [],
+			"tooBigFiles": [],
+			"zipFiles": []
+		},
+		"issues": [],
+		"l10n": {
+			"title": {
+				"en": "Totally valid FS22 Mod"
+			},
+			"description": {
+				"en": "Demonstates how FSModAssit handles a good mod file."
+			}
+		},
+		"md5Sum": null,
+		"modDesc": {
+			"actions": {},
+			"binds": {},
+			"author": "--",
+			"scriptFiles": 0,
+			"storeItems": 1,
+			"cropInfo": null,
+			"cropWeather": null,
+			"depend": [],
+			"descVersion": 69,
+			"iconFileName": "modIcon.dds",
+			"mapConfigFile": null,
+			"mapIsSouth": false,
+			"mapImage": null,
+			"multiPlayer": true,
+			"version": "1.0.0.0"
+		},
+		"uuid": "89b7c5117437014a47f7805bf24a0d43"
+	});
+
+	assert_json_include!(actual : json!(mod_record), expected : expected);
 }
