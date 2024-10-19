@@ -48,12 +48,17 @@ impl ModRecord {
             uuid               : format!("{:?}", md5::compute(full_path.to_str().unwrap_or("")))
         }
     }
+    /// raise an fatal error on the mod
+    pub fn add_fatal(&mut self, issue : ModError) {
+        self.can_not_use = true;
+        self.issues.insert(issue);
+    }
     /// raise an error on the mod
     pub fn add_issue(&mut self, issue : ModError) {
         self.issues.insert(issue);
     }
     /// update the badge array from other data
-    pub fn update_badges(&mut self) -> &mut ModRecord{
+    pub fn update_badges(&mut self) -> &mut Self {
         self.badge_array.notmod = BADGE_NOT_MOD.iter().any(|x| self.issues.contains(x));
         self.badge_array.pconly = self.mod_desc.script_files > 0;
 
@@ -150,6 +155,7 @@ pub struct ModFile {
     pub short_name    : String,
     pub space_files   : Vec<String>,
     pub too_big_files : Vec<String>,
+    pub zip_files     : Vec<String>,
 }
 
 impl ModFile {
@@ -171,6 +177,7 @@ impl ModFile {
             short_name    : file.file_stem().unwrap().to_str().unwrap().to_owned(),
             space_files   : vec![],
             too_big_files : vec![],
+            zip_files     : vec![],
         }
     }
 }

@@ -162,8 +162,7 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
             match AbstractFolder::new(full_path) {
                 Ok(archive) => Box::new(archive),
                 Err(e) => {
-                    mod_record.add_issue(e);
-                    mod_record.can_not_use = true;
+                    mod_record.add_fatal(e);
                     mod_record.update_badges();
                     return mod_record;
                 }
@@ -172,8 +171,7 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
             match AbstractZipFile::new(full_path) {
                 Ok(archive) => Box::new(archive),
                 Err(e) => {
-                    mod_record.add_issue(e);
-                    mod_record.can_not_use = true;
+                    mod_record.add_fatal(e);
                     mod_record.update_badges();
                     return mod_record
                 } 
@@ -199,30 +197,29 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
 
     if abstract_file.exists("careerSavegame.xml") {
         mod_record.file_detail.is_save_game = true;
-        mod_record.can_not_use = true;
-        mod_record.add_issue(ModError::FileErrorLikelySaveGame);
+        mod_record.add_fatal(ModError::FileErrorLikelySaveGame);
         mod_record.update_badges();
         return mod_record;
     }
 
-    if ! abstract_file.is_folder() && abstract_file_list.iter().all(|x| x.extension == "zip") {
-        mod_record.file_detail.is_mod_pack = true;
-        mod_record.can_not_use = true;
-        mod_record.add_issue(ModError::FileErrorLikelyZipPack);
-        mod_record.update_badges();
-        return mod_record;
+    if ! abstract_file.is_folder() {
+        if let Some(list) = test_mod_pack(&abstract_file_list) {
+            mod_record.file_detail.zip_files   = list;
+            mod_record.file_detail.is_mod_pack = true;
+            mod_record.add_fatal(ModError::FileErrorLikelyZipPack);
+            mod_record.update_badges();
+            return mod_record;
+        }
     }
 
     let Ok(mod_desc_content) = abstract_file.as_text("modDesc.xml") else {
-        mod_record.add_issue(ModError::ModDescMissing);
-        mod_record.can_not_use = true;
+        mod_record.add_fatal(ModError::ModDescMissing);
         mod_record.update_badges();
         return mod_record;
     };
 
     let Ok(mod_desc_doc) = roxmltree::Document::parse(&mod_desc_content) else {
-        mod_record.add_issue(ModError::ModDescParseError);
-        mod_record.can_not_use = true;
+        mod_record.add_fatal(ModError::ModDescParseError);
         mod_record.update_badges();
         return mod_record;
     };
@@ -258,6 +255,27 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
     mod_record
 }
 
+
+fn test_mod_pack(file_list : &Vec<FileDefinition>) -> Option<Vec<String>> {
+    let mut zip_list:Vec<String> = vec![];
+    let mut max_non_zip_files = 2;
+
+    for file in file_list {
+        if file.is_folder { return None }
+
+        match file.extension.as_str() {
+            "xml" => return None,
+            "zip" => zip_list.push(file.name.clone()),
+            _ => max_non_zip_files -= 1
+        }
+    }
+
+    if max_non_zip_files <= 0 {
+        return None
+    }
+    
+    Some(zip_list)
+}
 /// Test a mod file name against known game limitations
 fn test_file_name(mod_record : &mut ModRecord) -> bool {
     // TODO: fix case sensitive extension
