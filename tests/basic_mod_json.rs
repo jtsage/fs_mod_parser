@@ -126,9 +126,7 @@ fn simple_good_mod() {
 		"fileDetail": {
 			"copyName": null,
 			"extraFiles": [],
-			"fileDate": "2024-10-14T17:02:40Z",
-			"fileSize": 12529,
-			"fullPath": "./tests/test_mods/PASS_Good_Simple_Mod.zip",
+			"fileSize": 12530,
 			"i3dFiles": [],
 			"imageDDS": [
 				"modIcon.dds"
@@ -149,14 +147,14 @@ fn simple_good_mod() {
 				"en": "Totally valid FS22 Mod"
 			},
 			"description": {
-				"en": "Demonstates how FSModAssit handles a good mod file."
+				"en": "Demonstrates how FSModAssist handles a good mod file."
 			}
 		},
 		"md5Sum": null,
 		"modDesc": {
 			"actions": {},
 			"binds": {},
-			"author": "--",
+			"author": "FSModAssist Test",
 			"scriptFiles": 0,
 			"storeItems": 1,
 			"cropInfo": null,

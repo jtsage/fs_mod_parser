@@ -413,7 +413,7 @@ fn mod_desc_basics(mod_record : &mut ModRecord, mod_desc : &roxmltree::Document)
         None => { mod_record.add_issue(ModError::ModDescNoModVersion); }
     }
 
-    if let Some(node) = mod_desc.descendants().find(|n| n.has_tag_name("author") && n.is_text() ) {
+    if let Some(node) = mod_desc.descendants().find(|n| n.has_tag_name("author")) {
         node.text().unwrap_or("--").clone_into(&mut mod_record.mod_desc.author);
     }
 
