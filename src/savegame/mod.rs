@@ -42,11 +42,14 @@ pub struct SaveGameMod {
     pub farms : HashSet<usize>,
 }
 impl SaveGameMod {
-    fn new() -> Self {
+    fn new(farm_id:Option<usize>) -> Self {
         SaveGameMod {
             version : String::from("0"),
             title : String::from("--"),
-            farms : HashSet::new()
+            farms : match farm_id {
+                Some(this_id) => HashSet::from([this_id]),
+                None => HashSet::from([0])
+            }
         }
     }
 }
@@ -111,11 +114,11 @@ impl std::fmt::Display for SaveGameRecord {
     }
 }
 
-pub fn parse_to_json(full_path :&Path, is_folder: bool) -> String {
+pub fn parse_to_json<P: AsRef<Path>>(full_path :P, is_folder: bool) -> String {
     parser(full_path, is_folder).to_string()
 }
 
-pub fn parser(full_path :&Path, is_folder: bool) -> SaveGameRecord {
+pub fn parser<P: AsRef<Path>>(full_path :P, is_folder: bool) -> SaveGameRecord {
     let mut save_record = SaveGameRecord::new();
 
     let mut abstract_file: Box<dyn AbstractFileHandle> = if is_folder 
@@ -133,21 +136,36 @@ pub fn parser(full_path :&Path, is_folder: bool) -> SaveGameRecord {
             return save_record;
         };
 
+    do_farms(&mut save_record, &mut abstract_file);
+    do_placeables(&mut save_record, &mut abstract_file);
+    do_vehicles(&mut save_record, &mut abstract_file);
+
+    save_record
+}
+
+fn do_farms(save_record: &mut SaveGameRecord, abstract_file : &mut Box<dyn AbstractFileHandle>) {
     let Ok(farms_content) = abstract_file.as_text("farms.xml") else {
         save_record.add_issue(SaveError::FarmsMissing);
-        return save_record;
+        return;
     };
 
     let Ok(farms_document) = roxmltree::Document::parse(&farms_content) else {
         save_record.add_issue(SaveError::FarmsParseError);
-        return save_record;
+        return;
     };
 
+    let mut ran_more_than_once = false;
     #[allow(clippy::cast_possible_truncation)]
     for farm_entry in farms_document.descendants().filter(|n|n.has_tag_name("farm")) {
         let Some(farm_id_str) = farm_entry.attribute("farmId") else { continue; };
         let Ok(farm_id) = farm_id_str.parse::<usize>() else { continue; };
         let Some(farm_name) = farm_entry.attribute("name") else { continue; };
+
+        if ran_more_than_once {
+            save_record.single_farm = false;
+        } else {
+            ran_more_than_once = true;
+        }
 
         let mut farm_record = SaveGameFarm::new(farm_name.to_owned());
 
@@ -163,5 +181,54 @@ pub fn parser(full_path :&Path, is_folder: bool) -> SaveGameRecord {
 
         save_record.farms.insert(farm_id, farm_record);
     }
-    save_record
+}
+
+fn do_placeables(save_record: &mut SaveGameRecord, abstract_file : &mut Box<dyn AbstractFileHandle> ) {
+    let Ok(placeable_content) = abstract_file.as_text("placeables.xml") else {
+        save_record.add_issue(SaveError::PlaceableMissing);
+        return;
+    };
+
+    let Ok(placeable_document) = roxmltree::Document::parse(&placeable_content) else {
+        save_record.add_issue(SaveError::PlaceableParseError);
+        return;
+    };
+
+    for item in placeable_document.descendants().filter(|n| n.has_tag_name("placeable") && n.has_attribute("farmId") && n.has_attribute("modName")) {
+        let farm_id = item.attribute("farmId")
+            .unwrap_or("0").parse::<usize>()
+            .unwrap_or(0);
+
+        let Some(mod_key) = item.attribute("modName") else { continue; };
+
+        match save_record.mods.get_mut(mod_key) {
+            Some(this_mod) => { this_mod.farms.insert(farm_id); },
+            None => { save_record.mods.insert(mod_key.to_string(), SaveGameMod::new(Some(farm_id))); }
+        };
+    }
+}
+
+fn do_vehicles(save_record: &mut SaveGameRecord, abstract_file : &mut Box<dyn AbstractFileHandle> ) {
+    let Ok(vehicles_content) = abstract_file.as_text("vehicles.xml") else {
+        save_record.add_issue(SaveError::PlaceableMissing);
+        return;
+    };
+
+    let Ok(vehicles_document) = roxmltree::Document::parse(&vehicles_content) else {
+        save_record.add_issue(SaveError::PlaceableParseError);
+        return;
+    };
+
+    for item in vehicles_document.descendants().filter(|n| n.has_tag_name("vehicle") && n.has_attribute("farmId") && n.has_attribute("modName")) {
+        let farm_id = item.attribute("farmId")
+            .unwrap_or("0").parse::<usize>()
+            .unwrap_or(0);
+
+        let Some(mod_key) = item.attribute("modName") else { continue; };
+
+        match save_record.mods.get_mut(mod_key) {
+            Some(this_mod) => { this_mod.farms.insert(farm_id); },
+            None => { save_record.mods.insert(mod_key.to_string(), SaveGameMod::new(Some(farm_id))); }
+        };
+    }
 }

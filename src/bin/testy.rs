@@ -4,15 +4,16 @@
 //! optionally including information on contained store
 //! items, along with savegame processing, and basic mod
 //! pack processing.
-use std::path::{self, PathBuf, Path};
+use std::path::{self, PathBuf};
 use std::time::Instant;
 use glob::glob;
 use fs_mod_parser::{parse_basic_mod, savegame::parser};
 use rayon::prelude::*;
 
 fn main() {
-    let output = parser(Path::new("./tests/test_mods/VARIANT_SaveGame.zip"), false);
+    let output = parser("./tests/test_mods/VARIANT_SaveGame.zip", false);
     print!("{}", output.pretty_print());
+    // scan_full_collection();
 }
 
 #[allow(dead_code)]
