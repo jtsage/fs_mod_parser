@@ -104,7 +104,7 @@ pub const NOT_MALWARE: [&str; 11] = [
 ///}
 /// ```
 /* cSpell: enable */
-pub fn parse_to_json(full_path :&Path, is_folder: bool) -> String {
+pub fn parse_to_json<P: AsRef<Path>>(full_path :P, is_folder: bool) -> String {
     parser(full_path, is_folder).to_string()
 }
 
@@ -145,8 +145,8 @@ pub fn parse_to_json(full_path :&Path, is_folder: bool) -> String {
 /// let size_shapes :u64 = 268_435_456;
 /// let size_xml :u64    = 262_144;
 /// ```
-pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
-    let mut mod_record = ModRecord::new(full_path, is_folder);
+pub fn parser<P: AsRef<Path>>(full_path :P, is_folder: bool) -> ModRecord {
+    let mut mod_record = ModRecord::new(&full_path, is_folder);
 
     mod_record.can_not_use = !test_file_name(&mut mod_record);
 
@@ -159,7 +159,7 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
     let mut abstract_file: Box<dyn AbstractFileHandle> = if is_folder 
         {
             mod_record.add_issue(ModError::InfoNoMultiplayerUnzipped);
-            match AbstractFolder::new(full_path) {
+            match AbstractFolder::new(&full_path) {
                 Ok(archive) => Box::new(archive),
                 Err(e) => {
                     mod_record.add_fatal(e);
@@ -168,7 +168,7 @@ pub fn parser(full_path :&Path, is_folder: bool) -> ModRecord {
                 }
             }
         } else {
-            match AbstractZipFile::new(full_path) {
+            match AbstractZipFile::new(&full_path) {
                 Ok(archive) => Box::new(archive),
                 Err(e) => {
                     mod_record.add_fatal(e);

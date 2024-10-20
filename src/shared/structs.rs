@@ -32,7 +32,8 @@ impl ModRecord {
     /// Create a new mod record from a full path
     /// 
     /// You must define if it's a folder or not
-    pub fn new(full_path: &Path, is_folder : bool) -> ModRecord {
+    pub fn new<P: AsRef<Path>>(input_path :P, is_folder : bool) -> ModRecord {
+        let full_path = input_path.as_ref();
         ModRecord {
             badge_array        : ModBadges::new(),
             can_not_use        : true,

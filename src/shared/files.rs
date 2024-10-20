@@ -52,7 +52,9 @@ impl AbstractFolder {
     /// 
     /// Can possibly return [`ModError::FileErrorUnreadableZip`] - should be added direct
     /// to mod record issues.
-    pub fn new(input_path: &Path) -> Result<AbstractFolder, ModError> {
+    pub fn new<P: AsRef<Path>>(file_path :P) -> Result<AbstractFolder, ModError> {
+        let input_path = file_path.as_ref();
+
         if input_path.exists() {
             Ok(AbstractFolder { is_folder : true, path : input_path.to_path_buf() })
         } else {
@@ -114,7 +116,8 @@ impl AbstractZipFile {
     /// 
     /// Can possibly return [`ModError::FileErrorUnreadableZip`] - should be added direct
     /// to mod record issues.
-    pub fn new(path: &Path) -> Result<AbstractZipFile, ModError> {
+    pub fn new<P: AsRef<Path>>(file_path :P) -> Result<AbstractZipFile, ModError> {
+        let path = file_path.as_ref();
         match std::fs::File::open(path) {
             Ok(file) => {
                 match zip::ZipArchive::new(file) {
