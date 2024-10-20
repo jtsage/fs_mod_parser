@@ -9,7 +9,7 @@ fn piracy_warning() {
 	let test_file_path = Path::new("./tests/test_mods/WARNING_Fake_Cracked_DLC.zip");
 	assert!(test_file_path.exists());
 
-	let mod_record = parser(test_file_path, false);
+	let mod_record = parser(test_file_path);
 
 	assert_eq!(mod_record.can_not_use, false);
 
@@ -34,7 +34,7 @@ fn icon_not_found() {
 	let test_file_path = Path::new("./tests/test_mods/WARNING_Icon_Not_Found.zip");
 	assert!(test_file_path.exists());
 
-	let mod_record = parser(test_file_path, false);
+	let mod_record = parser(test_file_path);
 
 	assert_eq!(mod_record.can_not_use, false);
 
@@ -59,7 +59,7 @@ fn malicious_code_check() {
 	let test_file_path = Path::new("./tests/test_mods/WARNING_Malicious_Code.zip");
 	assert!(test_file_path.exists());
 
-	let mod_record = parser(test_file_path, false);
+	let mod_record = parser(test_file_path);
 
 	assert_eq!(mod_record.can_not_use, false);
 
@@ -84,7 +84,7 @@ fn no_version() {
 	let test_file_path = Path::new("./tests/test_mods/WARNING_No_Version.zip");
 	assert!(test_file_path.exists());
 
-	let mod_record = parser(test_file_path, false);
+	let mod_record = parser(test_file_path);
 
 	assert_eq!(mod_record.can_not_use, false);
 

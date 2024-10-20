@@ -9,7 +9,7 @@ fn is_zip_pack() {
 	let test_file_path = Path::new("./tests/test_mods/VARIANT_Mod_Pack.zip");
 	assert!(test_file_path.exists());
 
-	let mod_record = parser(test_file_path, false);
+	let mod_record = parser(test_file_path);
 
 	assert_eq!(mod_record.can_not_use, true);
 

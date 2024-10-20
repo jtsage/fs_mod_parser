@@ -9,7 +9,7 @@ fn broken_zip_file() {
 	let test_file_path = Path::new("./tests/test_mods/FAILURE_Broken_Zip_File.zip");
 	assert!(test_file_path.exists());
 
-	let mod_record = parser(test_file_path, false);
+	let mod_record = parser(test_file_path);
 
 	assert_eq!(mod_record.can_not_use, true);
 
@@ -33,7 +33,7 @@ fn bad_crc_moddesc() {
 	let test_file_path = Path::new("./tests/test_mods/FAILURE_Bad_ModDesc_CRC.zip");
 	assert!(test_file_path.exists());
 
-	let mod_record = parser(test_file_path, false);
+	let mod_record = parser(test_file_path);
 
 	assert_eq!(mod_record.can_not_use, true);
 
@@ -58,11 +58,11 @@ fn garbage_file() {
 	let test_file_path = Path::new("./tests/test_mods/FAILURE_Garbage_File.txt");
 	assert!(test_file_path.exists());
 
-	let mod_record = parser(test_file_path, false);
+	let mod_record = parser(test_file_path);
 
 	assert_eq!(mod_record.can_not_use, true);
 
-	let expected_errors:HashSet<ModError> = HashSet::from([ModError::FileErrorGarbageFile, ModError::FileErrorNameInvalid]);
+	let expected_errors:HashSet<ModError> = HashSet::from([ModError::FileErrorGarbageFile, ModError::FileErrorNameInvalid, ModError::FileErrorUnreadableZip]);
 	assert_eq!(mod_record.issues, expected_errors);
 
 	assert_eq!(mod_record.badge_array, ModBadges {
@@ -82,7 +82,7 @@ fn missing_desc_version() {
 	let test_file_path = Path::new("./tests/test_mods/FAILURE_No_DescVersion.zip");
 	assert!(test_file_path.exists());
 
-	let mod_record = parser(test_file_path, false);
+	let mod_record = parser(test_file_path);
 
 	assert_eq!(mod_record.can_not_use, false);
 
@@ -106,7 +106,7 @@ fn missing_moddesc() {
 	let test_file_path = Path::new("./tests/test_mods/FAILURE_Missing_ModDesc.zip");
 	assert!(test_file_path.exists());
 
-	let mod_record = parser(test_file_path, false);
+	let mod_record = parser(test_file_path);
 
 	assert_eq!(mod_record.can_not_use, true);
 
@@ -131,7 +131,7 @@ fn invalid_file_copy() {
 	let test_file_path = Path::new("./tests/test_mods/FAILURE_Copied_Mod (2).zip");
 	assert!(test_file_path.exists());
 
-	let mod_record = parser(test_file_path, false);
+	let mod_record = parser(test_file_path);
 
 	assert_eq!(mod_record.can_not_use, true);
 
@@ -158,7 +158,7 @@ fn malformed_moddesc() {
 	let test_file_path = Path::new("./tests/test_mods/FAILURE_Really_Malformed_ModDesc.zip");
 	assert!(test_file_path.exists());
 
-	let mod_record = parser(test_file_path, false);
+	let mod_record = parser(test_file_path);
 
 	assert_eq!(mod_record.can_not_use, true);
 
@@ -184,7 +184,7 @@ fn starts_with_digit() {
 	let test_file_path = Path::new("./tests/test_mods/0FAILURE_Starts_With_Digit.zip");
 	assert!(test_file_path.exists());
 
-	let mod_record = parser(test_file_path, false);
+	let mod_record = parser(test_file_path);
 
 	assert_eq!(mod_record.can_not_use, true);
 

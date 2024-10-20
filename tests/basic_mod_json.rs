@@ -101,7 +101,7 @@ fn simple_good_mod() {
 	let test_file_path = Path::new("./tests/test_mods/PASS_Good_Simple_Mod.zip");
 	assert!(test_file_path.exists());
 
-	let mod_record = parser(test_file_path, false);
+	let mod_record = parser(test_file_path);
 
 	assert_eq!(mod_record.can_not_use, false);
 	assert_eq!(mod_record.issues.len(), 0);

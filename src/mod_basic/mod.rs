@@ -85,8 +85,7 @@ pub const NOT_MALWARE: [&str; 11] = [
 ///    "cropWeather": {
 ///      "spring": { "max": 32, "min": 16 },
 ///      "autumn": { "min": 14, "max": 30 },
-///      "winter": { "max": 30, "min": 13
-///      },
+///      "winter": { "max": 30, "min": 13 },
 ///      "summer": { "max": 31, "min": 21 }
 ///    },
 ///    "depend": [
@@ -104,8 +103,14 @@ pub const NOT_MALWARE: [&str; 11] = [
 ///}
 /// ```
 /* cSpell: enable */
-pub fn parse_to_json<P: AsRef<Path>>(full_path :P, is_folder: bool) -> String {
-    parser(full_path, is_folder).to_string()
+pub fn parse_to_json<P: AsRef<Path>>(full_path :P) -> String {
+    parser(full_path).to_string()
+}
+/// Parse a mod into a pretty print JSON representation
+/// 
+/// See also [`parse_to_json`]
+pub fn parse_to_json_pretty<P: AsRef<Path>>(full_path :P) -> String {
+    parser(full_path).pretty_print()
 }
 
 
@@ -145,15 +150,16 @@ pub fn parse_to_json<P: AsRef<Path>>(full_path :P, is_folder: bool) -> String {
 /// let size_shapes :u64 = 268_435_456;
 /// let size_xml :u64    = 262_144;
 /// ```
-pub fn parser<P: AsRef<Path>>(full_path :P, is_folder: bool) -> ModRecord {
+pub fn parser<P: AsRef<Path>>(full_path :P) -> ModRecord {
+    let is_folder = full_path.as_ref().is_dir();
     let mut mod_record = ModRecord::new(&full_path, is_folder);
 
     mod_record.can_not_use = !test_file_name(&mut mod_record);
 
     if mod_record.can_not_use {
         mod_record.add_issue(ModError::FileErrorNameInvalid);
-        mod_record.update_badges();
-        return mod_record;
+        // mod_record.update_badges();
+        // return mod_record;
     }
 
     let mut abstract_file: Box<dyn AbstractFileHandle> = if is_folder 
