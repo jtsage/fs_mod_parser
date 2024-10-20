@@ -7,5 +7,10 @@ pub mod mod_basic;
 pub mod savegame;
 pub mod shared;
 
-pub use savegame::parse_to_json as parse_savegame;
-pub use mod_basic::parse_to_json as parse_basic_mod;
+pub use savegame::parser as parse_savegame;
+pub use savegame::parse_to_json as parse_savegame_json;
+pub use savegame::parse_to_json_pretty as parse_savegame_json_pretty;
+
+pub use mod_basic::parser as parse_mod;
+pub use mod_basic::parse_to_json as parse_mod_json;
+pub use mod_basic::parse_to_json_pretty as parse_mod_json_pretty;

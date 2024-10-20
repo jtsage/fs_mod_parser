@@ -13,7 +13,24 @@ Checks the file name, and returns:
 - map information (if applicable)
 - mod content tests
 
+Valid input is a file or folder, any type that coerces into a `&Path`.
+
 ```rust
-let path_to_mod = std::path::Path::new("FS22_Mod_File.zip");
-let json_representation = fs_mod_parser::parse_basic_mod(path_to_mod, false);
+let json_representation = fs_mod_parser::parse_mod_json("FS22_Mod_File.zip");
+```
+
+### Save Game Details
+
+Returned information includes:
+
+- Mods loaded and used in the save with total count
+- Playtime, Save Date, Save Name
+- Map mod name and title
+- Errors, if any, and boolean valid flag
+- Farm list, boolean if it's a multiplayer save or not
+
+Valid input is a file or folder, any type that coerces into a `&Path`.
+
+```rust
+let json_representation = fs_mod_parser::parse_savegame_json("savegame1.zip");
 ```
