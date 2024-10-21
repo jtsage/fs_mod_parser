@@ -4,6 +4,7 @@
 
 pub mod maps;
 pub mod mod_basic;
+pub mod mod_detail;
 pub mod savegame;
 pub mod shared;
 
@@ -14,3 +15,7 @@ pub use savegame::parse_to_json_pretty as parse_savegame_json_pretty;
 pub use mod_basic::parser as parse_mod;
 pub use mod_basic::parse_to_json as parse_mod_json;
 pub use mod_basic::parse_to_json_pretty as parse_mod_json_pretty;
+
+pub use mod_detail::parser as parse_detail;
+pub use mod_detail::parse_to_json as parse_detail_json;
+pub use mod_detail::parse_to_json_pretty as parse_detail_json_pretty;

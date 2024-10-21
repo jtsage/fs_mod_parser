@@ -4,12 +4,14 @@
 use std::path::{self, PathBuf};
 use std::time::Instant;
 use glob::glob;
-use fs_mod_parser::{parse_mod_json_pretty, parse_savegame_json_pretty};
+use fs_mod_parser::{parse_detail_json_pretty, parse_mod_json_pretty, parse_savegame_json_pretty};
 use rayon::prelude::*;
 
 fn main() {
-    scan_full_collection();
-    scan_all_save_games();
+    // println!("{}", parse_detail_json_pretty("./tests/test_mods/PASS_Good_Simple_Mod.zip"));
+    println!("{}", parse_detail_json_pretty("./tests/test_mods/UNUSED_RealModForStoreItems.zip"));
+    // scan_full_collection();
+    // scan_all_save_games();
 }
 
 /// Scan and optionally show output from a test file
