@@ -5,25 +5,28 @@ use std::collections::{HashMap, HashSet};
 pub enum ModDetailError {
     FileReadFail,
     NotModModDesc,
+    BrandMissingIcon,
 }
 
 #[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ModDetail {
-    pub brands : String,
-    pub icons  : String,
-    pub issues : HashSet<ModDetailError>,
-    pub items  : String,
-    pub l10n   : LanguageDefinition,
+    pub brands     : BrandDefinition,
+    pub issues     : HashSet<ModDetailError>,
+    #[serde(skip_serializing)]
+    pub l10n       : LanguageDefinition,
+    pub placeables : String,
+    pub vehicles   : String,
 }
 
 impl ModDetail {
     pub fn new() -> Self {
         ModDetail {
-            brands : String::new(),
-            icons  : String::new(),
-            issues : HashSet::new(),
-            items  : String::new(),
-            l10n   : HashMap::new()
+            brands     : HashMap::new(),
+            issues     : HashSet::new(),
+            l10n       : HashMap::new(),
+            placeables : String::new(),
+            vehicles   : String::new(),
         }
     }
 
@@ -38,6 +41,15 @@ impl ModDetail {
 
         self
         
+    }
+    pub fn add_brand(&mut self, key_name : &str, title: Option<&str>) -> &mut ModDetailBrand{
+        let this_brand = self.brands.entry(key_name.to_string()).or_default();
+
+        this_brand.title = match title {
+            Some(title) => title.to_string(),
+            None => key_name.to_string()
+        };
+        this_brand
     }
     pub fn pretty_print(&self) -> String {
         serde_json::to_string_pretty(&self).unwrap_or("{}".to_string())
@@ -56,3 +68,24 @@ impl std::fmt::Display for ModDetail {
     }
 }
 type LanguageDefinition = HashMap<String, HashMap<String, String>>;
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModDetailBrand {
+    pub title : String,
+    pub icon_file : Option<String>,
+    pub icon_base : Option<String>
+}
+
+impl ModDetailBrand {
+    fn new() -> Self {
+        ModDetailBrand { title: String::new(), icon_file: None, icon_base: None }
+    }
+}
+impl Default for ModDetailBrand {
+    fn default() -> Self {
+        ModDetailBrand::new()
+    }
+}
+
+type BrandDefinition = HashMap<String, ModDetailBrand>;
