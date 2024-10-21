@@ -2,7 +2,7 @@
 use std::{collections::{HashMap, HashSet}, path::Path};
 
 use crate::shared::errors::{ModError, BADGE_BROKEN, BADGE_ISSUE, BADGE_NOT_MOD};
-use crate::maps::structs::{CropWeatherType, CropOutput};
+use crate::maps::structs::{CropWeatherType, CropList};
 use serde::ser::{Serialize, Serializer};
 
 /// Translatable modDesc entries
@@ -91,19 +91,23 @@ impl std::fmt::Display for ModRecord {
 /// ModDesc.xml specific fields from a mod
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(clippy::struct_excessive_bools)]
 pub struct ModDesc {
     pub actions         : HashMap<String, String>,
     pub binds           : HashMap<String, Vec<String>>,
     pub author          : String,
     pub script_files    : u32,
     pub store_items     : usize,
-    pub crop_info       : Option<Vec<CropOutput>>,
+    pub crop_info       : CropList,
     pub crop_weather    : Option<CropWeatherType>,
     pub depend          : Vec<String>,
     pub desc_version    : u32,
     pub icon_file_name  : Option<String>,
     pub icon_image      : Option<String>,
     pub map_config_file : Option<String>,
+    pub map_custom_env  : bool,
+    pub map_custom_crop : bool,
+    pub map_custom_grow : bool,
     pub map_is_south    : bool,
     pub map_image       : Option<String>,
     pub multi_player    : bool,
@@ -117,13 +121,16 @@ impl ModDesc {
             actions         : HashMap::new(),
             author          : "--".to_owned(),
             binds           : HashMap::new(),
-            crop_info       : None,
+            crop_info       : CropList::new(),
             crop_weather    : None,
             depend          : vec![],
             desc_version    : 0,
             icon_file_name  : None,
             icon_image      : None,
             map_config_file : None,
+            map_custom_env  : false,
+            map_custom_crop : false,
+            map_custom_grow : false,
             map_is_south    : false,
             map_image       : None,
             multi_player    : false,

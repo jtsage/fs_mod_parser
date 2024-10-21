@@ -1,11 +1,12 @@
 //! Map file parsing
 //! 
 //! Reads crop data, weather data, and the map overview image
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use regex::Regex;
 use crate::shared::convert_map_image;
 use crate::shared::structs::ModRecord;
 use crate::shared::files::AbstractFileHandle;
+use crate::maps::structs::CropList;
 
 pub mod structs;
 mod data;
@@ -61,12 +62,11 @@ fn bool_array_to_vector(input_array:[bool;12]) -> Vec<u8> {
 }
 
 // Convert base game crop data to usable version
-fn crops_from_base_game() -> Vec<CropOutput> {
-    let mut crop_list:Vec<CropOutput> = vec![];
+fn crops_from_base_game() -> CropList {
+    let mut crop_list:CropList = CropList::new();
 
     for crop in &BG_CROPS {
-        crop_list.push(CropOutput {
-            name : crop.name.to_owned(),
+        crop_list.insert(crop.name.to_owned(), CropOutput {
             growth_time : crop.growth_time,
             harvest_periods : bool_array_to_vector(crop.harvest_periods),
             plant_periods : bool_array_to_vector(crop.plant_periods),
@@ -149,97 +149,26 @@ pub fn read_map_basics(mod_record : &mut ModRecord, file_handle: &mut Box<dyn Ab
         }
     };
 
+    mod_record.mod_desc.map_custom_crop = fruits.is_some();
+    mod_record.mod_desc.map_custom_env = env_in.is_some();
+    mod_record.mod_desc.map_custom_grow = growth.is_some();
 
     let this_map_environment = populate_weather(file_handle, env_base, env_in);
     mod_record.mod_desc.map_is_south = this_map_environment.0;
     mod_record.mod_desc.crop_weather = this_map_environment.1;
 
     if growth.is_none() {
-        mod_record.mod_desc.crop_info = Some(crops_from_base_game());
+        mod_record.mod_desc.crop_info = crops_from_base_game();
         return;
     }
 
     let crop_builder = populate_crop_builder(file_handle, fruits);
 
-    match &growth {
-        Some(file_name) => match file_handle.as_text( file_name) {
-            Ok(contents) => {
-                match roxmltree::Document::parse(&contents) {
-                    Ok(tree) => {
-                        let mut crop_list:Vec<CropOutput> = vec![];
-                        for fruit in tree.descendants().filter(|n|n.has_tag_name("fruit")) {
-                            let fruit_name = fruit.attribute("name").unwrap_or("unknown").to_owned();
-
-                            if SKIP_CROP_TYPES.contains(&fruit_name.as_str()) { continue }
-
-                            let builder = crop_builder.iter().find(|n|n.name == fruit_name);
-
-                            let Some(builder_unwrapped) = builder else { continue; };
-
-                            let mut crop_def = CropOutput {
-                                name : fruit_name,
-                                growth_time : builder_unwrapped.states,
-                                harvest_periods : vec![],
-                                plant_periods : vec![]
-                            };
-
-                            let mut last_maximum_state:u8 = 0;
-
-                            for period in fruit.children().filter(|n|n.has_tag_name("period") && n.has_attribute("index")) {
-                                let mut die_back_happened = false;
-                                let current_period_index = period.attribute("index").unwrap_or("0").parse::<u8>().unwrap_or(0_u8);
-
-                                if current_period_index == 0_u8 { continue; }
-
-                                if let Some(value) = period.attribute("plantingAllowed") {
-                                    if value == "true" {
-                                        crop_def.plant_periods.push(current_period_index);
-                                    }
-                                }
-
-                                let updates_count = period.children().filter(|n|n.has_tag_name("update")).count();
-
-                                if updates_count == 0 {
-                                    // if we are already harvestable, we still are with no update
-                                    if last_maximum_state >= builder_unwrapped.min_harvest && last_maximum_state <= builder_unwrapped.max_harvest {
-                                        crop_def.harvest_periods.push(current_period_index);
-                                    }
-                                } else {
-                                    // do the updates
-                                    for update in period.children().filter(|n|n.has_tag_name("update")) {
-                                        if update.attribute("set").is_some() {
-                                            // if set range > growth_time, it's a regrow.
-                                            // if set range <= growth_time, it's die back
-                                            let range = decode_max_range(update.attribute("range"));
-                                            if range <= builder_unwrapped.states {
-                                                last_maximum_state = range;
-                                                die_back_happened  = true;
-                                            }
-                                        }
-                                        if ! die_back_happened {
-                                            if let Some(add_value) = update.attribute("add") {
-                                                let mut new_possible_max = decode_max_range(update.attribute("range"));
-                                                new_possible_max += add_value.parse::<u8>().unwrap_or(0_u8);
-                                                last_maximum_state = std::cmp::max(last_maximum_state, new_possible_max);
-                                            }
-                                        }
-                                    }
-                                    if last_maximum_state >= builder_unwrapped.min_harvest && last_maximum_state <= builder_unwrapped.max_harvest {
-                                        crop_def.harvest_periods.push(current_period_index);
-                                    }
-                                }
-                            }
-                            crop_list.push(crop_def);
-                        }
-                        mod_record.mod_desc.crop_info = Some(crop_list);
-                    },
-                    Err(..) => { mod_record.mod_desc.crop_info = Some(crops_from_base_game()); }
-                }
-            },
-            Err(..) => { mod_record.mod_desc.crop_info = Some(crops_from_base_game()); }
-        },
-        None => { mod_record.mod_desc.crop_info = Some(crops_from_base_game()); }
+    match populate_crop_growth(file_handle, growth, &crop_builder) {
+        Some(value) => mod_record.mod_desc.crop_info = value,
+        None => mod_record.mod_desc.crop_info = crops_from_base_game()
     }
+
 }
 
 
@@ -271,6 +200,7 @@ fn process_overview(xml_tree: &roxmltree::Document, mod_record : &mut ModRecord,
     }
     None
 }
+
 fn populate_crop_builder(file_handle: &mut Box<dyn AbstractFileHandle>, fruits : Option<String>) -> Vec<CropTypeStateBuilder> {
     if let Some(file_name) = fruits {
         if let Ok(contents) = file_handle.as_text( &file_name) {
@@ -278,7 +208,7 @@ fn populate_crop_builder(file_handle: &mut Box<dyn AbstractFileHandle>, fruits :
                 let mut new_build:Vec<CropTypeStateBuilder> = vec![];
 
                 for item in tree.descendants().filter(|n|n.has_tag_name("fruitType")) {
-                    let item_name = item.attribute("name").unwrap_or("unknown").to_owned();
+                    let item_name = item.attribute("name").unwrap_or("unknown").to_owned().to_lowercase();
 
                     if SKIP_CROP_TYPES.contains(&item_name.as_str()) { continue }
 
@@ -322,6 +252,7 @@ fn populate_weather(file_handle: &mut Box<dyn AbstractFileHandle>, env_base: Opt
                 }
 
                 for season in tree.descendants().filter(|n|n.has_tag_name("season") && n.has_attribute("name")) {
+                    // TODO: refactor to not compare every time
                     let mut min_temp:i8 = 127;
                     let mut max_temp:i8 = -127;
 
@@ -354,6 +285,96 @@ fn populate_weather(file_handle: &mut Box<dyn AbstractFileHandle>, env_base: Opt
     weather_from_base_game("mapUS")
 }
 
+fn get_real_index(index : u8, name : &str) -> u8 {
+    let test_index = if name == "olive" {
+        index + 2
+    } else {
+        index + 1
+    };
+    ((test_index - 1) % 12) + 1
+}
+fn populate_crop_growth(file_handle: &mut Box<dyn AbstractFileHandle>, growth : Option<String>, crop_builder: &[CropTypeStateBuilder]) -> Option<CropList> {
+    let file_name = growth?;
+    let contents = file_handle.as_text(&file_name).ok()?;
+    let full_tree = roxmltree::Document::parse(&contents).ok()?;
+    let seasonal_tree = full_tree.descendants().find(|n|n.has_tag_name("seasonal"))?;
+
+    let mut crop_list:CropList = CropList::new();
+    for fruit in seasonal_tree.descendants().filter(|n|n.has_tag_name("fruit")) {
+        let fruit_name = fruit.attribute("name").unwrap_or("unknown").to_owned().to_lowercase();
+
+        if SKIP_CROP_TYPES.contains(&fruit_name.as_str()) { continue }
+
+        let builder = crop_builder.iter().find(|n|n.name == fruit_name);
+
+        let Some(builder_unwrapped) = builder else { continue; };
+
+        let mut crop_def = CropOutput {
+            growth_time : builder_unwrapped.states,
+            harvest_periods : vec![],
+            plant_periods : vec![]
+        };
+
+        let mut possible_states:HashSet<u8> = HashSet::new();
+
+        for period in fruit.children().filter(|n|n.has_tag_name("period") && n.has_attribute("index")) {
+            let mut die_back_happened = false;
+            let current_period_index = period.attribute("index").unwrap_or("0").parse::<u8>().unwrap_or(0_u8);
+
+            if current_period_index == 0_u8 { continue; }
+
+            if let Some(value) = period.attribute("plantingAllowed") {
+                if value == "true" {
+                    crop_def.plant_periods.push(current_period_index);
+                }
+            }
+
+            let mut updates = period.children().filter(|n|n.has_tag_name("update")).peekable();
+
+            if updates.peek().is_none() {
+                // if we are already harvestable, we still are with no update
+                for test_state in builder_unwrapped.min_harvest..=builder_unwrapped.max_harvest {
+                    if possible_states.contains(&test_state) {
+                        crop_def.harvest_periods.push(get_real_index(current_period_index, &fruit_name));
+                    }
+                }
+            } else {
+                // do the updates
+
+                possible_states.clear();
+                for update in updates {
+                    if update.attribute("set").is_some() {
+                        // if set range > growth_time, it's a regrow.
+                        // if set range <= growth_time, it's die back
+                        let range = decode_max_range(update.attribute("range"));
+                        let new_value = decode_max_range(update.attribute("set"));
+                        if range > new_value {
+                            possible_states.insert(new_value);
+                            die_back_happened  = true;
+                        }
+                    }
+                    if ! die_back_happened {
+                        if let Some(add_value) = update.attribute("add") {
+                            let mut new_possible_max = decode_max_range(update.attribute("range"));
+                            new_possible_max += add_value.parse::<u8>().unwrap_or(0_u8);
+                            possible_states.insert(new_possible_max);
+                        }
+                    }
+                }
+
+                for test_state in builder_unwrapped.min_harvest..=builder_unwrapped.max_harvest {
+                    if possible_states.contains(&test_state) {
+                        crop_def.harvest_periods.push(get_real_index(current_period_index, &fruit_name));
+                    }
+                }
+            }
+        }
+        if fruit_name == "poplar" { crop_def.harvest_periods = vec![1,2,3,4,5,6,7,8,9,10,11,12]; }
+        crop_list.insert(fruit_name, crop_def);
+    }
+    Some(crop_list)
+}
+
 /// Get an included map support XML file
 fn nullify_base_game_entry(xml_tree: &roxmltree::Document, tag : &str) -> Option<String> {
     match xml_tree.descendants().find(|n| n.has_tag_name(tag)) {
@@ -364,6 +385,7 @@ fn nullify_base_game_entry(xml_tree: &roxmltree::Document, tag : &str) -> Option
         None => None
     }
 }
+
 /// Get a map base game entry key
 fn get_base_game_entry_key(xml_tree: &roxmltree::Document) -> Option<String> {
     match xml_tree.descendants().find(|n| n.has_tag_name("environment")) {
