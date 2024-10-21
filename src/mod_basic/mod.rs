@@ -255,7 +255,10 @@ pub fn parser<P: AsRef<Path>>(full_path :P) -> ModRecord {
         }
     }
 
-    crate::maps::read_map_basics(&mut mod_record, &mut abstract_file);
+    if mod_record.mod_desc.desc_version >= 60 {
+        // Map Parsing not implemented for <FS22
+        crate::maps::read_map_basics(&mut mod_record, &mut abstract_file);
+    }
 
     mod_record.update_badges();
     mod_record
