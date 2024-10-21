@@ -45,14 +45,11 @@ pub struct SaveGameMod {
     pub farms : HashSet<usize>,
 }
 impl SaveGameMod {
-    fn new(farm_id:Option<usize>) -> Self {
+    fn new() -> Self {
         SaveGameMod {
             version : String::from("0"),
             title   : String::from("--"),
-            farms   : match farm_id {
-                Some(this_id) => HashSet::from([this_id]),
-                None => HashSet::new()
-            }
+            farms   : HashSet::new()
         }
     }
 }
@@ -114,23 +111,17 @@ impl SaveGameRecord {
     }
 
     fn add_mod_with_farm(&mut self, mod_key : &str, farm_id: usize) -> &mut Self {
-        match self.mods.get_mut(mod_key) {
-            Some(this_mod) => { this_mod.farms.insert(farm_id); },
-            None => { self.mods.insert(mod_key.to_string(), SaveGameMod::new(Some(farm_id))); }
-        };
+        let this_mod = self.mods.entry(mod_key.to_string()).or_insert_with(SaveGameMod::new);
+        this_mod.farms.insert(farm_id);
         self
     }
 
     fn add_mod_with_detail(&mut self, mod_key : &str, title : Option<&str>, version : Option<&str>) -> &mut Self {
-        if let Some(this_mod) = self.mods.get_mut(mod_key) {
-            if let Some(title)   = title   { this_mod.title = title.to_string() }
-            if let Some(version) = version { this_mod.version = version.to_string(); }
-        } else {
-            let this_mod = &mut SaveGameMod::new(None);
-            if let Some(title)   = title   { this_mod.title = title.to_string() }
-            if let Some(version) = version { this_mod.version = version.to_string(); }
-            self.mods.insert(mod_key.to_string(), this_mod.clone());
-        };
+        let this_mod = self.mods.entry(mod_key.to_string()).or_insert_with(SaveGameMod::new);
+
+        if let Some(title)   = title   { this_mod.title = title.to_string() }
+        if let Some(version) = version { this_mod.version = version.to_string(); }
+
         self
     }
 
@@ -333,8 +324,9 @@ fn do_career(save_record: &mut SaveGameRecord, abstract_file : &mut Box<dyn Abst
         return;
     };
 
+
     if let Some(node) = career_document.descendants().find(|n| n.has_tag_name("mapTitle")) {
-        if let Some(value) = node.text() { save_record.map_title = Some(value.to_string()) }
+        if let Some(value) = node.text() {save_record.map_title = Some(value.to_string()) }
     }
 
     if let Some(node) = career_document.descendants().find(|n| n.has_tag_name("savegameName")) {
@@ -361,7 +353,7 @@ fn do_career(save_record: &mut SaveGameRecord, abstract_file : &mut Box<dyn Abst
             save_record.map_mod = Some(map_split[0].to_string());
         }
     }
-
+ 
     for item in career_document.descendants().filter(|n| n.has_tag_name("mod") && n.has_attribute("modName")) {
         if let Some(mod_key) = item.attribute("modName") {
             save_record.add_mod_with_detail(
