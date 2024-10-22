@@ -125,23 +125,23 @@ pub enum VehicleCapability {
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModDetailVehicleFlags {
-    pub enterable : VehicleCapability,
-    pub motorized : VehicleCapability,
     pub beacons   : VehicleCapability,
     pub color     : VehicleCapability,
+    pub enterable : VehicleCapability,
     pub lights    : VehicleCapability,
+    pub motorized : VehicleCapability,
     pub wheels    : VehicleCapability,
 }
 
 impl ModDetailVehicleFlags {
     fn new() -> Self {
         ModDetailVehicleFlags {
-            enterable: VehicleCapability::No,
-            motorized: VehicleCapability::No,
-            beacons: VehicleCapability::No,
-            color: VehicleCapability::No,
-            lights: VehicleCapability::No,
-            wheels: VehicleCapability::No
+            beacons   : VehicleCapability::No,
+            color     : VehicleCapability::No,
+            enterable : VehicleCapability::No,
+            lights    : VehicleCapability::No,
+            motorized : VehicleCapability::No,
+            wheels    : VehicleCapability::No
         }
     }
 }
@@ -258,20 +258,10 @@ impl ModDetailVehicle {
             specs       : ModDetailVehicleSpecs::new(),
         }
     }
-
-    pub fn pretty_print(&self) -> String {
-        serde_json::to_string_pretty(&self).unwrap_or("{}".to_string())
-    }
 }
 
 impl Default for ModDetailVehicle {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-impl std::fmt::Display for ModDetailVehicle {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&serde_json::to_string(&self).unwrap())
     }
 }

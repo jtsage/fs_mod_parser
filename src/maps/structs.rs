@@ -116,5 +116,5 @@ impl Serialize for CropList {
 fn empty_crop_list() {
     let mine = CropList::new();
 
-    assert_eq!(String::new(), serde_json::to_string(&mine).unwrap())
+    assert_eq!(String::from("null"), serde_json::to_string(&mine).unwrap())
 }
