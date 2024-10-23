@@ -15,6 +15,7 @@ pub mod files;
 /// with an `<image src="...">` tag.
 /// 
 /// Supports DDS BC1-BC7 in one pass, in-memory
+#[must_use]
 pub fn convert_mod_icon(bin_file: Vec<u8>) -> Option<String> {
     let input_vector: Cursor<Vec<u8>> = Cursor::new(bin_file);
     let dds = ddsfile::Dds::read(input_vector).ok()?;
@@ -33,6 +34,7 @@ pub fn convert_mod_icon(bin_file: Vec<u8>) -> Option<String> {
 /// with an `<image src="...">` tag.
 /// 
 /// Supports DDS BC1-BC7 in one pass, in-memory
+#[must_use]
 pub fn convert_map_image(bin_file: Vec<u8>) -> Option<String> {
     let input_vector = Cursor::new(bin_file);
     let dds = ddsfile::Dds::read(input_vector).ok()?;

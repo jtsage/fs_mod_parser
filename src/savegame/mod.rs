@@ -142,6 +142,7 @@ impl SaveGameRecord {
             single_farm : true,
         }
     }
+    #[must_use]
     pub fn pretty_print(&self) -> String {
         serde_json::to_string_pretty(&self).unwrap_or("{}".to_string())
     }

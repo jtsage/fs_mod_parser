@@ -75,6 +75,7 @@ impl CropList {
     pub fn get(&mut self, key : &str) -> Option<&CropOutput> {
         self.list.get(key)
     }
+    #[must_use]
     pub fn new() -> Self {
         CropList{
             list : HashMap::new(),
