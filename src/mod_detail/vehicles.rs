@@ -1,7 +1,7 @@
 use crate::mod_detail::structs::{VehicleCapability, ModDetailVehicle, ModDetailSprayType};
 use crate::shared::files::AbstractFileHandle;
 use crate::mod_detail::structs::{MotorEntry, MotorValue};
-use super::{xml_extract_text_as_opt_string, xml_extract_text_as_opt_u32, xml_extract_text_u32_from_node};
+use super::{xml_extract_text_as_opt_string, xml_extract_text_as_opt_u32};
 use crate::shared::convert_mod_icon;
 use std::f32::consts::PI;
 
@@ -27,7 +27,6 @@ pub fn vehicle_parse(xml_tree : &roxmltree::Document, file_handle: &mut Box<dyn 
     this_vehicle
 }
 
-#[derive(Debug)]
 struct TorqueEntry {
     pub torque   : f32,
     pub rpm      : f32
@@ -197,21 +196,20 @@ fn vehicle_parse_fills(xml_tree : &roxmltree::Document, this_vehicle : &mut ModD
     for spray_type in xml_tree.descendants().filter(|n|n.has_tag_name("sprayType")) {
         this_vehicle.fill_spray.spray_types.push(ModDetailSprayType{
 
-            width : if let Some(scale) = spray_type.children().find(|n|n.has_tag_name("usageScales")) {
-                if let Some(work_width) = scale.attribute("workingWidth") {
-                    work_width.parse::<u32>().ok()
-                } else {
-                    None
-                }
-            } else {
-                None
-            },
+            width : spray_type
+                .children()
+                .find(|n|n.has_tag_name("usageScales"))
+                .and_then(|n|n.attribute("workingWidth"))
+                .and_then(|n|n.parse::<u32>().ok()),
 
-            fills : if let Some(fill_types) = spray_type.attribute("fillTypes") {
-                fill_types.split(' ').filter(|n|*n!="unknown").map(|n|n.to_lowercase().to_string()).collect()
-            } else {
-                vec![]
-            }
+            fills : spray_type
+                .attribute("fillTypes")
+                .map_or(vec![], |n| n
+                    .split(' ')
+                    .filter(|n|*n!="unknown")
+                    .map(|n|n.to_lowercase().to_string())
+                    .collect()
+                )
         });
     }
 }
@@ -254,17 +252,20 @@ fn vehicle_parse_flags(xml_tree : &roxmltree::Document, this_vehicle : &mut ModD
 
 fn vehicle_parse_specs(xml_tree : &roxmltree::Document, this_vehicle : &mut ModDetailVehicle) {
     if let Some(node) = xml_tree.descendants().find(|n| n.has_tag_name("speedLimit")) {
-        if let Some(value) = node.attribute("value") {
-            if let Ok(val_num) = value.parse::<u32>() {
-                this_vehicle.specs.specs.insert(String::from("speedLimit"), val_num);
-            }
+        if let Some(value) = node
+            .attribute("value")
+            .and_then(|n|n.parse::<u32>().ok()) {
+                this_vehicle.specs.specs.insert(String::from("speedLimit"), value);
         }
     }
 
     if let Some(spec_node) = xml_tree.descendants().find(|n|n.has_tag_name("specs")) {
         for spec in spec_node.children().filter(|n| !n.has_tag_name("combination")) {
-            if let Some(value) = xml_extract_text_u32_from_node(&spec) {
-                this_vehicle.specs.specs.insert(spec.tag_name().name().to_string(), value);
+            if let Some(value) = spec.text().and_then(|n|n.parse::<u32>().ok()) {
+                this_vehicle.specs.specs.insert(
+                    spec.tag_name().name().to_string(),
+                    value
+                );
             }
         }
     }

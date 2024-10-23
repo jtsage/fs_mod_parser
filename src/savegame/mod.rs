@@ -244,8 +244,7 @@ fn do_farms(save_record: &mut SaveGameRecord, abstract_file : &mut Box<dyn Abstr
     let mut ran_more_than_once = false;
     #[allow(clippy::cast_possible_truncation)]
     for farm_entry in farms_document.descendants().filter(|n|n.has_tag_name("farm")) {
-        let Some(farm_id_str) = farm_entry.attribute("farmId") else { continue; };
-        let Ok(farm_id) = farm_id_str.parse::<usize>() else { continue; };
+        let Some(farm_id)   = farm_entry.attribute("farmId").and_then(|n|n.parse::<usize>().ok()) else { continue; };
         let Some(farm_name) = farm_entry.attribute("name") else { continue; };
 
         if ran_more_than_once {
@@ -256,15 +255,9 @@ fn do_farms(save_record: &mut SaveGameRecord, abstract_file : &mut Box<dyn Abstr
 
         let mut farm_record = SaveGameFarm::new(farm_name.to_owned());
 
-        farm_record.loan = match farm_entry.attribute("loan") {
-            Some(value) => value.parse::<f64>().unwrap_or(0_f64) as i64,
-            None => 0_i64
-        };
+        farm_record.loan = farm_entry.attribute("loan").map_or(0, |n|n.parse::<i64>().unwrap());
 
-        farm_record.cash = match farm_entry.attribute("money") {
-            Some(value) => value.parse::<f64>().unwrap_or(0_f64) as i64,
-            None => 0_i64
-        };
+        farm_record.cash = farm_entry.attribute("money").map_or(0, |n|n.parse::<i64>().unwrap());
 
         save_record.farms.insert(farm_id, farm_record);
     }
@@ -282,13 +275,9 @@ fn do_placeables(save_record: &mut SaveGameRecord, abstract_file : &mut Box<dyn 
     };
 
     for item in placeable_document.descendants().filter(|n| n.has_tag_name("placeable") && n.has_attribute("farmId") && n.has_attribute("modName")) {
-        let farm_id = item.attribute("farmId")
-            .unwrap_or("0").parse::<usize>()
-            .unwrap_or(0);
+        let farm_id = item.attribute("farmId").map_or(0, |n|n.parse::<usize>().unwrap());
 
-        if let Some(mod_key) = item.attribute("modName") {
-            save_record.add_mod_with_farm(mod_key, farm_id);
-        }
+        item.attribute("modName").map(|key|save_record.add_mod_with_farm(key, farm_id));
     }
 }
 
@@ -304,13 +293,9 @@ fn do_vehicles(save_record: &mut SaveGameRecord, abstract_file : &mut Box<dyn Ab
     };
 
     for item in vehicles_document.descendants().filter(|n| n.has_tag_name("vehicle") && n.has_attribute("farmId") && n.has_attribute("modName")) {
-        let farm_id = item.attribute("farmId")
-            .unwrap_or("0").parse::<usize>()
-            .unwrap_or(0);
+        let farm_id = item.attribute("farmId").map_or(0, |n|n.parse::<usize>().unwrap());
 
-        if let Some(mod_key) = item.attribute("modName") {
-            save_record.add_mod_with_farm(mod_key, farm_id);
-        }
+        item.attribute("modName").map(|key|save_record.add_mod_with_farm(key, farm_id));
     }
 }
 
@@ -326,35 +311,45 @@ fn do_career(save_record: &mut SaveGameRecord, abstract_file : &mut Box<dyn Abst
     };
 
 
-    if let Some(node) = career_document.descendants().find(|n| n.has_tag_name("mapTitle")) {
-        if let Some(value) = node.text() {save_record.map_title = Some(value.to_string()) }
+    if let Some(value) = career_document
+        .descendants()
+        .find(|n| n.has_tag_name("mapTitle"))
+        .and_then(|n|n.text()) {
+            save_record.map_title = Some(value.to_string());
     }
 
-    if let Some(node) = career_document.descendants().find(|n| n.has_tag_name("savegameName")) {
-        if let Some(value) = node.text() { save_record.name = Some(value.to_string()) }
+    if let Some(value) = career_document
+        .descendants()
+        .find(|n| n.has_tag_name("savegameName"))
+        .and_then(|n|n.text()) {
+            save_record.name = Some(value.to_string());
     }
 
-    if let Some(node) = career_document.descendants().find(|n| n.has_tag_name("saveDate")) {
-        if let Some(value) = node.text() { save_record.save_date = value.to_string() }
+    if let Some(value) = career_document
+        .descendants()
+        .find(|n| n.has_tag_name("saveDate"))
+        .and_then(|n|n.text()) {
+            save_record.save_date = value.to_string();
     }
 
-    if let Some(node) = career_document.descendants().find(|n| n.has_tag_name("playTime")) {
-        if let Some(value) = node.text() { 
-            if let Ok(value_f) = value.parse::<f64>() {
-                let hours = (value_f / 60_f64).floor();
-                let minutes = (value_f % 60_f64).floor();
-                save_record.play_time = format!("{hours:.0}:{minutes:02.0}");
-            }
-        }
+    if let Some(value_f) = career_document
+        .descendants()
+        .find(|n| n.has_tag_name("playTime"))
+        .and_then(|n|n.text())
+        .and_then(|n|n.parse::<f64>().ok()) {
+            let hours = (value_f / 60_f64).floor();
+            let minutes = (value_f % 60_f64).floor();
+            save_record.play_time = format!("{hours:.0}:{minutes:02.0}");
+    }
+    
+
+    if let Some(map_pattern) = career_document
+        .descendants()
+        .find(|n| n.has_tag_name("mapId"))
+        .and_then(|n|n.text()) {
+            save_record.map_mod = map_pattern.split('.').next().map(std::string::ToString::to_string);
     }
 
-    if let Some(node) = career_document.descendants().find(|n| n.has_tag_name("mapId")) {
-        if let Some(map_pattern) = node.text() {
-            let map_split : Vec<&str> = map_pattern.split('.').collect();
-            save_record.map_mod = Some(map_split[0].to_string());
-        }
-    }
- 
     for item in career_document.descendants().filter(|n| n.has_tag_name("mod") && n.has_attribute("modName")) {
         if let Some(mod_key) = item.attribute("modName") {
             save_record.add_mod_with_detail(

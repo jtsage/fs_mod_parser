@@ -147,23 +147,15 @@ fn do_languages(
 }
 
 
-fn xml_extract_text_u32_from_node(xml_node : &roxmltree::Node) -> Option<u32> {
-    if let Some(xml_value) = xml_node.text() { 
-        return xml_value.parse::<u32>().ok()
-    }    
-    None
-}
 fn xml_extract_text_as_opt_u32(xml_tree : &roxmltree::Document, key : &str) -> Option<u32> {
-    if let Some(node) = xml_tree.descendants().find(|n|n.has_tag_name(key)) {
-        if let Some(text) = node.text() {
-            return text.parse::<u32>().ok()
-        }
-    }
-    None
+    xml_tree
+        .descendants()
+        .find(|n|n.has_tag_name(key))
+        .and_then(|n|n.text().map(|n| n.parse::<u32>().unwrap()))
 }
 fn xml_extract_text_as_opt_string(xml_tree : &roxmltree::Document, key : &str) -> Option<String> {
-    if let Some(node) = xml_tree.descendants().find(|n|n.has_tag_name(key)) {
-        return node.text().map(std::string::ToString::to_string)
-    }
-    None
+    xml_tree
+        .descendants()
+        .find(|n|n.has_tag_name(key))
+        .and_then(|n|n.text().map(std::string::ToString::to_string))
 }
