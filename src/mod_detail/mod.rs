@@ -6,16 +6,7 @@ use std::path::Path;
 pub mod structs;
 mod vehicles;
 
-pub fn parse_to_json_pretty<P: AsRef<Path>>(full_path :P) -> String {
-    parser(full_path).pretty_print()
-}
-
-pub fn parse_to_json<P: AsRef<Path>>(full_path :P) -> String {
-    parser(full_path).to_string()
-}
-
 pub fn parser<P: AsRef<Path>>(full_path :P) -> ModDetail {
-    let mut mod_detail = ModDetail::new();
     let is_folder = full_path.as_ref().is_dir();
 
     let mut abstract_file: Box<dyn AbstractFileHandle> = if is_folder 
@@ -23,31 +14,33 @@ pub fn parser<P: AsRef<Path>>(full_path :P) -> ModDetail {
             if let Ok(archive) = AbstractFolder::new(full_path) {
                 Box::new(archive)
             } else {
-                mod_detail.issues.insert(ModDetailError::FileReadFail);
-                return mod_detail;
+                return ModDetail::fast_fail(ModDetailError::FileReadFail);
             }
         } else if let Ok(archive) = AbstractZipFile::new(full_path) {
             Box::new(archive)
         } else {
-            mod_detail.add_issue(ModDetailError::FileReadFail);
-            return mod_detail;
+            return ModDetail::fast_fail(ModDetailError::FileReadFail);
         };
 
     let abstract_file_list = abstract_file.list();
 
     let Ok(mod_desc_content) = abstract_file.as_text("modDesc.xml") else {
-        mod_detail.add_issue(ModDetailError::NotModModDesc);
-        return mod_detail;
+        return ModDetail::fast_fail(ModDetailError::NotModModDesc);
     };
 
     let Ok(mod_desc_doc) = roxmltree::Document::parse(&mod_desc_content) else {
-        mod_detail.add_issue(ModDetailError::NotModModDesc);
-        return mod_detail;
+        return ModDetail::fast_fail(ModDetailError::NotModModDesc);
     };
 
+    parse_open_file(abstract_file, &mod_desc_doc, &abstract_file_list)
+}
 
-    do_languages(&mut mod_detail, &mut abstract_file, &mod_desc_doc, &abstract_file_list);
-    do_brands(&mut mod_detail, &mut abstract_file, &mod_desc_doc);
+#[must_use]
+pub fn parse_open_file( mut abstract_file: Box<dyn AbstractFileHandle>, mod_desc_doc : &roxmltree::Document, abstract_file_list: &[FileDefinition] ) -> ModDetail {
+    let mut mod_detail = ModDetail::new();
+
+    do_languages(&mut mod_detail, &mut abstract_file, mod_desc_doc, abstract_file_list);
+    do_brands(&mut mod_detail, &mut abstract_file, mod_desc_doc);
 
     for store_item in mod_desc_doc.descendants().filter(|n| n.has_tag_name("storeItem")) {
         if let Some(file_name) = store_item.attribute("xmlFilename") {
@@ -151,7 +144,8 @@ fn xml_extract_text_as_opt_u32(xml_tree : &roxmltree::Document, key : &str) -> O
     xml_tree
         .descendants()
         .find(|n|n.has_tag_name(key))
-        .and_then(|n|n.text().map(|n| n.parse::<u32>().unwrap()))
+        .and_then(|n|n.text())
+        .and_then(|n| n.parse::<u32>().ok())
 }
 fn xml_extract_text_as_opt_string(xml_tree : &roxmltree::Document, key : &str) -> Option<String> {
     xml_tree

@@ -5,6 +5,7 @@ use crate::shared::files::{AbstractFileHandle, AbstractFolder, AbstractZipFile, 
 use crate::shared::structs::{ModRecord, ZipPackFile};
 use crate::shared::convert_mod_icon;
 use crate::savegame::parse_open_file as savegame_parse;
+use crate::mod_detail::parse_open_file as detail_parse;
 
 use std::{time::SystemTime, path::Path};
 use chrono::{DateTime, SecondsFormat, Utc};
@@ -259,8 +260,7 @@ pub fn parser_with_options<P: AsRef<Path>>(full_path :P, options : &ModParserOpt
     mod_record.update_badges();
 
     if options.include_mod_detail {
-        //TODO: add detail inclusion
-        todo!("Mod Detail inclusion not yet working");
+        mod_record.include_detail = Some(detail_parse(abstract_file, &mod_desc_doc, &abstract_file_list));
     }
 
     mod_record

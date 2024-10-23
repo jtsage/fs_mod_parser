@@ -32,6 +32,13 @@ impl ModDetail {
         }
     }
 
+    #[must_use]
+    pub fn fast_fail(e : ModDetailError) -> Self {
+        let mut record = ModDetail::new();
+        record.add_issue(e);
+        record
+    }
+
     pub fn add_issue(&mut self, issue : ModDetailError) -> &mut Self {
         self.issues.insert(issue);
         self
@@ -54,8 +61,13 @@ impl ModDetail {
         this_brand
     }
     #[must_use]
-    pub fn pretty_print(&self) -> String {
+    pub fn to_json_pretty(&self) -> String {
         serde_json::to_string_pretty(&self).unwrap_or("{}".to_string())
+    }
+
+    #[must_use]
+    pub fn to_json(&self) -> String {
+        self.to_string()
     }
 }
 

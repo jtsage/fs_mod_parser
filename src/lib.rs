@@ -20,5 +20,3 @@ pub use mod_basic::parser as parse_mod;
 pub use mod_basic::parser_with_options as parse_mod_with_options;
 
 pub use mod_detail::parser as parse_detail;
-pub use mod_detail::parse_to_json as parse_detail_json;
-pub use mod_detail::parse_to_json_pretty as parse_detail_json_pretty;

@@ -4,7 +4,7 @@
 use std::path::{self, PathBuf};
 use std::time::Instant;
 use glob::glob;
-use fs_mod_parser::{parse_detail_json_pretty, parse_mod, parse_savegame};
+use fs_mod_parser::{parse_detail, parse_mod, parse_savegame};
 use rayon::prelude::*;
 
 fn main() {
@@ -66,18 +66,20 @@ fn detail_full_collection() {
     let file_list:Vec<PathBuf> = glob(pattern).unwrap().filter_map(Result::ok).collect();
     let counter = file_list.len();
 
-    file_list.par_iter().for_each(|entry|{
+    // file_list.par_iter().for_each(|entry|{
+    for entry in file_list {
         let this_file_start = Instant::now();
 
         match path::absolute(entry.clone()) {
             Ok(abs_path) => {
-                let _output = parse_detail_json_pretty(abs_path.as_path());
-                println!("{_output}");
+                let _output = parse_detail(abs_path.as_path()).to_json_pretty();
+                // println!("{_output}");
                 println!("{} in {:.2?}", entry.clone().to_str().unwrap(), this_file_start.elapsed());
             },
             Err(e) => panic!("{}", e),
         };
-    });
+    }
+    // });
 
 
     let elapsed = start_time.elapsed();
