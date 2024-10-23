@@ -21,6 +21,7 @@ pub struct ModDetail {
 }
 
 impl ModDetail {
+    #[must_use]
     pub fn new() -> Self {
         ModDetail {
             brands     : HashMap::new(),
@@ -52,6 +53,7 @@ impl ModDetail {
         };
         this_brand
     }
+    #[must_use]
     pub fn pretty_print(&self) -> String {
         serde_json::to_string_pretty(&self).unwrap_or("{}".to_string())
     }
@@ -160,11 +162,9 @@ impl Serialize for VehicleCapability {
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModDetailVehicleEngine {
-    fuel_type         : Option<String>,
-    transmission_type : Option<String>,
-    mph               : Option<String>,
-    kph               : Option<String>,
-    hp                : Option<String>
+    pub fuel_type         : Option<String>,
+    pub transmission_type : Option<String>,
+    pub motors            : Vec<MotorEntry>,
 }
 
 impl ModDetailVehicleEngine {
@@ -172,9 +172,7 @@ impl ModDetailVehicleEngine {
         ModDetailVehicleEngine {
             fuel_type         : None,
             transmission_type : None,
-            mph               : None,
-            kph               : None,
-            hp                : None,
+            motors            : vec![],
         }
     }
 }
@@ -183,7 +181,7 @@ impl ModDetailVehicleEngine {
 #[serde(rename_all = "camelCase")]
 pub struct ModDetailSprayType {
     pub fills : Vec<String>,
-    pub width : u32,
+    pub width : Option<u32>,
 }
 
 #[derive(serde::Serialize)]
@@ -209,25 +207,25 @@ impl ModDetailVehicleFillSpray {
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModDetailVehicleSpecs {
-    pub functions     : Vec<String>,
-    pub joint_can_use : Vec<String>,
-    pub joint_need    : Vec<String>,
-    pub name          : String,
-    pub price         : u32,
-    pub specs         : HashMap<String, u32>,
-    pub weight        : u32,
+    pub functions      : Vec<String>,
+    pub joint_accepts  : Vec<String>,
+    pub joint_requires : Vec<String>,
+    pub name           : String,
+    pub price          : u32,
+    pub specs          : HashMap<String, u32>,
+    pub weight         : u32,
 }
 
 impl ModDetailVehicleSpecs {
     fn new() -> Self {
         ModDetailVehicleSpecs {
-            functions     : vec![],
-            joint_can_use : vec![],
-            joint_need    : vec![],
-            name          : String::new(),
-            price         : 0,
-            specs         : HashMap::new(),
-            weight        : 0,
+            functions      : vec![],
+            joint_accepts  : vec![],
+            joint_requires : vec![],
+            name           : String::new(),
+            price          : 0,
+            specs          : HashMap::new(),
+            weight         : 0,
         }
     }
 }
@@ -246,6 +244,7 @@ pub struct ModDetailVehicle {
 }
 
 impl ModDetailVehicle {
+    #[must_use]
     pub fn new() -> Self {
         ModDetailVehicle {
             fill_spray  : ModDetailVehicleFillSpray::new(),
@@ -263,5 +262,48 @@ impl ModDetailVehicle {
 impl Default for ModDetailVehicle {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MotorValue {
+    pub rpm : u32,
+    pub value : u32,
+}
+impl MotorValue {
+    #[must_use]
+    pub fn new(rpm: f32, value : f32) -> Self {
+        MotorValue {
+            rpm   : Self::round_to_u32(rpm),
+            value : Self::round_to_u32(value)
+        }
+    }
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    fn round_to_u32(num:f32) -> u32 {
+        num.round() as u32
+    }
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MotorEntry {
+    pub name        : String,
+    pub horse_power : Vec<MotorValue>,
+    pub max_speed   : u32,
+    pub speed_kph   : Vec<MotorValue>,
+    pub speed_mph   : Vec<MotorValue>,
+}
+
+impl MotorEntry {
+    #[must_use]
+    pub fn new(name : String, max_speed : u32) -> Self {
+        MotorEntry {
+            name,
+            horse_power : vec![],
+            max_speed,
+            speed_kph : vec![],
+            speed_mph : vec![],
+        }
     }
 }

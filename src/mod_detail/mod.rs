@@ -1,9 +1,10 @@
-use crate::mod_detail::structs::{ModDetail, ModDetailError, ModDetailVehicle};
+use crate::mod_detail::structs::{ModDetail, ModDetailError};
 use crate::shared::files::{AbstractFileHandle, AbstractFolder, AbstractZipFile, FileDefinition};
 use crate::shared::convert_mod_icon;
 use std::path::Path;
 
 pub mod structs;
+mod vehicles;
 
 pub fn parse_to_json_pretty<P: AsRef<Path>>(full_path :P) -> String {
     parser(full_path).pretty_print()
@@ -54,7 +55,7 @@ pub fn parser<P: AsRef<Path>>(full_path :P) -> ModDetail {
             let Ok(file_tree) = roxmltree::Document::parse(&file_content) else { continue; };
 
             if file_tree.root_element().has_tag_name("vehicle") {
-                mod_detail.vehicles.push(vehicle_parse(&file_tree, &mut abstract_file));
+                mod_detail.vehicles.push(vehicles::vehicle_parse(&file_tree, &mut abstract_file));
             } else {
                 println!("not vehicle {file_name}");
             }
@@ -145,37 +146,13 @@ fn do_languages(
     }
 }
 
-fn vehicle_parse(xml_tree : &roxmltree::Document, _file_handle: &mut Box<dyn AbstractFileHandle> ) -> ModDetailVehicle {
-    let mut this_vehicle = ModDetailVehicle::new();
 
-    this_vehicle.master_type = String::from("vehicle");
-    
-    vehicle_parse_sorting(xml_tree, &mut this_vehicle);
-
-    // this_vehicle.specs
-    // this_vehicle.flags
-    // this_vehicle.motor
-    // this_vehicle.fill_spray
-
-    this_vehicle
+fn xml_extract_text_u32_from_node(xml_node : &roxmltree::Node) -> Option<u32> {
+    if let Some(xml_value) = xml_node.text() { 
+        return xml_value.parse::<u32>().ok()
+    }    
+    None
 }
-
-fn vehicle_parse_sorting(xml_tree : &roxmltree::Document, this_vehicle : &mut ModDetailVehicle) {
-    this_vehicle.sorting.name = xml_extract_text_as_opt_string(xml_tree, "name");
-    this_vehicle.sorting.brand = xml_extract_text_as_opt_string(xml_tree, "brand");
-    this_vehicle.sorting.category = xml_extract_text_as_opt_string(xml_tree, "category");
-    this_vehicle.sorting.type_description = xml_extract_text_as_opt_string(xml_tree, "typeDesc");
-    this_vehicle.sorting.type_name = xml_tree.root_element().attribute("type").map(std::string::ToString::to_string);
-    this_vehicle.sorting.year = xml_extract_text_as_opt_u32(xml_tree, "year");
-
-    for combo in xml_tree.descendants().filter(|n| n.has_tag_name("combination")) {
-        if let Some(combo_file) = combo.attribute("xmlFilename") {
-            this_vehicle.sorting.combos.push(combo_file.to_string());
-        }
-    }
-}
-
-
 fn xml_extract_text_as_opt_u32(xml_tree : &roxmltree::Document, key : &str) -> Option<u32> {
     if let Some(node) = xml_tree.descendants().find(|n|n.has_tag_name(key)) {
         if let Some(text) = node.text() {
