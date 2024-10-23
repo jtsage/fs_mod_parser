@@ -1,14 +1,13 @@
+use crate::ModParserOptions;
 use crate::mod_detail::structs::{VehicleCapability, ModDetailVehicle, ModDetailSprayType};
 use crate::shared::files::AbstractFileHandle;
 use crate::mod_detail::structs::{MotorEntry, MotorValue};
-use super::{xml_extract_text_as_opt_string, xml_extract_text_as_opt_u32};
+use super::{xml_extract_text_as_opt_string, xml_extract_text_as_opt_u32, normalize_icon_name};
 use crate::shared::convert_mod_icon;
 use std::f32::consts::PI;
 
-pub fn vehicle_parse(xml_tree : &roxmltree::Document, file_handle: &mut Box<dyn AbstractFileHandle> ) -> ModDetailVehicle {
+pub fn vehicle_parse(xml_tree : &roxmltree::Document, file_handle: &mut Box<dyn AbstractFileHandle>,  options : &ModParserOptions ) -> ModDetailVehicle {
     let mut this_vehicle = ModDetailVehicle::new();
-
-    this_vehicle.master_type = String::from("vehicle");
     
     vehicle_parse_sorting(xml_tree, &mut this_vehicle);
     vehicle_parse_flags(xml_tree, &mut this_vehicle);
@@ -16,11 +15,13 @@ pub fn vehicle_parse(xml_tree : &roxmltree::Document, file_handle: &mut Box<dyn 
     vehicle_parse_fills(xml_tree, &mut this_vehicle);
     vehicle_parse_motor(xml_tree, &mut this_vehicle);
 
-    if let Some(image_entry) = xml_tree.descendants().find(|n|n.has_tag_name("image")).and_then(|n|n.text()) {
-        if image_entry.starts_with("$data") {
-            this_vehicle.icon_base = Some(image_entry.to_string());
-        } else if let Ok(file_content) = file_handle.as_bin(image_entry) {
-            this_vehicle.icon_file = convert_mod_icon(file_content);
+    if !options.skip_detail_icons {
+        if let Some(image_entry) = xml_tree.descendants().find(|n|n.has_tag_name("image")).and_then(|n|n.text()) {
+            if image_entry.starts_with("$data") {
+                this_vehicle.icon_base = Some(image_entry.to_string());
+            } else if let Ok(file_content) = file_handle.as_bin(&normalize_icon_name(image_entry)) {
+                this_vehicle.icon_file = convert_mod_icon(file_content);
+            }
         }
     }
 

@@ -4,10 +4,14 @@
 use std::path::{self, PathBuf};
 use std::time::Instant;
 use glob::glob;
-use fs_mod_parser::{parse_detail, parse_mod, parse_savegame};
+use fs_mod_parser::{parse_detail, parse_detail_with_options, parse_mod, parse_mod_with_options, parse_savegame, ModParserOptions};
 use rayon::prelude::*;
 
 fn main() {
+    // let options = ModParserOptions{
+    //     skip_detail_icons : true,
+    //     ..Default::default()
+    // };
     // println!("{}", parse_detail_json_pretty("./tests/test_mods/PASS_Good_Simple_Mod.zip"));
 
     // let _out = parse_detail_json_pretty("./tests/test_mods/UNUSED_RealModForStoreItems.zip");
@@ -16,10 +20,12 @@ fn main() {
 
     // println!("{}", parse_detail_json_pretty("./tests/test_mods/FSG_Color_Pack.zip"));
     // println!("{}", parse_detail_json_pretty("./tests/test_mods/FS22_CaseTitanPack.zip"));
-    // let _out = parse_detail_json_pretty("./tests/test_mods/FS22_CaseTitanPack.zip");
+    // let _out = parse_detail_with_options("./tests/test_mods/FS22_FSG_RealismProductions.zip", &options).to_json_pretty();
 
     // println!("{_out}");
-    detail_full_collection();
+
+    // detail_full_collection();
+    detail_full_collection_no_icon();
     // scan_full_collection();
     // scan_all_save_games();
 }
@@ -66,8 +72,8 @@ fn detail_full_collection() {
     let file_list:Vec<PathBuf> = glob(pattern).unwrap().filter_map(Result::ok).collect();
     let counter = file_list.len();
 
-    // file_list.par_iter().for_each(|entry|{
-    for entry in file_list {
+    file_list.par_iter().for_each(|entry|{
+    // for entry in file_list {
         let this_file_start = Instant::now();
 
         match path::absolute(entry.clone()) {
@@ -78,8 +84,8 @@ fn detail_full_collection() {
             },
             Err(e) => panic!("{}", e),
         };
-    }
-    // });
+    // }
+    });
 
 
     let elapsed = start_time.elapsed();
@@ -102,7 +108,7 @@ fn scan_full_collection() {
         match path::absolute(entry.clone()) {
             Ok(abs_path) => {
                 let _output = parse_mod(abs_path.as_path()).to_json_pretty();
-
+                println!("{_output}");
                 println!("{} in {:.2?}", entry.clone().to_str().unwrap(), this_file_start.elapsed());
             },
             Err(e) => panic!("{}", e),
@@ -141,6 +147,43 @@ fn scan_all_save_games() {
             },
             Err(e) => panic!("{}", e),
         };
+    });
+
+
+    let elapsed = start_time.elapsed();
+    println!("Total Elapsed: {:.2?} for {} files", elapsed, counter);
+}
+
+
+/// Scan full set of mods
+#[allow(dead_code)]
+fn detail_full_collection_no_icon() {
+    let options = ModParserOptions{
+        include_mod_detail : true,
+        skip_detail_icons : false,
+        ..Default::default()
+    };
+
+    let start_time = Instant::now();
+
+    let pattern = "C:\\Users\\jtsag\\Documents\\My Games\\FarmingSimulator2022\\mods\\*\\*";
+
+    let file_list:Vec<PathBuf> = glob(pattern).unwrap().filter_map(Result::ok).collect();
+    let counter = file_list.len();
+
+    file_list.par_iter().for_each(|entry|{
+    // for entry in file_list {
+        let this_file_start = Instant::now();
+
+        match path::absolute(entry.clone()) {
+            Ok(abs_path) => {
+                let _output = parse_mod_with_options(abs_path.as_path(), &options).to_json_pretty();
+                println!("{_output}");
+                println!("{} in {:.2?}", entry.clone().to_str().unwrap(), this_file_start.elapsed());
+            },
+            Err(e) => panic!("{}", e),
+        };
+    // }
     });
 
 

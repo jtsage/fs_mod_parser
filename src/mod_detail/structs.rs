@@ -16,7 +16,7 @@ pub struct ModDetail {
     pub issues     : HashSet<ModDetailError>,
     #[serde(skip_serializing)]
     pub l10n       : LanguageDefinition,
-    pub placeables : String,
+    pub placeables : Vec<ModDetailPlace>,
     pub vehicles   : Vec<ModDetailVehicle>,
 }
 
@@ -27,7 +27,7 @@ impl ModDetail {
             brands     : HashMap::new(),
             issues     : HashSet::new(),
             l10n       : HashMap::new(),
-            placeables : String::new(),
+            placeables : vec![],
             vehicles   : vec![],
         }
     }
@@ -263,7 +263,7 @@ impl ModDetailVehicle {
             flags       : ModDetailVehicleFlags::new(),
             icon_base   : None,
             icon_file   : None,
-            master_type : String::new(),
+            master_type : String::from("vehicle"),
             motor       : ModDetailVehicleEngine::new(),
             sorting     : ModDetailVehicleSorting::new(),
             specs       : ModDetailVehicleSpecs::new(),
@@ -317,5 +317,182 @@ impl MotorEntry {
             speed_kph : vec![],
             speed_mph : vec![],
         }
+    }
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModDetailPlaceSorting {
+    pub category        : Option<String>,
+    pub functions       : Vec<String>,
+    pub has_color       : VehicleCapability,
+    pub income_per_hour : u32,
+    pub name            : Option<String>,
+    pub price           : u32,
+    pub type_name       : Option<String>,
+}
+
+impl ModDetailPlaceSorting {
+    fn new() -> Self {
+        ModDetailPlaceSorting {
+            category        : None,
+            functions       : vec![],
+            has_color       : VehicleCapability::No,
+            income_per_hour : 0,
+            name            : None,
+            price           : 0,
+            type_name       : None
+        }
+    }
+    
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModDetailPlaceAnimals {
+    pub beehive_exists    : bool,
+    pub beehive_per_day   : u32,
+    pub beehive_radius    : u32,
+    pub husbandry_animals : u32,
+    pub husbandry_exists  : bool,
+    pub husbandry_type    : Option<String>,
+}
+
+impl ModDetailPlaceAnimals {
+    fn new() -> Self {
+        ModDetailPlaceAnimals {
+            beehive_exists    : false,
+            beehive_per_day   : 0,
+            beehive_radius    : 0,
+            husbandry_animals : 0,
+            husbandry_exists  : false,
+            husbandry_type    : None
+        }
+    }
+    
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModDetailPlaceStorage {
+    pub objects         : Option<u32>,
+    pub silo_capacity   : u32,
+    pub silo_exists     : bool,
+    pub silo_fill_cats  : Vec<String>,
+    pub silo_fill_types : Vec<String>,
+}
+
+impl ModDetailPlaceStorage {
+    fn new() -> Self {
+        ModDetailPlaceStorage {
+            objects         : None,
+            silo_capacity   : 0,
+            silo_exists     : false,
+            silo_fill_cats  : vec![],
+            silo_fill_types : vec![],
+        }
+    }
+}
+
+pub type ProductionIngredients = Vec<ProductionIngredient>;
+pub type ProductionRecipe = Vec<ProductionIngredients>;
+
+#[derive(serde::Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct ProductionIngredient {
+    amount : f32,
+    fill_type : String
+}
+impl ProductionIngredient {
+    #[must_use]
+    pub fn new(fill_type: String, amount: f32) -> Self {
+        ProductionIngredient {
+            amount,
+            fill_type,
+        }
+    }
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProductionBoost {
+    amount       : f32,
+    boost_factor : f32,
+    fill_type    : String,
+}
+impl ProductionBoost {
+    #[must_use]
+    pub fn new(fill_type: String, amount: f32, boost_factor: f32) -> Self {
+        ProductionBoost {
+            amount,
+            boost_factor,
+            fill_type,
+        }
+    }
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModDetailProduction {
+    pub boosts          : Vec<ProductionBoost>,
+    pub cost_per_hour   : u32,
+    pub cycles_per_hour : u32,
+    pub name            : String,
+    pub output          : Vec<ProductionIngredient>,
+    pub params          : String,
+    pub recipe          : ProductionRecipe,
+}
+
+impl ModDetailProduction {
+    #[must_use]
+    pub fn new() -> Self {
+        ModDetailProduction {
+            boosts          : vec![],
+            cost_per_hour   : 1,
+            cycles_per_hour : 1,
+            name            : String::from("--"),
+            output          : vec![],
+            params          : String::new(),
+            recipe          : vec![]
+        }
+    }
+}
+
+impl Default for ModDetailProduction {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModDetailPlace {
+    pub animals     : ModDetailPlaceAnimals,
+    pub icon_base   : Option<String>,
+    pub icon_file   : Option<String>,
+    pub master_type : String,
+    pub productions : Vec<ModDetailProduction>,
+    pub sorting     : ModDetailPlaceSorting,
+    pub storage     : ModDetailPlaceStorage,
+}
+
+impl ModDetailPlace {
+    #[must_use]
+    pub fn new() -> Self {
+        ModDetailPlace {
+            animals     : ModDetailPlaceAnimals::new(),
+            icon_base   : None,
+            icon_file   : None,
+            master_type : String::from("placeable"),
+            productions : vec![],
+            sorting     : ModDetailPlaceSorting::new(),
+            storage     : ModDetailPlaceStorage::new()
+        }
+    }
+}
+
+impl Default for ModDetailPlace {
+    fn default() -> Self {
+        Self::new()
     }
 }

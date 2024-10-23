@@ -1,3 +1,4 @@
+use crate::ModParserOptions;
 use crate::mod_detail::structs::{ModDetail, ModDetailError};
 use crate::shared::files::{AbstractFileHandle, AbstractFolder, AbstractZipFile, FileDefinition};
 use crate::shared::convert_mod_icon;
@@ -5,8 +6,13 @@ use std::path::Path;
 
 pub mod structs;
 mod vehicles;
+mod places;
 
 pub fn parser<P: AsRef<Path>>(full_path :P) -> ModDetail {
+    parser_with_options(full_path, &ModParserOptions::default())
+}
+
+pub fn parser_with_options<P: AsRef<Path>>(full_path :P, options : &ModParserOptions) -> ModDetail {
     let is_folder = full_path.as_ref().is_dir();
 
     let mut abstract_file: Box<dyn AbstractFileHandle> = if is_folder 
@@ -32,11 +38,11 @@ pub fn parser<P: AsRef<Path>>(full_path :P) -> ModDetail {
         return ModDetail::fast_fail(ModDetailError::NotModModDesc);
     };
 
-    parse_open_file(abstract_file, &mod_desc_doc, &abstract_file_list)
+    parse_open_file(abstract_file, &mod_desc_doc, &abstract_file_list, options)
 }
 
 #[must_use]
-pub fn parse_open_file( mut abstract_file: Box<dyn AbstractFileHandle>, mod_desc_doc : &roxmltree::Document, abstract_file_list: &[FileDefinition] ) -> ModDetail {
+pub fn parse_open_file( mut abstract_file: Box<dyn AbstractFileHandle>, mod_desc_doc : &roxmltree::Document, abstract_file_list: &[FileDefinition], options : &ModParserOptions ) -> ModDetail {
     let mut mod_detail = ModDetail::new();
 
     do_languages(&mut mod_detail, &mut abstract_file, mod_desc_doc, abstract_file_list);
@@ -44,16 +50,14 @@ pub fn parse_open_file( mut abstract_file: Box<dyn AbstractFileHandle>, mod_desc
 
     for store_item in mod_desc_doc.descendants().filter(|n| n.has_tag_name("storeItem")) {
         if let Some(file_name) = store_item.attribute("xmlFilename") {
-            let Ok(file_content) = abstract_file.as_text(file_name) else { continue; };
+            let Ok(file_content) = abstract_file.as_text(&file_name.to_string().replace('\\', "/")) else { continue; };
             let Ok(file_tree) = roxmltree::Document::parse(&file_content) else { continue; };
 
             if file_tree.root_element().has_tag_name("vehicle") {
-                mod_detail.vehicles.push(vehicles::vehicle_parse(&file_tree, &mut abstract_file));
-            } else {
-                println!("not vehicle {file_name}");
+                mod_detail.vehicles.push(vehicles::vehicle_parse(&file_tree, &mut abstract_file, options));
+            } else if file_tree.root_element().has_tag_name("placeable") {
+                mod_detail.placeables.push(places::place_parse(&file_tree, &mut abstract_file, options));
             }
-            
-            
         }
     }
 
@@ -80,7 +84,7 @@ fn do_brands(
             }
         } else {
             // Load from disk, if it exists.
-            let Ok(bin_file) = file_handle.as_bin(brand_icon_file) else {
+            let Ok(bin_file) = file_handle.as_bin(&normalize_icon_name(brand_icon_file)) else {
                 mod_detail.add_issue(ModDetailError::BrandMissingIcon);
                 continue;
             };
@@ -152,4 +156,12 @@ fn xml_extract_text_as_opt_string(xml_tree : &roxmltree::Document, key : &str) -
         .descendants()
         .find(|n|n.has_tag_name(key))
         .and_then(|n|n.text().map(std::string::ToString::to_string))
+}
+
+fn normalize_icon_name(name : &str) -> String {
+    let mut value_string = name.to_string();
+    if let Some(index) = value_string.find(".png") {
+        value_string.replace_range(index..value_string.len(), ".dds");
+    }
+    value_string.replace('\\', "/")
 }

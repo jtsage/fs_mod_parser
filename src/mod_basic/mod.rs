@@ -162,8 +162,7 @@ pub fn parser_with_options<P: AsRef<Path>>(full_path :P, options : &ModParserOpt
             match AbstractFolder::new(&full_path) {
                 Ok(archive) => Box::new(archive),
                 Err(e) => {
-                    mod_record.add_fatal(e);
-                    mod_record.update_badges();
+                    mod_record.add_fatal(e).update_badges();
                     return mod_record;
                 }
             }
@@ -171,8 +170,7 @@ pub fn parser_with_options<P: AsRef<Path>>(full_path :P, options : &ModParserOpt
             match AbstractZipFile::new(&full_path) {
                 Ok(archive) => Box::new(archive),
                 Err(e) => {
-                    mod_record.add_fatal(e);
-                    mod_record.update_badges();
+                    mod_record.add_fatal(e).update_badges();
                     return mod_record
                 } 
             }
@@ -197,8 +195,7 @@ pub fn parser_with_options<P: AsRef<Path>>(full_path :P, options : &ModParserOpt
 
     if abstract_file.exists("careerSavegame.xml") {
         mod_record.file_detail.is_save_game = true;
-        mod_record.add_fatal(ModError::FileErrorLikelySaveGame);
-        mod_record.update_badges();
+        mod_record.add_fatal(ModError::FileErrorLikelySaveGame).update_badges();
         if options.include_save_game {
             mod_record.include_save_game = Some(savegame_parse(abstract_file));
         }
@@ -209,8 +206,7 @@ pub fn parser_with_options<P: AsRef<Path>>(full_path :P, options : &ModParserOpt
         if let Some(list) = test_mod_pack(&abstract_file_list) {
             mod_record.file_detail.zip_files   = list;
             mod_record.file_detail.is_mod_pack = true;
-            mod_record.add_fatal(ModError::FileErrorLikelyZipPack);
-            mod_record.update_badges();
+            mod_record.add_fatal(ModError::FileErrorLikelyZipPack).update_badges();
             return mod_record;
         }
     }
@@ -230,9 +226,11 @@ pub fn parser_with_options<P: AsRef<Path>>(full_path :P, options : &ModParserOpt
     do_file_counts(&mut mod_record, &abstract_file_list);
     mod_desc_basics(&mut mod_record, &mod_desc_doc);
 
-    if let Some(filename) = &mod_record.mod_desc.icon_file_name {
-        if let Ok(binary_file) = abstract_file.as_bin(filename) {
-            mod_record.mod_desc.icon_image = convert_mod_icon(binary_file);
+    if ! options.skip_mod_icons {
+        if let Some(filename) = &mod_record.mod_desc.icon_file_name {
+            if let Ok(binary_file) = abstract_file.as_bin(filename) {
+                mod_record.mod_desc.icon_image = convert_mod_icon(binary_file);
+            }
         }
     }
 
@@ -260,7 +258,8 @@ pub fn parser_with_options<P: AsRef<Path>>(full_path :P, options : &ModParserOpt
     mod_record.update_badges();
 
     if options.include_mod_detail {
-        mod_record.include_detail = Some(detail_parse(abstract_file, &mod_desc_doc, &abstract_file_list));
+        mod_record.detail_icon_loaded = ! options.skip_detail_icons;
+        mod_record.include_detail = Some(detail_parse(abstract_file, &mod_desc_doc, &abstract_file_list, options));
     }
 
     mod_record

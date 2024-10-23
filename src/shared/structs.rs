@@ -22,6 +22,7 @@ pub struct ModRecord {
     pub badge_array        : ModBadges,
     pub can_not_use        : bool,
     pub current_collection : String,
+    pub detail_icon_loaded : bool,
     pub file_detail        : ModFile,
     pub issues             : HashSet<ModError>,
     pub include_detail     : Option<ModDetail>,
@@ -42,6 +43,7 @@ impl ModRecord {
             badge_array        : ModBadges::new(),
             can_not_use        : true,
             current_collection : String::new(),
+            detail_icon_loaded : false,
             file_detail        : ModFile::new(full_path, is_folder),
             issues             : HashSet::new(),
             include_detail     : None,
@@ -56,13 +58,15 @@ impl ModRecord {
         }
     }
     /// raise an fatal error on the mod
-    pub fn add_fatal(&mut self, issue : ModError) {
+    pub fn add_fatal(&mut self, issue : ModError) -> &mut Self {
         self.can_not_use = true;
         self.issues.insert(issue);
+        self
     }
     /// raise an error on the mod
-    pub fn add_issue(&mut self, issue : ModError) {
+    pub fn add_issue(&mut self, issue : ModError) -> &mut Self {
         self.issues.insert(issue);
+        self
     }
     /// update the badge array from other data
     pub fn update_badges(&mut self) -> &mut Self {
