@@ -252,7 +252,6 @@ fn populate_weather(file_handle: &mut Box<dyn AbstractFileHandle>, env_base: Opt
                 }
 
                 for season in tree.descendants().filter(|n|n.has_tag_name("season") && n.has_attribute("name")) {
-                    // TODO: refactor to not compare every time
                     let mut min_temp:i8 = 127;
                     let mut max_temp:i8 = -127;
 

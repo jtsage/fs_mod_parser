@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use std::path::Path;
-use fs_mod_parser::parse_mod;
+use fs_mod_parser::ModParserOptions;
+use fs_mod_parser::{parse_mod, parse_mod_with_options};
 use fs_mod_parser::shared::errors::ModError;
 use fs_mod_parser::shared::structs::ModBadges;
 use fs_mod_parser::parse_savegame;
@@ -64,7 +65,7 @@ fn missing_farms() {
 fn missing_vehicles() {
 	let test_file_path = Path::new("./tests/test_mods/SAVEGAME_No_Vehicles.zip");
 	assert!(test_file_path.exists());
-
+	
 	let save_record = parse_savegame(test_file_path);
 
 	assert_eq!(save_record.is_valid, false);
@@ -118,12 +119,12 @@ fn good_multiplayer() {
 	/* cSpell: disable */
 	let expected_farms = json!({
 		"farms": {
-			"2": { "name": "PUBLIC", "cash": 878837, "loan": 0, "color": 1 },
-			"5": { "name": "THE CROFT", "cash": 42937, "loan": 0, "color": 1 },
-			"4": { "name": "BELLWETHER RANCH", "cash": 110758, "loan": 0, "color": 1 },
+			"2": { "name": "PUBLIC", "cash": 878837, "loan": 0, "color": 8 },
+			"5": { "name": "THE CROFT", "cash": 42937, "loan": 0, "color": 6 },
+			"4": { "name": "BELLWETHER RANCH", "cash": 110758, "loan": 0, "color": 2 },
 			"0": { "name": "--unowned--", "cash": 0, "loan": 0, "color": 1 },
 			"3": { "name": "joinFSG.gg", "cash": 100000, "loan": 0, "color": 1 },
-			"1": { "name": "HENNESSEY ACRES", "cash": 46198, "loan": 230000, "color": 1 }
+			"1": { "name": "HENNESSEY ACRES", "cash": 46198, "loan": 230000, "color": 7 }
 		},
 	});
 	/* cSpell: enable */
@@ -185,4 +186,48 @@ fn good_single_player() {
 
 	assert_json_include!(actual : actual, expected : expected_farms);
 
+}
+
+#[test]
+fn mod_parse_save_detection_with_scan() {
+	let test_file_path = Path::new("./tests/test_mods/SAVEGAME_Good.zip");
+	assert!(test_file_path.exists());
+
+	let options = ModParserOptions{
+		include_save_game : true,
+		..Default::default()
+	};
+
+	let mod_record = parse_mod_with_options(test_file_path, &options);
+
+	assert_eq!(mod_record.can_not_use, true);
+
+	let expected_errors:HashSet<ModError> = HashSet::from([ModError::FileErrorLikelySaveGame]);
+	assert_eq!(mod_record.issues, expected_errors);
+
+	assert_eq!(mod_record.badge_array, ModBadges {
+		broken   : false,
+		folder   : false,
+		malware  : false,
+		no_mp    : false,
+		notmod   : true,
+		pconly   : false,
+		problem  : false,
+		savegame : true,
+	});
+
+	assert!(mod_record.include_save_game.is_some());
+
+	let byte_length = mod_record.to_json_pretty().len() as i32;
+	let byte_expected:i32 = 7615;
+	let byte_margin = 100;
+	assert!(
+		(byte_length - byte_expected).abs() < byte_margin,
+		"assertion failed: `(left !== right)` \
+		(left: `{:?}`, right: `{:?}`, expect diff: `{:?}`, real diff: `{:?}`)",
+		byte_length,
+		byte_expected,
+		byte_margin,
+		(byte_length - byte_expected).abs()
+	);
 }

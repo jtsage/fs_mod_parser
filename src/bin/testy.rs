@@ -4,7 +4,7 @@
 use std::path::{self, PathBuf};
 use std::time::Instant;
 use glob::glob;
-use fs_mod_parser::{parse_detail_json_pretty, parse_mod_json_pretty, parse_savegame_json_pretty};
+use fs_mod_parser::{parse_detail_json_pretty, parse_mod, parse_savegame};
 use rayon::prelude::*;
 
 fn main() {
@@ -39,7 +39,7 @@ fn scan_test_items(pattern_part: &str, show_output : bool) {
 
         match path::absolute(entry.clone()) {
             Ok(abs_path) => {
-                let _output = parse_mod_json_pretty(abs_path.as_path());
+                let _output = parse_mod(abs_path.as_path()).to_json_pretty();
 
                 println!("{} in {:.2?}", entry.clone().to_str().unwrap(), this_file_start.elapsed());
                 if show_output {
@@ -99,7 +99,7 @@ fn scan_full_collection() {
 
         match path::absolute(entry.clone()) {
             Ok(abs_path) => {
-                let _output = parse_mod_json_pretty(abs_path.as_path());
+                let _output = parse_mod(abs_path.as_path()).to_json_pretty();
 
                 println!("{} in {:.2?}", entry.clone().to_str().unwrap(), this_file_start.elapsed());
             },
@@ -133,7 +133,7 @@ fn scan_all_save_games() {
 
         match path::absolute(entry.clone()) {
             Ok(abs_path) => {
-                let _output = parse_savegame_json_pretty(abs_path.as_path());
+                let _output = parse_savegame(abs_path.as_path()).to_json_pretty();
 
                 println!("{} in {:.2?}", entry.clone().to_str().unwrap(), this_file_start.elapsed());
             },

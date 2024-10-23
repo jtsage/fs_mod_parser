@@ -35,6 +35,8 @@ fn check_json_mod_record() {
 			"zipFiles": [],
 		},
 		"issues": [],
+		"includeDetail"   : null,
+        "includeSaveGame" : null,
 		"l10n": {
 			"description": {
 				"en": "--"

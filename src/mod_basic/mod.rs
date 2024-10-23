@@ -1,8 +1,10 @@
 //! Parser functions for basic mod reading
+use crate::ModParserOptions;
 use crate::shared::errors::ModError;
 use crate::shared::files::{AbstractFileHandle, AbstractFolder, AbstractZipFile, FileDefinition};
 use crate::shared::structs::{ModRecord, ZipPackFile};
 use crate::shared::convert_mod_icon;
+use crate::savegame::parse_open_file as savegame_parse;
 
 use std::{time::SystemTime, path::Path};
 use chrono::{DateTime, SecondsFormat, Utc};
@@ -23,8 +25,44 @@ pub const NOT_MALWARE: [&str; 11] = [
     "FS19_GlobalCompany",
 ];
 
+
 /* cSpell: disable */
-/// Get the JSON representation of a mod in one shot
+/// Test a mod file against known game limitations
+/// 
+/// Returns a [`ModRecord`]
+/// 
+/// captured information includes version, l10n title and description,
+/// key bindings, multiplayer status, if it's a map,
+/// icon, abd some simple piracy detection - see [`ModRecord`] for more details
+/// 
+/// # File Name Checks
+/// 
+/// - Filename must start with a letter (not a number)
+/// - Filename must not contain spaces
+/// - Filename can only contain A-Z, a-z, 0-9, and underscore.
+/// - Non-Folders must end with a .zip extension
+/// 
+/// # Valid file types
+/// ```
+/// vec!["png", "dds", "i3d", "shapes", "lua", "gdm", "cache", "xml", "grle", "pdf", "txt", "gls", "anim", "ogg"];
+/// ```
+/// 
+/// # Quantity Limits
+/// ```
+/// let mut max_grle = 10;
+/// let mut max_pdf = 1;
+/// let mut max_png = 128;
+/// let mut max_txt = 2;
+/// ```
+/// 
+/// # Size Limits (in bytes)
+/// ```
+/// let size_cache :u64  = 10_485_760;
+/// let size_dds :u64    = 12_582_912;
+/// let size_gdm :u64    = 18_874_368;
+/// let size_shapes :u64 = 268_435_456;
+/// let size_xml :u64    = 262_144;
+/// ```
 /// 
 /// # Sample Output
 /// 
@@ -103,54 +141,11 @@ pub const NOT_MALWARE: [&str; 11] = [
 ///}
 /// ```
 /* cSpell: enable */
-pub fn parse_to_json<P: AsRef<Path>>(full_path :P) -> String {
-    parser(full_path).to_string()
-}
-/// Parse a mod into a pretty print JSON representation
-/// 
-/// See also [`parse_to_json`]
-pub fn parse_to_json_pretty<P: AsRef<Path>>(full_path :P) -> String {
-    parser(full_path).pretty_print()
-}
-
-
-/// Test a mod file against known game limitations
-/// 
-/// Returns a [`ModRecord`]
-/// 
-/// captured information includes version, l10n title and description,
-/// key bindings, multiplayer status, if it's a map,
-/// icon, abd some simple piracy detection - see [`ModRecord`] for more details
-/// 
-/// # File Name Checks
-/// 
-/// - Filename must start with a letter (not a number)
-/// - Filename must not contain spaces
-/// - Filename can only contain A-Z, a-z, 0-9, and underscore.
-/// - Non-Folders must end with a .zip extension
-/// 
-/// # Valid file types
-/// ```
-/// vec!["png", "dds", "i3d", "shapes", "lua", "gdm", "cache", "xml", "grle", "pdf", "txt", "gls", "anim", "ogg"];
-/// ```
-/// 
-/// # Quantity Limits
-/// ```
-/// let mut max_grle = 10;
-/// let mut max_pdf = 1;
-/// let mut max_png = 128;
-/// let mut max_txt = 2;
-/// ```
-/// 
-/// # Size Limits (in bytes)
-/// ```
-/// let size_cache :u64  = 10_485_760;
-/// let size_dds :u64    = 12_582_912;
-/// let size_gdm :u64    = 18_874_368;
-/// let size_shapes :u64 = 268_435_456;
-/// let size_xml :u64    = 262_144;
-/// ```
 pub fn parser<P: AsRef<Path>>(full_path :P) -> ModRecord {
+    parser_with_options(full_path, &ModParserOptions::default())
+}
+
+pub fn parser_with_options<P: AsRef<Path>>(full_path :P, options : &ModParserOptions) -> ModRecord {
     let is_folder = full_path.as_ref().is_dir();
     let mut mod_record = ModRecord::new(&full_path, is_folder);
 
@@ -158,8 +153,6 @@ pub fn parser<P: AsRef<Path>>(full_path :P) -> ModRecord {
 
     if mod_record.can_not_use {
         mod_record.add_issue(ModError::FileErrorNameInvalid);
-        // mod_record.update_badges();
-        // return mod_record;
     }
 
     let mut abstract_file: Box<dyn AbstractFileHandle> = if is_folder 
@@ -205,6 +198,9 @@ pub fn parser<P: AsRef<Path>>(full_path :P) -> ModRecord {
         mod_record.file_detail.is_save_game = true;
         mod_record.add_fatal(ModError::FileErrorLikelySaveGame);
         mod_record.update_badges();
+        if options.include_save_game {
+            mod_record.include_save_game = Some(savegame_parse(abstract_file));
+        }
         return mod_record;
     }
 
@@ -261,6 +257,12 @@ pub fn parser<P: AsRef<Path>>(full_path :P) -> ModRecord {
     }
 
     mod_record.update_badges();
+
+    if options.include_mod_detail {
+        //TODO: add detail inclusion
+        todo!("Mod Detail inclusion not yet working");
+    }
+
     mod_record
 }
 
@@ -353,8 +355,6 @@ fn do_file_counts(mod_record : &mut ModRecord, file_list : &Vec<FileDefinition>)
     let size_gdm :u64    = 18_874_368;
     let size_shapes :u64 = 268_435_456;
     let size_xml :u64    = 262_144;
-
-    // TODO: fix case sensitive extension
 
     let known_good = vec!["png", "dds", "i3d", "shapes", "lua", "gdm", "cache", "xml", "grle", "pdf", "txt", "gls", "anim", "ogg"];
 

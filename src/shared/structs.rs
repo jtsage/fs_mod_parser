@@ -3,6 +3,8 @@ use std::{collections::{HashMap, HashSet}, path::Path};
 
 use crate::shared::errors::{ModError, BADGE_BROKEN, BADGE_ISSUE, BADGE_NOT_MOD};
 use crate::maps::structs::{CropWeatherType, CropList};
+use crate::savegame::SaveGameRecord;
+use crate::mod_detail::structs::ModDetail;
 use serde::ser::{Serialize, Serializer};
 
 /// Translatable modDesc entries
@@ -22,6 +24,8 @@ pub struct ModRecord {
     pub current_collection : String,
     pub file_detail        : ModFile,
     pub issues             : HashSet<ModError>,
+    pub include_detail     : Option<ModDetail>,
+    pub include_save_game  : Option<SaveGameRecord>,
     pub l10n               : ModDescL10N,
     pub md5_sum            : Option<String>,
     pub mod_desc           : ModDesc,
@@ -40,6 +44,8 @@ impl ModRecord {
             current_collection : String::new(),
             file_detail        : ModFile::new(full_path, is_folder),
             issues             : HashSet::new(),
+            include_detail     : None,
+            include_save_game  : None,
             l10n               : ModDescL10N{
                 title       : HashMap::from([("en".to_string(), "--".to_string())]),
                 description : HashMap::from([("en".to_string(), "--".to_string())])
@@ -78,8 +84,12 @@ impl ModRecord {
         self
     }
     #[must_use]
-    pub fn pretty_print(&self) -> String {
+    pub fn to_json_pretty(&self) -> String {
         serde_json::to_string_pretty(&self).unwrap_or("{}".to_string())
+    }
+    #[must_use]
+    pub fn to_json(&self) -> String {
+        self.to_string()
     }
 }
 impl std::fmt::Display for ModRecord {

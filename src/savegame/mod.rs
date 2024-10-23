@@ -142,9 +142,19 @@ impl SaveGameRecord {
             single_farm : true,
         }
     }
+    fn fast_fail(e : SaveError) -> Self {
+        let mut record = SaveGameRecord::new();
+        record.add_issue(e);
+        record
+    }
+
     #[must_use]
-    pub fn pretty_print(&self) -> String {
+    pub fn to_json_pretty(&self) -> String {
         serde_json::to_string_pretty(&self).unwrap_or("{}".to_string())
+    }
+    #[must_use]
+    pub fn to_json(&self) -> String {
+        self.to_string()
     }
 }
 
@@ -154,17 +164,16 @@ impl std::fmt::Display for SaveGameRecord {
     }
 }
 
-
-/// Parse a savegame into a pretty-print json representation
+/// Parse a savegame
 /// 
-/// See also [`parse_to_json`]
-pub fn parse_to_json_pretty<P: AsRef<Path>>(full_path :P) -> String {
-    parser(full_path).pretty_print()
-}
-
-/// Parse a savegame into a json representation
+/// Returned information includes:
+/// - Mods loaded and used in the save with total count
+/// - Playtime, Save Date, Save Name
+/// - Map mod name and title
+/// - Errors, if any, and boolean valid flag
+/// - Farm list, boolean if it's a multiplayer save or not
 /// 
-/// # Sample Output
+/// /// # Sample Output
 /// ```json
 /// {
 ///   "errorList": [],
@@ -189,36 +198,29 @@ pub fn parse_to_json_pretty<P: AsRef<Path>>(full_path :P) -> String {
 ///   "singleFarm": false
 /// }
 /// ```
-pub fn parse_to_json<P: AsRef<Path>>(full_path :P) -> String {
-    parser(full_path).to_string()
-}
-
-/// Parse a savegame
-/// 
-/// Returned information includes:
-/// - Mods loaded and used in the save with total count
-/// - Playtime, Save Date, Save Name
-/// - Map mod name and title
-/// - Errors, if any, and boolean valid flag
-/// - Farm list, boolean if it's a multiplayer save or not
 pub fn parser<P: AsRef<Path>>(full_path :P) -> SaveGameRecord {
-    let mut save_record = SaveGameRecord::new();
     let is_folder = full_path.as_ref().is_dir();
 
-    let mut abstract_file: Box<dyn AbstractFileHandle> = if is_folder 
+    let abstract_file: Box<dyn AbstractFileHandle> = if is_folder 
         {
             if let Ok(archive) = AbstractFolder::new(full_path) {
                 Box::new(archive)
             } else {
-                save_record.add_issue(SaveError::FileUnreadable);
-                return save_record;
+                return SaveGameRecord::fast_fail(SaveError::FileUnreadable);
             }
         } else if let Ok(archive) = AbstractZipFile::new(full_path) {
             Box::new(archive)
         } else {
-            save_record.add_issue(SaveError::FileUnreadable);
-            return save_record;
+            return SaveGameRecord::fast_fail(SaveError::FileUnreadable);
         };
+    
+    parse_open_file(abstract_file)
+}
+
+/// Parse a savegame from an already open [`AbstractFileHandle`]
+#[must_use]
+pub fn parse_open_file(mut abstract_file: Box<dyn AbstractFileHandle>) -> SaveGameRecord {
+    let mut save_record = SaveGameRecord::new();
 
     do_farms(&mut save_record, &mut abstract_file);
     do_placeables(&mut save_record, &mut abstract_file);
@@ -255,9 +257,9 @@ fn do_farms(save_record: &mut SaveGameRecord, abstract_file : &mut Box<dyn Abstr
 
         let mut farm_record = SaveGameFarm::new(farm_name.to_owned());
 
-        farm_record.loan = farm_entry.attribute("loan").map_or(0, |n|n.parse::<i64>().unwrap());
-
-        farm_record.cash = farm_entry.attribute("money").map_or(0, |n|n.parse::<i64>().unwrap());
+        farm_record.loan = farm_entry.attribute("loan").map_or(0.0, |n|n.parse::<f64>().unwrap_or(0.0)) as i64;
+        farm_record.cash = farm_entry.attribute("money").map_or(0.0, |n|n.parse::<f64>().unwrap_or(0.0)) as i64;
+        farm_record.color = farm_entry.attribute("color").map_or(0, |n|n.parse::<usize>().unwrap_or(0));
 
         save_record.farms.insert(farm_id, farm_record);
     }
@@ -275,7 +277,7 @@ fn do_placeables(save_record: &mut SaveGameRecord, abstract_file : &mut Box<dyn 
     };
 
     for item in placeable_document.descendants().filter(|n| n.has_tag_name("placeable") && n.has_attribute("farmId") && n.has_attribute("modName")) {
-        let farm_id = item.attribute("farmId").map_or(0, |n|n.parse::<usize>().unwrap());
+        let farm_id = item.attribute("farmId").map_or(0, |n|n.parse::<usize>().unwrap_or(0));
 
         item.attribute("modName").map(|key|save_record.add_mod_with_farm(key, farm_id));
     }
@@ -293,7 +295,7 @@ fn do_vehicles(save_record: &mut SaveGameRecord, abstract_file : &mut Box<dyn Ab
     };
 
     for item in vehicles_document.descendants().filter(|n| n.has_tag_name("vehicle") && n.has_attribute("farmId") && n.has_attribute("modName")) {
-        let farm_id = item.attribute("farmId").map_or(0, |n|n.parse::<usize>().unwrap());
+        let farm_id = item.attribute("farmId").map_or(0, |n|n.parse::<usize>().unwrap_or(0));
 
         item.attribute("modName").map(|key|save_record.add_mod_with_farm(key, farm_id));
     }

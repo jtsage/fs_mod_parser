@@ -36,15 +36,15 @@ impl TorqueEntry {
     fn new(node : &roxmltree::Node, motor_rpm : f32) -> Self {
         let norm_rpm = node
             .attribute("normRpm")
-            .map_or(1_f32, |n|n.parse::<f32>().unwrap());
+            .map_or(1_f32, |n|n.parse::<f32>().unwrap_or(1_f32));
 
         TorqueEntry {
             torque : node
                 .attribute("torque")
-                .map_or(1_f32, |n|n.parse::<f32>().unwrap()),
+                .map_or(1_f32, |n|n.parse::<f32>().unwrap_or(1_f32)),
             rpm : node
                 .attribute("rpm")
-                .map_or(motor_rpm * norm_rpm, |n|n.parse::<f32>().unwrap())
+                .map_or(motor_rpm * norm_rpm, |n|n.parse::<f32>().unwrap_or(motor_rpm * norm_rpm))
         }
     }
 }
@@ -65,7 +65,7 @@ fn vehicle_parse_motor(xml_tree : &roxmltree::Document, this_vehicle : &mut ModD
 
         let motor_scale = motor_config
             .attribute("torqueScale")
-            .map_or(1f32, |n|n.parse::<f32>().unwrap());
+            .map_or(1_f32, |n|n.parse::<f32>().unwrap_or(1_f32));
 
         // If new torque entries exist, replace the "last" list
         let mut torque_iter = motor_config.descendants().filter(|n|n.has_tag_name("torque")).peekable();
@@ -92,7 +92,7 @@ fn vehicle_parse_motor(xml_tree : &roxmltree::Document, this_vehicle : &mut ModD
 
             let axel_ratio = new_transmission
                 .attribute("axleRatio")
-                .map_or(1_f32, |n|n.parse::<f32>().unwrap());
+                .map_or(1_f32, |n|n.parse::<f32>().unwrap_or(1_f32));
 
             if let Some(fwd_gear_ratio) = new_transmission.attribute("minForwardGearRatio") {
                 // found minForwardGearRatio, can calculate `min_fwd_gear_and_axel_ratio`
@@ -118,7 +118,7 @@ fn vehicle_parse_motor(xml_tree : &roxmltree::Document, this_vehicle : &mut ModD
         // Get defined max speed for the motor
         let defined_max_speed = motor_config
             .attribute("maxForwardSpeed")
-            .map_or(0, |n|n.parse::<u32>().unwrap());
+            .map_or(0, |n|n.parse::<u32>().unwrap_or(0));
 
         let motor_name = motor_config
             .attribute("name")

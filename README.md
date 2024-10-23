@@ -16,7 +16,7 @@ Checks the file name, and returns:
 Valid input is a file or folder, any type that coerces into a `&Path`.
 
 ```rust
-let json_representation = fs_mod_parser::parse_mod_json("FS22_Mod_File.zip");
+let json_representation = fs_mod_parser::parse_mod("FS22_Mod_File.zip").to_json_pretty();
 ```
 
 ### Save Game Details
@@ -32,5 +32,5 @@ Returned information includes:
 Valid input is a file or folder, any type that coerces into a `&Path`.
 
 ```rust
-let json_representation = fs_mod_parser::parse_savegame_json("savegame1.zip");
+let json_representation = fs_mod_parser::parse_savegame("savegame1.zip").to_json_pretty();
 ```

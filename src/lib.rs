@@ -7,13 +7,17 @@ pub mod mod_detail;
 pub mod savegame;
 pub mod shared;
 
+#[derive(Default)]
+pub struct ModParserOptions {
+	pub include_save_game : bool,
+	pub include_mod_detail : bool,
+}
+
+
 pub use savegame::parser as parse_savegame;
-pub use savegame::parse_to_json as parse_savegame_json;
-pub use savegame::parse_to_json_pretty as parse_savegame_json_pretty;
 
 pub use mod_basic::parser as parse_mod;
-pub use mod_basic::parse_to_json as parse_mod_json;
-pub use mod_basic::parse_to_json_pretty as parse_mod_json_pretty;
+pub use mod_basic::parser_with_options as parse_mod_with_options;
 
 pub use mod_detail::parser as parse_detail;
 pub use mod_detail::parse_to_json as parse_detail_json;
