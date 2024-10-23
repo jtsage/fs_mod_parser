@@ -9,7 +9,17 @@ use rayon::prelude::*;
 
 fn main() {
     // println!("{}", parse_detail_json_pretty("./tests/test_mods/PASS_Good_Simple_Mod.zip"));
-    println!("{}", parse_detail_json_pretty("./tests/test_mods/UNUSED_RealModForStoreItems.zip"));
+
+    // let _out = parse_detail_json_pretty("./tests/test_mods/UNUSED_RealModForStoreItems.zip");
+
+    // println!("{_out}");
+
+    // println!("{}", parse_detail_json_pretty("./tests/test_mods/FSG_Color_Pack.zip"));
+    // println!("{}", parse_detail_json_pretty("./tests/test_mods/FS22_CaseTitanPack.zip"));
+    // let _out = parse_detail_json_pretty("./tests/test_mods/FS22_CaseTitanPack.zip");
+
+    // println!("{_out}");
+    detail_full_collection();
     // scan_full_collection();
     // scan_all_save_games();
 }
@@ -45,6 +55,34 @@ fn scan_test_items(pattern_part: &str, show_output : bool) {
     println!("Total Elapsed: {:.2?} for {} files", elapsed, counter);
 }
 
+
+/// Scan full set of mods
+#[allow(dead_code)]
+fn detail_full_collection() {
+    let start_time = Instant::now();
+
+    let pattern = "C:\\Users\\jtsag\\Documents\\My Games\\FarmingSimulator2022\\mods\\*\\*";
+
+    let file_list:Vec<PathBuf> = glob(pattern).unwrap().filter_map(Result::ok).collect();
+    let counter = file_list.len();
+
+    file_list.par_iter().for_each(|entry|{
+        let this_file_start = Instant::now();
+
+        match path::absolute(entry.clone()) {
+            Ok(abs_path) => {
+                let _output = parse_detail_json_pretty(abs_path.as_path());
+                println!("{_output}");
+                println!("{} in {:.2?}", entry.clone().to_str().unwrap(), this_file_start.elapsed());
+            },
+            Err(e) => panic!("{}", e),
+        };
+    });
+
+
+    let elapsed = start_time.elapsed();
+    println!("Total Elapsed: {:.2?} for {} files", elapsed, counter);
+}
 
 /// Scan full set of mods
 #[allow(dead_code)]
