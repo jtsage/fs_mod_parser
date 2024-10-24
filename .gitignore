@@ -1,3 +1,4 @@
 /target
 out.log
 /.VSCodeCounter
+tarpaulin-report.html
