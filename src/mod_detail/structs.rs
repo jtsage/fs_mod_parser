@@ -1,26 +1,36 @@
+//! Mod Detail data structures
 use std::collections::{HashMap, HashSet};
 use serde::ser::{Serialize, Serializer};
 
+/// Detail errors
 #[derive(serde::Serialize, PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
 pub enum ModDetailError {
+    /// Could not read file
     FileReadFail,
+    /// modDesc.xml missing
     NotModModDesc,
+    /// Brand icon is missing
     BrandMissingIcon,
 }
 
+/// Mod Detail Data
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModDetail {
-    #[serde(skip_serializing)]
+    /// list of brands
     pub brands     : BrandDefinition,
+    /// list of detected issues
     pub issues     : HashSet<ModDetailError>,
-    #[serde(skip_serializing)]
+    /// l10n languages, keys, and strings
     pub l10n       : LanguageDefinition,
+    /// placables
     pub placeables : Vec<ModDetailPlace>,
+    /// vehicles
     pub vehicles   : Vec<ModDetailVehicle>,
 }
 
 impl ModDetail {
+    /// Create new mod detail record
     #[must_use]
     pub fn new() -> Self {
         ModDetail {
@@ -32,6 +42,7 @@ impl ModDetail {
         }
     }
 
+    /// Create new mod detail record with a single error condition
     #[must_use]
     pub fn fast_fail(e : ModDetailError) -> Self {
         let mut record = ModDetail::new();
@@ -39,10 +50,13 @@ impl ModDetail {
         record
     }
 
+    /// Add an error to a mod detail record
     pub fn add_issue(&mut self, issue : ModDetailError) -> &mut Self {
         self.issues.insert(issue);
         self
     }
+
+    /// Add (or alter) a language code with a new key and string
     pub fn add_lang(&mut self, language : &str, key : &str, value : &str) -> &mut Self{
         let this_language = self.l10n.entry(language.to_string()).or_default();
     
@@ -51,6 +65,8 @@ impl ModDetail {
         self
         
     }
+
+    /// Add a brand record
     pub fn add_brand(&mut self, key_name : &str, title: Option<&str>) -> &mut ModDetailBrand{
         let this_brand = self.brands.entry(key_name.to_string()).or_default();
 
@@ -60,11 +76,14 @@ impl ModDetail {
         };
         this_brand
     }
+
+    /// Output as pretty-print JSON
     #[must_use]
     pub fn to_json_pretty(&self) -> String {
         serde_json::to_string_pretty(&self).unwrap_or("{}".to_string())
     }
 
+    /// Output as JSON
     #[must_use]
     pub fn to_json(&self) -> String {
         self.to_string()
@@ -82,17 +101,24 @@ impl std::fmt::Display for ModDetail {
         f.write_str(&serde_json::to_string(&self).unwrap())
     }
 }
+
+/// Nested language definition langCode => [key, string]
 type LanguageDefinition = HashMap<String, HashMap<String, String>>;
 
+/// Added brand
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModDetailBrand {
+    /// name of the brand (human readable)
     pub title : String,
+    /// icon file, if read and included
     pub icon_file : Option<String>,
+    /// icon path, if it references the base game
     pub icon_base : Option<String>
 }
 
 impl ModDetailBrand {
+    /// Create new brand record
     fn new() -> Self {
         ModDetailBrand { title: String::new(), icon_file: None, icon_base: None }
     }
@@ -103,21 +129,31 @@ impl Default for ModDetailBrand {
     }
 }
 
+/// Brand definition mapping Brand Key -> Brand Record 
 type BrandDefinition = HashMap<String, ModDetailBrand>;
 
+/// Vehicle sorting data
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModDetailVehicleSorting {
+    /// brand KEY
     pub brand            : Option<String>,
+    /// category
     pub category         : Option<String>,
+    /// list of combos (local or basegame)
     pub combos           : Vec<String>,
+    /// name of vehicle
     pub name             : Option<String>,
+    /// type name
     pub type_name        : Option<String>,
+    /// type description
     pub type_description : Option<String>,
+    /// year of vehicle (non-standard)
     pub year             : Option<u32>,
 }
 
 impl ModDetailVehicleSorting {
+    /// create new sorting sub-record
     fn new() -> Self {
         ModDetailVehicleSorting {
             brand            : None,
@@ -131,23 +167,34 @@ impl ModDetailVehicleSorting {
     }
 }
 
+/// Vehicle Capability
 pub enum VehicleCapability {
+    /// Has option
     Yes,
+    /// Does not have option
     No
 }
 
+/// Vehicle flags
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModDetailVehicleFlags {
+    /// has beacon lights
     pub beacons   : VehicleCapability,
+    /// has paint options
     pub color     : VehicleCapability,
+    /// can be entered by player
     pub enterable : VehicleCapability,
+    /// has real lights
     pub lights    : VehicleCapability,
+    /// is motorized
     pub motorized : VehicleCapability,
+    /// has wheel options
     pub wheels    : VehicleCapability,
 }
 
 impl ModDetailVehicleFlags {
+    /// Create new vehicle flag sub-record
     fn new() -> Self {
         ModDetailVehicleFlags {
             beacons   : VehicleCapability::No,
@@ -171,15 +218,20 @@ impl Serialize for VehicleCapability {
     }
 }
 
+/// Vehicle engine sub-record
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModDetailVehicleEngine {
+    /// fuel type
     pub fuel_type         : Option<String>,
+    /// transmission type (primary)
     pub transmission_type : Option<String>,
+    /// motor configurations
     pub motors            : Vec<MotorEntry>,
 }
 
 impl ModDetailVehicleEngine {
+    /// create new engine sub-record
     fn new() -> Self {
         ModDetailVehicleEngine {
             fuel_type         : None,
@@ -189,23 +241,32 @@ impl ModDetailVehicleEngine {
     }
 }
 
+/// Vehicle spray variant
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModDetailSprayType {
+    /// fill types supported
     pub fills : Vec<String>,
+    /// working width
     pub width : Option<u32>,
 }
 
+/// Vehicle fill and spray sub-record
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModDetailVehicleFillSpray {
+    /// fill categories for storage
     pub fill_cat    : Vec<String>,
+    /// capacity for storage
     pub fill_level  : u32,
+    /// fill types for storage
     pub fill_type   : Vec<String>,
+    /// list of spray variants
     pub spray_types : Vec<ModDetailSprayType>,
 }
 
 impl ModDetailVehicleFillSpray {
+    /// create new fill and spray sub-record
     fn new() -> Self {
         ModDetailVehicleFillSpray {
             fill_cat    : vec![],
@@ -216,19 +277,28 @@ impl ModDetailVehicleFillSpray {
     }
 }
 
+/// Vehicle spec sub-record
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModDetailVehicleSpecs {
+    /// vehicle functions
     pub functions      : Vec<String>,
+    /// this vehicle can use tools that want to connect to these joints
     pub joint_accepts  : Vec<String>,
+    /// this vehicle needs to connect to these type of joints
     pub joint_requires : Vec<String>,
+    /// vehicle name
     pub name           : String,
+    /// vehicle price
     pub price          : u32,
+    /// list of included specs
     pub specs          : HashMap<String, u32>,
+    /// vehicle weight
     pub weight         : u32,
 }
 
 impl ModDetailVehicleSpecs {
+    /// create new vehicle specs sub-record
     fn new() -> Self {
         ModDetailVehicleSpecs {
             functions      : vec![],
@@ -242,21 +312,31 @@ impl ModDetailVehicleSpecs {
     }
 }
 
+/// Vehicle storeItem record
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModDetailVehicle {
+    /// fills and sprays
     pub fill_spray  : ModDetailVehicleFillSpray,
+    /// feature flags
     pub flags       : ModDetailVehicleFlags,
+    /// path to base game icon
     pub icon_base   : Option<String>,
+    /// base64 webp icon, if loaded
     pub icon_file   : Option<String>,
+    /// master type (vehicle)
     pub master_type : String,
+    /// motor information
     pub motor       : ModDetailVehicleEngine,
+    /// sorting information
     pub sorting     : ModDetailVehicleSorting,
+    /// vehicle specs
     pub specs       : ModDetailVehicleSpecs,
 }
 
 impl ModDetailVehicle {
     #[must_use]
+    /// Create new vehicle record
     pub fn new() -> Self {
         ModDetailVehicle {
             fill_spray  : ModDetailVehicleFillSpray::new(),
@@ -277,38 +357,50 @@ impl Default for ModDetailVehicle {
     }
 }
 
+/// motor value definition (hp, kph, or mph)
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MotorValue {
+    /// RPM value
     pub rpm : u32,
+    /// other value
     pub value : u32,
 }
 impl MotorValue {
     #[must_use]
+    /// Create new motor value with round numbers
     pub fn new(rpm: f32, value : f32) -> Self {
         MotorValue {
             rpm   : Self::round_to_u32(rpm),
             value : Self::round_to_u32(value)
         }
     }
+    /// Round input number and cast to `u32`
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     fn round_to_u32(num:f32) -> u32 {
         num.round() as u32
     }
 }
 
+/// motor definition
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MotorEntry {
+    /// name of motor
     pub name        : String,
+    /// list of rpm->hp values
     pub horse_power : Vec<MotorValue>,
+    /// maximum stated speed (from author)
     pub max_speed   : u32,
+    /// list of rpm->kph values
     pub speed_kph   : Vec<MotorValue>,
+    /// list of rpm->mph values
     pub speed_mph   : Vec<MotorValue>,
 }
 
 impl MotorEntry {
     #[must_use]
+    /// create new motor definition
     pub fn new(name : String, max_speed : u32) -> Self {
         MotorEntry {
             name,
@@ -320,19 +412,28 @@ impl MotorEntry {
     }
 }
 
+/// placable sorting information sub-record
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModDetailPlaceSorting {
+    /// category
     pub category        : Option<String>,
+    /// functions
     pub functions       : Vec<String>,
+    /// has color choices
     pub has_color       : VehicleCapability,
+    /// income generated per hour
     pub income_per_hour : u32,
+    /// name of placeable
     pub name            : Option<String>,
+    /// price
     pub price           : u32,
+    /// type name
     pub type_name       : Option<String>,
 }
 
 impl ModDetailPlaceSorting {
+    /// create new placeable sorting sub-record
     fn new() -> Self {
         ModDetailPlaceSorting {
             category        : None,
@@ -347,18 +448,26 @@ impl ModDetailPlaceSorting {
     
 }
 
+/// placable husbandry sub-record
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModDetailPlaceAnimals {
+    /// is a beehive
     pub beehive_exists    : bool,
+    /// honey per day in liters
     pub beehive_per_day   : u32,
+    /// working radius in meters
     pub beehive_radius    : u32,
+    /// number of animals
     pub husbandry_animals : u32,
+    /// is a husbandry
     pub husbandry_exists  : bool,
+    /// type of husbandry
     pub husbandry_type    : Option<String>,
 }
 
 impl ModDetailPlaceAnimals {
+    /// create new placeable husbandry sub-record
     fn new() -> Self {
         ModDetailPlaceAnimals {
             beehive_exists    : false,
@@ -372,17 +481,24 @@ impl ModDetailPlaceAnimals {
     
 }
 
+/// placable storage sub-record
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModDetailPlaceStorage {
+    /// number of objects for object storage types
     pub objects         : Option<u32>,
+    /// silo capacity
     pub silo_capacity   : u32,
+    /// is a silo?
     pub silo_exists     : bool,
+    /// silo fill categories
     pub silo_fill_cats  : Vec<String>,
+    /// silo fill types
     pub silo_fill_types : Vec<String>,
 }
 
 impl ModDetailPlaceStorage {
+    /// create new placeable storage sub-record
     fn new() -> Self {
         ModDetailPlaceStorage {
             objects         : None,
@@ -394,16 +510,22 @@ impl ModDetailPlaceStorage {
     }
 }
 
+/// Production ingredient list
 pub type ProductionIngredients = Vec<ProductionIngredient>;
+/// Production recipe (list of list of ingredients - ingredients in nested level are "OR", ingredient list in top level is "AND")
 pub type ProductionRecipe = Vec<ProductionIngredients>;
 
+/// Production ingredient
 #[derive(serde::Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ProductionIngredient {
+    /// quantity for ingredient
     amount : f32,
+    /// fill type of ingredient
     fill_type : String
 }
 impl ProductionIngredient {
+    /// create new production ingredient
     #[must_use]
     pub fn new(fill_type: String, amount: f32) -> Self {
         ProductionIngredient {
@@ -413,14 +535,19 @@ impl ProductionIngredient {
     }
 }
 
+/// production boost type
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProductionBoost {
+    /// quantity for boots
     amount       : f32,
+    /// amount of boost (0-1) percentage
     boost_factor : f32,
+    /// fill type for boost
     fill_type    : String,
 }
 impl ProductionBoost {
+    /// create new boost type
     #[must_use]
     pub fn new(fill_type: String, amount: f32, boost_factor: f32) -> Self {
         ProductionBoost {
@@ -431,19 +558,28 @@ impl ProductionBoost {
     }
 }
 
+/// Placeable production record
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModDetailProduction {
+    /// list of boosts
     pub boosts          : Vec<ProductionBoost>,
+    /// cost per hour
     pub cost_per_hour   : u32,
+    /// cycles per hour
     pub cycles_per_hour : u32,
+    /// name of production
     pub name            : String,
+    /// output types - multiples are AND
     pub output          : Vec<ProductionIngredient>,
+    /// name parameters (if used)
     pub params          : String,
+    /// production recipe - items on root level are AND, items on second level are OR
     pub recipe          : ProductionRecipe,
 }
 
 impl ModDetailProduction {
+    /// create new placeable production record
     #[must_use]
     pub fn new() -> Self {
         ModDetailProduction {
@@ -464,20 +600,29 @@ impl Default for ModDetailProduction {
     }
 }
 
+/// Placable record
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModDetailPlace {
+    /// beehive and husbandry
     pub animals     : ModDetailPlaceAnimals,
+    /// path to base game icon
     pub icon_base   : Option<String>,
+    /// base64 webp icon, if loaded
     pub icon_file   : Option<String>,
+    /// master type, is "placeable"
     pub master_type : String,
+    /// production list
     pub productions : Vec<ModDetailProduction>,
+    /// placeable sorting information
     pub sorting     : ModDetailPlaceSorting,
+    /// silos and object storage
     pub storage     : ModDetailPlaceStorage,
 }
 
 impl ModDetailPlace {
     #[must_use]
+    /// create new Placable record
     pub fn new() -> Self {
         ModDetailPlace {
             animals     : ModDetailPlaceAnimals::new(),

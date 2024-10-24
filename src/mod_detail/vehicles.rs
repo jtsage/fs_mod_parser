@@ -1,3 +1,4 @@
+//! Parse vehicles
 use crate::ModParserOptions;
 use crate::mod_detail::structs::{VehicleCapability, ModDetailVehicle, ModDetailSprayType};
 use crate::shared::files::AbstractFileHandle;
@@ -6,6 +7,64 @@ use super::{xml_extract_text_as_opt_string, xml_extract_text_as_opt_u32, normali
 use crate::shared::convert_mod_icon;
 use std::f32::consts::PI;
 
+/// Parse a vehicle
+/// 
+/// # Sample Output
+/// ```json
+///{
+///    "fillSpray": {
+///        "fillCat": [],
+///        "fillLevel": 11433,
+///        "fillType": [ "liquidfertilizer", "seeds" ],
+///        "sprayTypes": [
+///            {
+///                "fills": [ "fertilizer" ],
+///                "width": null
+///            }
+///        ]
+///    },
+///    "flags": {
+///        "beacons": false,
+///        "color": false,
+///        "enterable": false,
+///        "lights": true,
+///        "motorized": false,
+///        "wheels": true
+///    },
+///    "iconBase": null,
+///    "iconFile": null,
+///    "masterType": "vehicle",
+///    "motor": {
+///        "fuelType": null,
+///        "transmissionType": null,
+///        "motors": []
+///    },
+///    "sorting": {
+///        "brand": "JOHNDEERE",
+///        "category": "planters",
+///        "combos": [],
+///        "name": "1775NT 2022",
+///        "typeName": "fertilizingSowingMachine",
+///        "typeDescription": "$l10n_typeDesc_sowingMachine",
+///        "year": null
+///    },
+///    "specs": {
+///        "functions": [
+///            "$l10n_function_planter",
+///            "$l10n_function_sowingMachineDirect"
+///        ],
+///        "jointAccepts": [ "trailer", "trailerLow" ],
+///        "jointRequires": [ "implement" ],
+///        "name": "1775NT 2022",
+///        "price": 362878,
+///        "specs": {
+///            "neededPower": 340,
+///            "speedLimit": 16
+///        },
+///        "weight": 6900
+///    }
+///}
+/// ```
 pub fn vehicle_parse(xml_tree : &roxmltree::Document, file_handle: &mut Box<dyn AbstractFileHandle>,  options : &ModParserOptions ) -> ModDetailVehicle {
     let mut this_vehicle = ModDetailVehicle::new();
     
@@ -28,12 +87,16 @@ pub fn vehicle_parse(xml_tree : &roxmltree::Document, file_handle: &mut Box<dyn 
     this_vehicle
 }
 
+/// Transient motor torque entry
 struct TorqueEntry {
+    /// Torque
     pub torque   : f32,
+    /// motor RPM
     pub rpm      : f32
 }
 
 impl TorqueEntry {
+    /// Create new torque entry
     fn new(node : &roxmltree::Node, motor_rpm : f32) -> Self {
         let norm_rpm = node
             .attribute("normRpm")
@@ -50,6 +113,7 @@ impl TorqueEntry {
     }
 }
 
+/// Parse motor configurations
 fn vehicle_parse_motor(xml_tree : &roxmltree::Document, this_vehicle : &mut ModDetailVehicle) {
     let mut torque_entries: Vec<TorqueEntry> = vec![];
     let mut motor_rpm:f32 = 1800_f32;
@@ -165,6 +229,7 @@ fn vehicle_parse_motor(xml_tree : &roxmltree::Document, this_vehicle : &mut ModD
         .map(std::string::ToString::to_string);
 }
 
+/// Parse fill levels
 fn vehicle_parse_fills(xml_tree : &roxmltree::Document, this_vehicle : &mut ModDetailVehicle) {
     let mut capacity:Vec<Option<&str>> = vec![];
 
@@ -215,6 +280,7 @@ fn vehicle_parse_fills(xml_tree : &roxmltree::Document, this_vehicle : &mut ModD
     }
 }
 
+/// Parse vehicle sorting info
 fn vehicle_parse_sorting(xml_tree : &roxmltree::Document, this_vehicle : &mut ModDetailVehicle) {
     this_vehicle.sorting.name = xml_extract_text_as_opt_string(xml_tree, "name");
     this_vehicle.sorting.brand = xml_extract_text_as_opt_string(xml_tree, "brand");
@@ -230,6 +296,7 @@ fn vehicle_parse_sorting(xml_tree : &roxmltree::Document, this_vehicle : &mut Mo
         .collect();
 }
 
+/// Parse vehicle flags
 fn vehicle_parse_flags(xml_tree : &roxmltree::Document, this_vehicle : &mut ModDetailVehicle) {
     if xml_tree.descendants().any(|n|n.has_tag_name("beaconLights")) {
         this_vehicle.flags.beacons = VehicleCapability::Yes;
@@ -251,6 +318,7 @@ fn vehicle_parse_flags(xml_tree : &roxmltree::Document, this_vehicle : &mut ModD
     }
 }
 
+/// Parse vehicle specs
 fn vehicle_parse_specs(xml_tree : &roxmltree::Document, this_vehicle : &mut ModDetailVehicle) {
     if let Some(node) = xml_tree.descendants().find(|n| n.has_tag_name("speedLimit")) {
         if let Some(value) = node

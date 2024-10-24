@@ -1,10 +1,13 @@
+//! Base game data
 use super::structs::{Crop, CropSeason, CropTypeState, CropWeather};
 
+/// Crop types to ignore
 pub const SKIP_CROP_TYPES: [&str; 2] = [
     "meadow",
 	"unknown"
 ];
 
+/// Basegame supplied crop growth definitions, FS22
 pub const BG_CROP_TYPES: [CropTypeState; 17] = [
     CropTypeState { name : "wheat", max_harvest : 8, min_harvest : 8, states : 8},
     CropTypeState { name : "barley", max_harvest : 7,  min_harvest : 7,  states : 7 },
@@ -25,6 +28,7 @@ pub const BG_CROP_TYPES: [CropTypeState; 17] = [
     CropTypeState { name : "oilseedradish", max_harvest: 2, min_harvest : 2,  states : 2 },
 ];
 
+/// Base game weather definitions, FS22
 pub const BG_CROP_WEATHER: [CropWeather; 3] = [
     CropWeather { name : "mapUS", seasons : [
         CropSeason { name : "spring", min : 6, max : 18 },
@@ -46,6 +50,7 @@ pub const BG_CROP_WEATHER: [CropWeather; 3] = [
     ]},
 ];
 
+/// Base game crop definitions, FS22
 pub const BG_CROPS: [Crop; 17] = [
     Crop {
         name : "wheat",

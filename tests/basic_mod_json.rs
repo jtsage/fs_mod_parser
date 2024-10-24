@@ -16,6 +16,7 @@ fn check_json_mod_record() {
 		],
 		"canNotUse": true,
 		"currentCollection": "",
+		"detailIconLoaded" : false,
 		"fileDetail": {
 			"copyName": null,
 			"extraFiles": [],

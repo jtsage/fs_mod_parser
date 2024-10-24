@@ -1,5 +1,7 @@
 #![doc = include_str!("../README.md")]
 #![deny(clippy::pedantic)]
+#![warn(missing_docs)]
+#![warn(clippy::missing_docs_in_private_items)]
 
 pub mod maps;
 pub mod mod_basic;
@@ -9,10 +11,15 @@ pub mod shared;
 
 #[derive(Default)]
 #[allow(clippy::struct_excessive_bools)]
+/// Parsing options
 pub struct ModParserOptions {
+	/// Include save game parsing in mod output
 	pub include_save_game  : bool,
+	/// Include detail parsing in mod output
 	pub include_mod_detail : bool,
+	/// Skip icon processing for detail items
 	pub skip_detail_icons  : bool,
+	/// Skip icon processing for mod
 	pub skip_mod_icons     : bool,
 }
 

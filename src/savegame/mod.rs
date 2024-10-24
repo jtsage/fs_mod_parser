@@ -6,14 +6,23 @@ use std::{collections::{HashSet, HashMap}, path::Path};
 /// Possible parse problems with a savegame
 #[derive(PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
 pub enum SaveError {
+    /// File is unreadable
     FileUnreadable,
+    /// farms.xml is missing
     FarmsMissing,
+    /// farms.xml could not be parsed
     FarmsParseError,
+    /// placables.xml missing
     PlaceableMissing,
+    /// placables.xml could not be parsed
     PlaceableParseError,
+    /// vehicles.xml missing
     VehicleMissing,
+    /// vehicles.xml could not be parsed
     VehicleParseError,
+    /// careerSavegame.xml missing
     CareerMissing,
+    /// careerSavegame.xml could not be parsed
     CareerParseError,
 }
 
@@ -39,12 +48,17 @@ impl Serialize for SaveError {
 #[derive(serde::Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SaveGameMod {
+    /// Mod version from careerSavegame
     pub version : String,
+    /// Mod title from careerSavegame
     pub title : String,
+    /// List of farms mod is purchased on
     #[serde(serialize_with = "ordered_set")]
     pub farms : HashSet<usize>,
 }
+
 impl SaveGameMod {
+    /// Create new mod in the save game
     fn new() -> Self {
         SaveGameMod {
             version : String::from("0"),
@@ -53,6 +67,7 @@ impl SaveGameMod {
         }
     }
 }
+/// Sort and collect a `HashSet` to a javascript array
 fn ordered_set<S, K: Ord + Serialize>(
     value: &HashSet<K>,
     serializer: S,
@@ -69,13 +84,18 @@ where
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SaveGameFarm {
+    /// Name of farm
     pub name : String,
+    /// Cash on hand for farm
     pub cash : i64,
+    /// Loan amount for farm
     pub loan : i64,
+    /// Color index for farm (1-16)
     pub color : usize,
 }
 
 impl SaveGameFarm {
+    /// Add a new farm definition
     fn new(name : String) -> Self {
         SaveGameFarm {
             name,
@@ -86,20 +106,31 @@ impl SaveGameFarm {
     }
 }
 
-// Data structure for a savegame
+/// Data structure for a savegame
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SaveGameRecord {
+    /// List of found errors
     pub error_list  : HashSet<SaveError>,
+    /// List of farms
     pub farms       : HashMap<usize,  SaveGameFarm>,
+    /// Save passed all checks
     pub is_valid    : bool,
+    /// Map mod name (shortname)
     pub map_mod     : Option<String>,
+    /// Map title
     pub map_title   : Option<String>,
+    /// Number of mods loaded
     pub mod_count   : usize,
+    /// List of mods
     pub mods        : HashMap<String, SaveGameMod>,
+    /// Name of the save
     pub name        : Option<String>,
+    /// Playtime in hours:minutes, hours is unbound
     pub play_time   : String,
+    /// Save date, in rfc3339
     pub save_date   : String,
+    /// Single player save
     pub single_farm : bool
 }
 
@@ -110,12 +141,14 @@ impl SaveGameRecord {
         self.error_list.insert(issue);
     }
 
+    /// Add (or update) a mod with the owning farm already known
     fn add_mod_with_farm(&mut self, mod_key : &str, farm_id: usize) -> &mut Self {
         let this_mod = self.mods.entry(mod_key.to_string()).or_insert_with(SaveGameMod::new);
         this_mod.farms.insert(farm_id);
         self
     }
 
+    /// Add (or update) a mod with the details already known
     fn add_mod_with_detail(&mut self, mod_key : &str, title : Option<&str>, version : Option<&str>) -> &mut Self {
         let this_mod = self.mods.entry(mod_key.to_string()).or_insert_with(SaveGameMod::new);
 
@@ -125,6 +158,7 @@ impl SaveGameRecord {
         self
     }
 
+    /// Create a new save game record
     fn new() -> Self {
         SaveGameRecord {
             error_list  : HashSet::new(),
@@ -142,16 +176,21 @@ impl SaveGameRecord {
             single_farm : true,
         }
     }
+
+    /// Create a new save game record with a single error
     fn fast_fail(e : SaveError) -> Self {
         let mut record = SaveGameRecord::new();
         record.add_issue(e);
         record
     }
 
+    /// Get output as pretty-print JSON
     #[must_use]
     pub fn to_json_pretty(&self) -> String {
         serde_json::to_string_pretty(&self).unwrap_or("{}".to_string())
     }
+
+    /// Get output as JSON
     #[must_use]
     pub fn to_json(&self) -> String {
         self.to_string()
@@ -232,6 +271,7 @@ pub fn parse_open_file(mut abstract_file: Box<dyn AbstractFileHandle>) -> SaveGa
     save_record
 }
 
+/// Process farms.xml
 fn do_farms(save_record: &mut SaveGameRecord, abstract_file : &mut Box<dyn AbstractFileHandle>) {
     let Ok(farms_content) = abstract_file.as_text("farms.xml") else {
         save_record.add_issue(SaveError::FarmsMissing);
@@ -265,6 +305,7 @@ fn do_farms(save_record: &mut SaveGameRecord, abstract_file : &mut Box<dyn Abstr
     }
 }
 
+/// Process placables.xml
 fn do_placeables(save_record: &mut SaveGameRecord, abstract_file : &mut Box<dyn AbstractFileHandle> ) {
     let Ok(placeable_content) = abstract_file.as_text("placeables.xml") else {
         save_record.add_issue(SaveError::PlaceableMissing);
@@ -283,6 +324,7 @@ fn do_placeables(save_record: &mut SaveGameRecord, abstract_file : &mut Box<dyn 
     }
 }
 
+/// Process vehicles.xml
 fn do_vehicles(save_record: &mut SaveGameRecord, abstract_file : &mut Box<dyn AbstractFileHandle> ) {
     let Ok(vehicles_content) = abstract_file.as_text("vehicles.xml") else {
         save_record.add_issue(SaveError::VehicleMissing);
@@ -301,6 +343,7 @@ fn do_vehicles(save_record: &mut SaveGameRecord, abstract_file : &mut Box<dyn Ab
     }
 }
 
+/// Process careerSavegame.xml
 fn do_career(save_record: &mut SaveGameRecord, abstract_file : &mut Box<dyn AbstractFileHandle> ) {
     let Ok(career_content) = abstract_file.as_text("careerSavegame.xml") else {
         save_record.add_issue(SaveError::CareerMissing);

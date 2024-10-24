@@ -9,9 +9,13 @@ use crate::shared::errors::ModError;
 /// Used to represent a file contained inside an [`AbstractFileHandle`]
 #[derive(Debug)]
 pub struct FileDefinition {
+    /// File extension, forced to lowercase
     pub extension : String,
+    /// File name, including extension
     pub name : String,
+    /// File size in bytes
     pub size : u64,
+    /// Folder flag (is this a folder?)
     pub is_folder : bool,
 }
 
@@ -43,7 +47,10 @@ pub trait AbstractFileHandle {
 
 
 /// Open a folder as an [`AbstractFileHandle`]
-pub struct AbstractFolder { is_folder : bool, path : PathBuf }
+pub struct AbstractFolder {
+    /// [`PathBuf`] to folder
+    path : PathBuf
+}
 
 impl AbstractFolder {
     /// Create a new [`AbstractFileHandle`] record from a folder [`std::path::Path`]
@@ -56,7 +63,7 @@ impl AbstractFolder {
         let input_path = file_path.as_ref();
 
         if input_path.exists() {
-            Ok(AbstractFolder { is_folder : true, path : input_path.to_path_buf() })
+            Ok(AbstractFolder { path : input_path.to_path_buf() })
         } else {
             Err(ModError::FileErrorUnreadableZip)
         }
@@ -71,9 +78,7 @@ impl AbstractFileHandle for AbstractFolder {
         let search_path = Path::new(&self.path).join(needle);
         fs::read(search_path)
     }
-    fn is_folder(&self) -> bool {
-        self.is_folder
-    }
+    fn is_folder(&self) -> bool { true }
     fn list(&mut self) -> Vec<FileDefinition> {
         let mut names: Vec<FileDefinition> = vec![];
 
@@ -108,7 +113,10 @@ impl AbstractFileHandle for AbstractFolder {
 }
 
 /// Open a zip file as an [`AbstractFileHandle`]
-pub struct AbstractZipFile { is_folder: bool, archive : zip::ZipArchive<File> }
+pub struct AbstractZipFile {
+    /// archive file (opened)
+    archive : zip::ZipArchive<File>
+}
 impl AbstractZipFile {
     /// Create a new [`AbstractFileHandle`] record from a zip file [`std::path::Path`]
     /// 
@@ -123,7 +131,6 @@ impl AbstractZipFile {
                 match zip::ZipArchive::new(file) {
                     Ok(archive) => {
                         Ok(AbstractZipFile {
-                            is_folder : false,
                             archive
                         })
                     },
@@ -152,9 +159,7 @@ impl AbstractFileHandle for AbstractZipFile {
         file.read_to_string(&mut contents)?;
         Ok(contents)
     }
-    fn is_folder(&self) -> bool {
-        self.is_folder
-    }
+    fn is_folder(&self) -> bool { false }
     fn list(&mut self) -> Vec<FileDefinition> {
         let mut names: Vec<FileDefinition> = vec![];
         for i in 0..self.archive.len() {

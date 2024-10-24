@@ -1,3 +1,4 @@
+//! Parse mod storeItems, l10n additions and brands
 use crate::ModParserOptions;
 use crate::mod_detail::structs::{ModDetail, ModDetailError};
 use crate::shared::files::{AbstractFileHandle, AbstractFolder, AbstractZipFile, FileDefinition};
@@ -8,10 +9,33 @@ pub mod structs;
 mod vehicles;
 mod places;
 
+/// Parse the given mod for:
+/// 
+/// - store items
+/// - l10n additions
+/// - brand additions
+/// 
+/// This returns (optionally) a JSON object that looks like:
+/// ```json
+/// {
+///     "brands" : [],
+///     "l10n" : {
+///         "langCode" : {
+///             "key" : "Translated String"
+///         }
+///     },
+///     "issues": [],
+///     "placeables": [],
+///     "vehicles": [],
+/// }
+/// ```
+/// 
+/// See also [`crate::mod_detail::places::place_parse`] and [`crate::mod_detail::vehicles::vehicle_parse`]
 pub fn parser<P: AsRef<Path>>(full_path :P) -> ModDetail {
     parser_with_options(full_path, &ModParserOptions::default())
 }
 
+/// Parse mod detail with options
 pub fn parser_with_options<P: AsRef<Path>>(full_path :P, options : &ModParserOptions) -> ModDetail {
     let is_folder = full_path.as_ref().is_dir();
 
@@ -41,12 +65,13 @@ pub fn parser_with_options<P: AsRef<Path>>(full_path :P, options : &ModParserOpt
     parse_open_file(abstract_file, &mod_desc_doc, &abstract_file_list, options)
 }
 
+/// Parse mod details with an open [`AbstractFileHandle`]
 #[must_use]
 pub fn parse_open_file( mut abstract_file: Box<dyn AbstractFileHandle>, mod_desc_doc : &roxmltree::Document, abstract_file_list: &[FileDefinition], options : &ModParserOptions ) -> ModDetail {
     let mut mod_detail = ModDetail::new();
 
     do_languages(&mut mod_detail, &mut abstract_file, mod_desc_doc, abstract_file_list);
-    do_brands(&mut mod_detail, &mut abstract_file, mod_desc_doc);
+    do_brands(&mut mod_detail, &mut abstract_file, mod_desc_doc, options);
 
     for store_item in mod_desc_doc.descendants().filter(|n| n.has_tag_name("storeItem")) {
         if let Some(file_name) = store_item.attribute("xmlFilename") {
@@ -64,10 +89,12 @@ pub fn parse_open_file( mut abstract_file: Box<dyn AbstractFileHandle>, mod_desc
     mod_detail
 }
 
+/// Parse added brands
 fn do_brands(
     mod_detail: &mut ModDetail,
     file_handle: &mut Box<dyn AbstractFileHandle>,
-    mod_desc_doc : &roxmltree::Document
+    mod_desc_doc : &roxmltree::Document,
+    options : &ModParserOptions
 ) {
     let Some(brand_key) = mod_desc_doc.descendants().find(|n| n.has_tag_name("brands") ) else { return; };
 
@@ -82,7 +109,7 @@ fn do_brands(
             if let Some(base_filename) = Path::new(base_path).file_stem() {
                 this_brand.icon_base = Some(base_filename.to_string_lossy().to_string().to_lowercase());
             }
-        } else {
+        } else if !options.skip_detail_icons {
             // Load from disk, if it exists.
             let Ok(bin_file) = file_handle.as_bin(&normalize_icon_name(brand_icon_file)) else {
                 mod_detail.add_issue(ModDetailError::BrandMissingIcon);
@@ -93,6 +120,20 @@ fn do_brands(
     }
 }
 
+/// Parse added L10N keys and strings
+/// 
+/// Covers :
+/// 
+/// `<l10n filenamePrefix="languages/l10n" />`
+///   *OR*
+/// `<l10n><text name="key"><en>value</en></text></l10n>`
+/// 
+/// Covers files in the format
+/// 
+/// `<text name="key" text="value" />`
+///  *OR*
+/// `<e k="key" v="value"/>`
+/// 
 fn do_languages(
     mod_detail: &mut ModDetail,
     file_handle: &mut Box<dyn AbstractFileHandle>,
@@ -144,6 +185,7 @@ fn do_languages(
 }
 
 
+/// Extract an XML text element as a `u32` `Option`
 fn xml_extract_text_as_opt_u32(xml_tree : &roxmltree::Document, key : &str) -> Option<u32> {
     xml_tree
         .descendants()
@@ -151,6 +193,8 @@ fn xml_extract_text_as_opt_u32(xml_tree : &roxmltree::Document, key : &str) -> O
         .and_then(|n|n.text())
         .and_then(|n| n.parse::<u32>().ok())
 }
+
+/// Extract an XML text element as a `String` `Option`
 fn xml_extract_text_as_opt_string(xml_tree : &roxmltree::Document, key : &str) -> Option<String> {
     xml_tree
         .descendants()
@@ -158,6 +202,7 @@ fn xml_extract_text_as_opt_string(xml_tree : &roxmltree::Document, key : &str) -
         .and_then(|n|n.text().map(std::string::ToString::to_string))
 }
 
+/// Normalize an icon filename for loading (png->dds, fix slashes)
 fn normalize_icon_name(name : &str) -> String {
     let mut value_string = name.to_string();
     if let Some(index) = value_string.find(".png") {

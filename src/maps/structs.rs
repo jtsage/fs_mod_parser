@@ -7,30 +7,43 @@ pub type CropWeatherType = HashMap<String, HashMap<String, i8>>;
 
 /// Static version of the crop types
 pub struct CropTypeState {
+    /// Crop name
     pub name        : &'static str,
+    /// Last valid harvest state
     pub max_harvest : u8,
+    /// First valid harvest state
     pub min_harvest : u8,
+    /// Number of growth states (note: states+1 is usually withered)
     pub states      : u8,
 }
 
 /// Dynamic version of the crop types
 pub struct CropTypeStateBuilder {
+    /// Last valid harvest state
     pub max_harvest : u8,
+    /// First valid harvest state
     pub min_harvest : u8,
+    /// Name of crop
     pub name        : String,
+    /// Number of growth states (note: states+1 is usually withered)
     pub states      : u8,
 }
 
 /// Static season definition
 pub struct CropSeason {
+    /// Name of season
     pub name : &'static str,
+    /// Max temperature in celsius
     pub min : i8,
+    /// Min temperature in celsius
     pub max : i8,
 }
 
 /// Static weather definition
 pub struct CropWeather {
+    /// Name of base map
     pub name : &'static str,
+    /// Season definitions
     pub seasons : [CropSeason; 4],
 }
 
@@ -38,9 +51,13 @@ pub struct CropWeather {
 /// Static crop definition
 #[derive(Clone)]
 pub struct Crop {
+    /// Name of crop
     pub name : &'static str,
+    /// Periods for full growth
     pub growth_time : u8,
+    /// Periods for valid harvest - 12 booleans
     pub harvest_periods : [bool;12],
+    /// Periods for valid sowing - 12 booleans
     pub plant_periods : [bool;12],
 }
 
@@ -48,34 +65,48 @@ pub struct Crop {
 #[derive(serde::Serialize, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "camelCase")]
 pub struct CropOutput {
+    /// Periods for full growth
     pub growth_time : u8,
+    /// Periods for valid harvest - vector of periods
     pub harvest_periods : Vec<u8>,
+    /// Periods for valid sowing - vector of periods
     pub plant_periods : Vec<u8>,
 }
 
+/// Temporary struct for serializing crop data properly
 #[derive(serde::Serialize)]
 struct CropSerializerOutput {
+    /// Name of crop
     pub name : String,
+    /// Periods for full growth
     pub growth_time : u8,
+    /// Periods for valid harvest - vector of periods
     pub harvest_periods : Vec<u8>,
+    /// Periods for valid sowing - vector of periods
     pub plant_periods : Vec<u8>,
 }
 
 
+/// Crop listing
 pub struct CropList {
+    /// Internal List
     list : HashMap<String, CropOutput>,
+    /// Intended Order
     order : Vec<String>
 }
 
 impl CropList {
+    /// Add a crop to the list
     pub fn insert(&mut self, key : String, value : CropOutput) {
         self.list.insert(key.clone(), value);
         self.order.push(key);
     }
+    /// Get a crop from the list by &str key
     pub fn get(&mut self, key : &str) -> Option<&CropOutput> {
         self.list.get(key)
     }
     #[must_use]
+    /// Create new crop list
     pub fn new() -> Self {
         CropList{
             list : HashMap::new(),

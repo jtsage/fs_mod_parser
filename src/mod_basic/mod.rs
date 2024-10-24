@@ -146,6 +146,7 @@ pub fn parser<P: AsRef<Path>>(full_path :P) -> ModRecord {
     parser_with_options(full_path, &ModParserOptions::default())
 }
 
+/// [`crate::mod_basic::parser`] with options
 pub fn parser_with_options<P: AsRef<Path>>(full_path :P, options : &ModParserOptions) -> ModRecord {
     let is_folder = full_path.as_ref().is_dir();
     let mut mod_record = ModRecord::new(&full_path, is_folder);
@@ -266,6 +267,7 @@ pub fn parser_with_options<P: AsRef<Path>>(full_path :P, options : &ModParserOpt
 }
 
 
+/// Check if mod is actually a mod pack
 fn test_mod_pack(file_list : &Vec<FileDefinition>) -> Option<Vec<ZipPackFile>> {
     let mut zip_list:Vec<ZipPackFile> = vec![];
     let mut max_non_zip_files = 2;
@@ -377,14 +379,29 @@ fn do_file_counts(mod_record : &mut ModRecord, file_list : &Vec<FileDefinition>)
                 "pdf"  => max_pdf -= 1,
                 "grle" => max_grle -= 1,
                 "txt"  => max_txt -= 1,
-                "cache"  => if file.size > size_cache { mod_record.add_issue(ModError::PerformanceOversizeI3D); },
+                "cache"  => if file.size > size_cache {
+                    mod_record.add_issue(ModError::PerformanceOversizeI3D);
+                    mod_record.file_detail.too_big_files.push(file.name.clone());
+                },
                 "dds"    => {
                     mod_record.file_detail.image_dds.push(file.name.clone());
-                    if file.size > size_dds { mod_record.add_issue(ModError::PerformanceOversizeDDS); }
+                    if file.size > size_dds {
+                        mod_record.add_issue(ModError::PerformanceOversizeDDS);
+                        mod_record.file_detail.too_big_files.push(file.name.clone());
+                    }
                 },
-                "gdm"    => if file.size > size_gdm { mod_record.add_issue(ModError::PerformanceOversizeGDM); },
-                "shapes" => if file.size > size_shapes { mod_record.add_issue(ModError::PerformanceOversizeSHAPES); },
-                "xml"    => if file.size > size_xml { mod_record.add_issue(ModError::PerformanceOversizeXML); },
+                "gdm"    => if file.size > size_gdm { 
+                    mod_record.add_issue(ModError::PerformanceOversizeGDM);
+                    mod_record.file_detail.too_big_files.push(file.name.clone());
+                },
+                "shapes" => if file.size > size_shapes {
+                    mod_record.add_issue(ModError::PerformanceOversizeSHAPES);
+                    mod_record.file_detail.too_big_files.push(file.name.clone());
+                },
+                "xml"    => if file.size > size_xml { 
+                    mod_record.add_issue(ModError::PerformanceOversizeXML);
+                    mod_record.file_detail.too_big_files.push(file.name.clone());
+                },
                 _ => {},
             }
 
@@ -447,7 +464,7 @@ fn mod_desc_basics(mod_record : &mut ModRecord, mod_desc : &roxmltree::Document)
         mod_record.add_issue(ModError::InfoLikelyPiracy); 
     }
 
-    mod_record.mod_desc.icon_file_name = read_mod_filename(mod_desc.descendants().find(|n| n.has_tag_name("iconFilename")), mod_record);
+    mod_record.mod_desc.icon_file_name = read_mod_icon_filename(mod_desc.descendants().find(|n| n.has_tag_name("iconFilename")), mod_record);
 
     if mod_record.mod_desc.icon_file_name.is_none() {
         mod_record.add_issue(ModError::ModDescNoModIcon);
@@ -519,12 +536,13 @@ fn mod_desc_basics(mod_record : &mut ModRecord, mod_desc : &roxmltree::Document)
     }
 }
 
-fn read_mod_filename(node : Option<roxmltree::Node>, mod_record : &mut ModRecord) -> Option<String> {
+/// Get mod icon filename from entry
+fn read_mod_icon_filename(node : Option<roxmltree::Node>, mod_record : &mut ModRecord) -> Option<String> {
     match node {
         Some(node) => {
             match node.text() {
                 Some(val) => {
-                    let mut value_string = val.to_string();
+                    let mut value_string = val.to_string().replace('\\', "/");
                     if let Some(index) = value_string.find(".png") {
                         value_string.replace_range(index..value_string.len(), ".dds");
                     }

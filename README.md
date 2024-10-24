@@ -34,3 +34,18 @@ Valid input is a file or folder, any type that coerces into a `&Path`.
 ```rust
 let json_representation = fs_mod_parser::parse_savegame("savegame1.zip").to_json_pretty();
 ```
+
+### Store Item Details
+
+Returned information includes:
+
+- Added Brands
+- Added L10N Strings
+- Vehicles
+- Placables and Productions
+
+Valid input is a file or folder, any type that coerces into a `&Path`.
+
+```rust
+let json_representation = fs_mod_parser::parse_detail("FS22_Mod_File.zip").to_json_pretty();
+```

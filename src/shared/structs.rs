@@ -11,7 +11,9 @@ use serde::ser::{Serialize, Serializer};
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModDescL10N {
+    /// Translation strings for the mod title
     pub title : HashMap<String, String>,
+    /// Translation strings for the mod description
     pub description : HashMap<String, String>,
 }
 
@@ -19,17 +21,29 @@ pub struct ModDescL10N {
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModRecord {
+    /// List of active badges
     pub badge_array        : ModBadges,
+    /// Mod not usable flag
     pub can_not_use        : bool,
+    /// Current collection for mod (not set)
     pub current_collection : String,
+    /// Detail icons processed flag
     pub detail_icon_loaded : bool,
+    /// File details
     pub file_detail        : ModFile,
+    /// Errors or issues found
     pub issues             : HashSet<ModError>,
+    /// storeItems found (if processed)
     pub include_detail     : Option<ModDetail>,
+    /// save game record (if processed)
     pub include_save_game  : Option<SaveGameRecord>,
+    /// L10N title and description
     pub l10n               : ModDescL10N,
+    /// MD5 Sum (not yet implemented)
     pub md5_sum            : Option<String>,
+    /// modDesc.xml fields
     pub mod_desc           : ModDesc,
+    /// Mod UUID from full path and filename (MD5)
     pub uuid               : String,
 }
 
@@ -87,10 +101,13 @@ impl ModRecord {
         }
         self
     }
+    /// Output as pretty-print JSON
     #[must_use]
     pub fn to_json_pretty(&self) -> String {
         serde_json::to_string_pretty(&self).unwrap_or("{}".to_string())
     }
+
+    /// Output as JSON
     #[must_use]
     pub fn to_json(&self) -> String {
         self.to_string()
@@ -108,24 +125,43 @@ impl std::fmt::Display for ModRecord {
 #[serde(rename_all = "camelCase")]
 #[allow(clippy::struct_excessive_bools)]
 pub struct ModDesc {
+    /// Keyboard actions
     pub actions         : HashMap<String, String>,
+    /// Keyboard bindings
     pub binds           : HashMap<String, Vec<String>>,
+    /// Mod Author
     pub author          : String,
+    /// Script file count
     pub script_files    : u32,
+    /// Store Item count
     pub store_items     : usize,
+    /// Crop details (for maps)
     pub crop_info       : CropList,
+    /// Map Weather (for maps)
     pub crop_weather    : Option<CropWeatherType>,
+    /// Mods this mod depends on (shortNames)
     pub depend          : Vec<String>,
+    /// descVersion
     pub desc_version    : u32,
+    /// icon file name
     pub icon_file_name  : Option<String>,
+    /// icon image, if processed and loaded - base64 webp
     pub icon_image      : Option<String>,
+    /// map config file (for maps)
     pub map_config_file : Option<String>,
+    /// map has a custom environment
     pub map_custom_env  : bool,
+    /// map has a custom fruit list
     pub map_custom_crop : bool,
+    /// map has a custom growth file
     pub map_custom_grow : bool,
+    /// map is in the southern hemisphere
     pub map_is_south    : bool,
+    /// map image, if processed and loaded - base64 webp
     pub map_image       : Option<String>,
+    /// multi-player capable
     pub multi_player    : bool,
+    /// mod version
     pub version         : String,
 }
 
@@ -157,10 +193,12 @@ impl ModDesc {
 }
 
 
-// Entry for zip files inside a "mod" file.
+/// Entry for zip files inside a "mod" file.
 #[derive(serde::Serialize, PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
 pub struct ZipPackFile {
+    /// name of file (includes relative path)
     pub name : String,
+    /// size of file (unpacked)
     pub size : u64,
 }
 
@@ -168,23 +206,39 @@ pub struct ZipPackFile {
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ModFile {
+    /// suggested name if this appears to be a copy of a mod
     pub copy_name     : Option<String>,
+    /// list of extra files in mod
     pub extra_files   : Vec<String>,
+    /// mod file date
     pub file_date     : String,
+    /// mod size (packed zip or folder contents)
     pub file_size     : u64,
+    /// full path to file
     pub full_path     : String,
+    /// list of I3D files
     pub i3d_files     : Vec<String>,
+    /// list of DDS files
     #[serde(rename = "imageDDS")]
     pub image_dds     : Vec<String>,
+    /// list of non DDS images
     #[serde(rename = "imageNonDDS")]
     pub image_non_dds : Vec<String>,
+    /// folder flag (is this a folder?)
     pub is_folder     : bool,
+    /// save game flag (is this a save game?)
     pub is_save_game  : bool,
+    /// mod pack flag (is this a pack of mods?)
     pub is_mod_pack   : bool,
+    /// list of PNG textures (false positives possible)
     pub png_texture   : Vec<String>,
+    /// short name of mod (the bit before the .zip extension, or the folder name)
     pub short_name    : String,
+    /// list of files with spaces in them
     pub space_files   : Vec<String>,
+    /// list of oversized files
     pub too_big_files : Vec<String>,
+    /// list of zip files
     pub zip_files     : Vec<ZipPackFile>,
 }
 
@@ -216,13 +270,21 @@ impl ModFile {
 #[allow(clippy::struct_excessive_bools)]
 #[derive(PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
 pub struct ModBadges {
+    /// is broken (likely unusable)
     pub broken   : bool,
+    /// is folder
     pub folder   : bool,
+    /// contains malware
     pub malware  : bool,
+    /// not valid for multiplayer
     pub no_mp    : bool,
+    /// not a mod
     pub notmod   : bool,
+    /// PC only (has LUA scripts)
     pub pconly   : bool,
+    /// has a problem (likely still useable)
     pub problem  : bool,
+    /// is a save game
     pub savegame : bool,
 }
 

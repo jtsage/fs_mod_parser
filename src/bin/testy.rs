@@ -4,7 +4,7 @@
 use std::path::{self, PathBuf};
 use std::time::Instant;
 use glob::glob;
-use fs_mod_parser::{parse_detail, parse_detail_with_options, parse_mod, parse_mod_with_options, parse_savegame, ModParserOptions};
+use fs_mod_parser::{parse_detail, parse_mod, parse_mod_with_options, parse_savegame, ModParserOptions};
 use rayon::prelude::*;
 
 fn main() {

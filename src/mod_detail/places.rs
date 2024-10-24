@@ -1,3 +1,4 @@
+//! Parse placeables and productions
 use std::collections::HashMap;
 use crate::ModParserOptions;
 use crate::mod_detail::structs::{VehicleCapability, ModDetailPlace, ModDetailProduction, ProductionIngredient, ProductionIngredients, ProductionBoost};
@@ -5,6 +6,59 @@ use crate::shared::files::AbstractFileHandle;
 use super::{xml_extract_text_as_opt_string, xml_extract_text_as_opt_u32, normalize_icon_name};
 use crate::shared::convert_mod_icon;
 
+/// Parse a placeable
+/// 
+/// Also processed productions if found
+/// 
+/// # Sample output:
+/// ```json
+/// {
+///    "animals": {
+///        "beehiveExists": false,
+///        "beehivePerDay": 0,
+///        "beehiveRadius": 0,
+///        "husbandryAnimals": 0,
+///        "husbandryExists": false,
+///        "husbandryType": null
+///    },
+///    "iconBase": null,
+///    "iconFile": null,
+///    "masterType": "placeable",
+///    "productions": [
+///    {
+///        "boosts": [],
+///        "costPerHour": 2,
+///        "cyclesPerHour": 1,
+///        "name": "$l10n_fillType_forage_mixing",
+///        "output": [
+///             { "amount": 2000.0, "fillType": "forage" }
+///        ],
+///        "params": "",
+///        "recipe": [
+///             [ { "amount": 1000.0, "fillType": "silage" } ],
+///             [ { "amount": 500.0, "fillType": "drygrass_windrow" } ],
+///             [ { "amount": 500.0, "fillType": "straw" } ]
+///        ]
+///    }
+///    ],
+///    "sorting": {
+///        "category": "fences",
+///        "functions": [ "$l10n_function_decoration" ],
+///        "hasColor": false,
+///        "incomePerHour": 0,
+///        "name": "$l10n_shopItem_guardRailLevel01",
+///        "price": 100,
+///        "typeName": "placeable"
+///    },
+///    "storage": {
+///        "objects": null,
+///        "siloCapacity": 0,
+///        "siloExists": false,
+///        "siloFillCats": [],
+///        "siloFillTypes": []
+///    }
+/// },
+/// ```
 pub fn place_parse(xml_tree : &roxmltree::Document, file_handle: &mut Box<dyn AbstractFileHandle>,  options : &ModParserOptions ) -> ModDetailPlace {
     let mut this_place = ModDetailPlace::new();
     
@@ -29,7 +83,7 @@ pub fn place_parse(xml_tree : &roxmltree::Document, file_handle: &mut Box<dyn Ab
     this_place
 }
 
-
+/// Parse productions
 fn place_parse_production(xml_node : &roxmltree::Node) -> ModDetailProduction {
     let mut this_production = ModDetailProduction::new();
 
@@ -110,6 +164,7 @@ fn place_parse_production(xml_node : &roxmltree::Node) -> ModDetailProduction {
     this_production
 }
 
+/// Parse storage (bales and silos)
 fn place_parse_storage(xml_tree : &roxmltree::Document, this_place : &mut ModDetailPlace) {
     if let Some(obj_store) = xml_tree.root().children().find(|n|n.has_tag_name("objectStorage")) {
         this_place.storage.objects =  Some(str::parse(obj_store.attribute("capacity").unwrap_or("250")).unwrap_or(250));
@@ -142,6 +197,7 @@ fn place_parse_storage(xml_tree : &roxmltree::Document, this_place : &mut ModDet
     }
 }
 
+/// Parse animal husbandry and beehives
 fn place_parse_animals(xml_tree : &roxmltree::Document, this_place : &mut ModDetailPlace) {
     if let Some(this_beehive) = xml_tree.descendants().find(|n|n.has_tag_name("beehive")) {
         this_place.animals.beehive_exists = true;
@@ -156,6 +212,7 @@ fn place_parse_animals(xml_tree : &roxmltree::Document, this_place : &mut ModDet
     }
 }
 
+/// Parse placeable sorting data
 fn place_parse_sorting(xml_tree : &roxmltree::Document, this_place : &mut ModDetailPlace) {
     this_place.sorting.category = xml_extract_text_as_opt_string(xml_tree, "category");
     this_place.sorting.income_per_hour = xml_extract_text_as_opt_u32(xml_tree, "incomePerHour").unwrap_or(0);

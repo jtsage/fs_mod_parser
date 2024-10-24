@@ -61,7 +61,7 @@ fn bool_array_to_vector(input_array:[bool;12]) -> Vec<u8> {
     input_array.iter().enumerate().map(|(i,v)| if *v { i as u8 + 1_u8 } else {0_u8}).filter(|n| *n!=0_u8 ).collect()
 }
 
-// Convert base game crop data to usable version
+/// Convert base game crop data to usable version
 fn crops_from_base_game() -> CropList {
     let mut crop_list:CropList = CropList::new();
 
@@ -75,7 +75,7 @@ fn crops_from_base_game() -> CropList {
     crop_list
 }
 
-// Convert base game fruit types to usable builders
+/// Convert base game fruit types to usable builders
 fn fruits_from_base_game() -> Vec<CropTypeStateBuilder> {
     let mut collector:Vec<CropTypeStateBuilder> = vec![];
 
@@ -90,9 +90,10 @@ fn fruits_from_base_game() -> Vec<CropTypeStateBuilder> {
     collector
 }
 
+/// Map environment - is souther hemisphere, weather struct
 struct MapEnvironment (bool, Option<CropWeatherType>);
 
-// Return basegame weather by key
+/// Return basegame weather by key
 fn weather_from_base_game(base_game_key : &str) -> MapEnvironment {
     let mut weather_map:CropWeatherType = HashMap::new();
 
@@ -171,7 +172,7 @@ pub fn read_map_basics(mod_record : &mut ModRecord, file_handle: &mut Box<dyn Ab
 
 }
 
-
+/// Decode a range argument and get the maximum from it
 fn decode_max_range(range:Option<&str>) -> u8 {
     match range {
         Some(value) => { 
@@ -186,9 +187,14 @@ fn decode_max_range(range:Option<&str>) -> u8 {
     }
 }
 
+/// Load and convert the overview image
+/// 
+/// Automatically crops to the center 1/4 of the image that contains the map
+/// and constrains the size to 512x512px
 fn process_overview(xml_tree: &roxmltree::Document, mod_record : &mut ModRecord, file_handle: &mut Box<dyn AbstractFileHandle>) -> Option<String> {
     if let Some(filename) = xml_tree.root_element().attribute("imageFilename") {
-        let mut value_string = filename.to_string();
+        let mut value_string = filename.to_string().replace('\\', "/");
+
         if let Some(index) = value_string.find(".png") {
             value_string.replace_range(index..value_string.len(), ".dds");
         }
@@ -201,6 +207,7 @@ fn process_overview(xml_tree: &roxmltree::Document, mod_record : &mut ModRecord,
     None
 }
 
+/// Build the crop builder struct from crop constraints
 fn populate_crop_builder(file_handle: &mut Box<dyn AbstractFileHandle>, fruits : Option<String>) -> Vec<CropTypeStateBuilder> {
     if let Some(file_name) = fruits {
         if let Ok(contents) = file_handle.as_text( &file_name) {
@@ -236,6 +243,7 @@ fn populate_crop_builder(file_handle: &mut Box<dyn AbstractFileHandle>, fruits :
     fruits_from_base_game()
 }
 
+/// Build the weather from base game or included XML file
 fn populate_weather(file_handle: &mut Box<dyn AbstractFileHandle>, env_base: Option<String>, env_in: Option<String>) -> MapEnvironment {
     if let Some(base_game_key) = env_base {
         return weather_from_base_game(&base_game_key)
@@ -284,6 +292,9 @@ fn populate_weather(file_handle: &mut Box<dyn AbstractFileHandle>, env_base: Opt
     weather_from_base_game("mapUS")
 }
 
+/// Convert the read index into the real harvest index
+/// 
+/// This is +1 for all crops except olives (+2)
 fn get_real_index(index : u8, name : &str) -> u8 {
     let test_index = if name == "olive" {
         index + 2
@@ -292,6 +303,10 @@ fn get_real_index(index : u8, name : &str) -> u8 {
     };
     ((test_index - 1) % 12) + 1
 }
+
+/// Populate crop growth from loaded XML file
+/// 
+/// This is only used when a map includes a growth file, the base game data is pre-calculated
 fn populate_crop_growth(file_handle: &mut Box<dyn AbstractFileHandle>, growth : Option<String>, crop_builder: &[CropTypeStateBuilder]) -> Option<CropList> {
     let file_name = growth?;
     let contents = file_handle.as_text(&file_name).ok()?;
