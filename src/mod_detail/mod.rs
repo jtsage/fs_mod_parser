@@ -6,8 +6,8 @@ use crate::shared::convert_mod_icon;
 use std::path::Path;
 
 pub mod structs;
-mod vehicles;
-mod places;
+pub mod vehicles;
+pub mod places;
 
 /// Parse the given mod for:
 /// 
