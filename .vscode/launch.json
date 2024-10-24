@@ -1,0 +1,178 @@
+{
+	// Use IntelliSense to learn about possible attributes.
+	// Hover to view descriptions of existing attributes.
+	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug unit tests in library 'fs_mod_parser'",
+			"cargo": {
+				"args": [
+					"test",
+					"--no-run",
+					"--lib",
+					"--package=fs_mod_parser"
+				],
+				"filter": {
+					"name": "fs_mod_parser",
+					"kind": "lib"
+				}
+			},
+			"args": [],
+			"cwd": "${workspaceFolder}"
+		},
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug executable 'testy'",
+			"cargo": {
+				"args": [
+					"build",
+					"--bin=testy",
+					"--package=fs_mod_parser"
+				],
+				"filter": {
+					"name": "testy",
+					"kind": "bin"
+				}
+			},
+			"args": [],
+			"cwd": "${workspaceFolder}"
+		},
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug unit tests in executable 'testy'",
+			"cargo": {
+				"args": [
+					"test",
+					"--no-run",
+					"--bin=testy",
+					"--package=fs_mod_parser"
+				],
+				"filter": {
+					"name": "testy",
+					"kind": "bin"
+				}
+			},
+			"args": [],
+			"cwd": "${workspaceFolder}"
+		},
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug integration test 'basic_mod_json'",
+			"cargo": {
+				"args": [
+					"test",
+					"--no-run",
+					"--test=basic_mod_json",
+					"--package=fs_mod_parser"
+				],
+				"filter": {
+					"name": "basic_mod_json",
+					"kind": "test"
+				}
+			},
+			"args": [],
+			"cwd": "${workspaceFolder}"
+		},
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug integration test 'file_failures'",
+			"cargo": {
+				"args": [
+					"test",
+					"--no-run",
+					"--test=file_failures",
+					"--package=fs_mod_parser"
+				],
+				"filter": {
+					"name": "file_failures",
+					"kind": "test"
+				}
+			},
+			"args": [],
+			"cwd": "${workspaceFolder}"
+		},
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug integration test 'maps'",
+			"cargo": {
+				"args": [
+					"test",
+					"--no-run",
+					"--test=maps",
+					"--package=fs_mod_parser"
+				],
+				"filter": {
+					"name": "maps",
+					"kind": "test"
+				}
+			},
+			"args": [],
+			"cwd": "${workspaceFolder}"
+		},
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug integration test 'not_fatal_warnings'",
+			"cargo": {
+				"args": [
+					"test",
+					"--no-run",
+					"--test=not_fatal_warnings",
+					"--package=fs_mod_parser"
+				],
+				"filter": {
+					"name": "not_fatal_warnings",
+					"kind": "test"
+				}
+			},
+			"args": [],
+			"cwd": "${workspaceFolder}"
+		},
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug integration test 'savegames'",
+			"cargo": {
+				"args": [
+					"test",
+					"--no-run",
+					"--test=savegames",
+					"--package=fs_mod_parser"
+				],
+				"filter": {
+					"name": "savegames",
+					"kind": "test"
+				}
+			},
+			"args": [],
+			"cwd": "${workspaceFolder}"
+		},
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Debug integration test 'zip_pack'",
+			"cargo": {
+				"args": [
+					"test",
+					"--no-run",
+					"--test=zip_pack",
+					"--package=fs_mod_parser"
+				],
+				"filter": {
+					"name": "zip_pack",
+					"kind": "test"
+				}
+			},
+			"args": [],
+			"cwd": "${workspaceFolder}"
+		}
+	]
+}

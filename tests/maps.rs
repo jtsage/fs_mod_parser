@@ -241,3 +241,16 @@ fn test_custom_growth() {
     }).as_ref(), "oilseedradish");
 
 }
+
+
+#[test]
+fn test_no_customs() {
+
+    let result = parse_mod("./tests/test_mods/MAP_NoCustoms.zip");
+
+    assert_eq!(result.mod_desc.map_custom_crop, false);
+    assert_eq!(result.mod_desc.map_custom_grow, false);
+    assert_eq!(result.mod_desc.map_custom_env, false);
+    assert_eq!(result.mod_desc.crop_info.is_empty(), false);
+    assert_eq!(result.mod_desc.crop_info.len(), 17);
+}

@@ -103,6 +103,85 @@ fn check_json_badges() {
 }
 
 #[test]
+fn simple_good_mod_unzipped() {
+	let test_file_path = Path::new("./tests/test_mods/PASS_Good_Simple_Mod");
+	assert!(test_file_path.exists());
+
+	let mod_record = parser(test_file_path);
+
+	assert_eq!(mod_record.can_not_use, false);
+	assert_eq!(mod_record.issues.len(), 1);
+
+	assert_eq!(mod_record.badge_array, ModBadges {
+		broken   : false,
+		folder   : true,
+		malware  : false,
+		no_mp    : true,
+		notmod   : false,
+		pconly   : false,
+		problem  : false,
+		savegame : false,
+	});
+
+	assert_ne!(mod_record.mod_desc.icon_image, None);
+
+	let expected = json!({
+		"badgeArray": [],
+		"canNotUse": false,
+		"currentCollection": "",
+		"fileDetail": {
+			"copyName": null,
+			"extraFiles": [],
+			"fileSize": 35748,
+			"i3dFiles": [],
+			"imageDDS": [
+				"modIcon.dds"
+			],
+			"imageNonDDS": [],
+			"isFolder": true,
+			"isSaveGame": false,
+			"isModPack": false,
+			"pngTexture": [],
+			"shortName": "PASS_Good_Simple_Mod",
+			"spaceFiles": [],
+			"tooBigFiles": [],
+			"zipFiles": []
+		},
+		"issues": [],
+		"l10n": {
+			"title": {
+				"en": "Totally valid FS22 Mod"
+			},
+			"description": {
+				"en": "Demonstrates how FSModAssist handles a good mod file."
+			}
+		},
+		"md5Sum": null,
+		"modDesc": {
+			"actions": {},
+			"binds": {},
+			"author": "FSModAssist Test",
+			"scriptFiles": 0,
+			"storeItems": 1,
+			"cropInfo": null,
+			"cropWeather": null,
+			"depend": [],
+			"descVersion": 69,
+			"iconFileName": "modIcon.dds",
+			"mapConfigFile": null,
+			"mapCustomEnv": false,
+			"mapCustomCrop": false,
+			"mapCustomGrow": false,
+			"mapIsSouth": false,
+			"mapImage": null,
+			"multiPlayer": true,
+			"version": "1.0.0.0"
+		},
+	});
+
+	assert_json_include!(actual : json!(mod_record), expected : expected);
+}
+#[test]
 fn simple_good_mod() {
 	let test_file_path = Path::new("./tests/test_mods/PASS_Good_Simple_Mod.zip");
 	assert!(test_file_path.exists());

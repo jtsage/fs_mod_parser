@@ -58,9 +58,9 @@ impl ModDetail {
 
     /// Add (or alter) a language code with a new key and string
     pub fn add_lang(&mut self, language : &str, key : &str, value : &str) -> &mut Self{
-        let this_language = self.l10n.entry(language.to_string()).or_default();
+        let this_language = self.l10n.entry(language.to_owned()).or_default();
     
-        this_language.insert(key.to_string().to_lowercase(), value.to_string());
+        this_language.insert(key.to_owned().to_lowercase(), value.to_owned());
 
         self
         
@@ -68,11 +68,11 @@ impl ModDetail {
 
     /// Add a brand record
     pub fn add_brand(&mut self, key_name : &str, title: Option<&str>) -> &mut ModDetailBrand{
-        let this_brand = self.brands.entry(key_name.to_string()).or_default();
+        let this_brand = self.brands.entry(key_name.to_owned()).or_default();
 
         this_brand.title = match title {
-            Some(title) => title.to_string(),
-            None => key_name.to_string()
+            Some(title) => title.to_owned(),
+            None => key_name.to_owned()
         };
         this_brand
     }
@@ -80,7 +80,7 @@ impl ModDetail {
     /// Output as pretty-print JSON
     #[must_use]
     pub fn to_json_pretty(&self) -> String {
-        serde_json::to_string_pretty(&self).unwrap_or("{}".to_string())
+        serde_json::to_string_pretty(&self).unwrap_or(String::from("{}"))
     }
 
     /// Output as JSON
@@ -98,7 +98,7 @@ impl Default for ModDetail {
 
 impl std::fmt::Display for ModDetail {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&serde_json::to_string(&self).unwrap())
+        f.write_str(&serde_json::to_string(&self).unwrap_or(String::from("{}")))
     }
 }
 
@@ -376,7 +376,7 @@ impl MotorValue {
         }
     }
     /// Round input number and cast to `u32`
-    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     fn round_to_u32(num:f32) -> u32 {
         num.round() as u32
     }

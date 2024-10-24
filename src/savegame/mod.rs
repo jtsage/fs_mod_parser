@@ -143,17 +143,17 @@ impl SaveGameRecord {
 
     /// Add (or update) a mod with the owning farm already known
     fn add_mod_with_farm(&mut self, mod_key : &str, farm_id: usize) -> &mut Self {
-        let this_mod = self.mods.entry(mod_key.to_string()).or_insert_with(SaveGameMod::new);
+        let this_mod = self.mods.entry(mod_key.to_owned()).or_insert_with(SaveGameMod::new);
         this_mod.farms.insert(farm_id);
         self
     }
 
     /// Add (or update) a mod with the details already known
     fn add_mod_with_detail(&mut self, mod_key : &str, title : Option<&str>, version : Option<&str>) -> &mut Self {
-        let this_mod = self.mods.entry(mod_key.to_string()).or_insert_with(SaveGameMod::new);
+        let this_mod = self.mods.entry(mod_key.to_owned()).or_insert_with(SaveGameMod::new);
 
-        if let Some(title)   = title   { this_mod.title = title.to_string() }
-        if let Some(version) = version { this_mod.version = version.to_string(); }
+        if let Some(title)   = title   { title.clone_into(&mut this_mod.title); }
+        if let Some(version) = version { version.clone_into(&mut this_mod.version); }
 
         self
     }
@@ -187,7 +187,7 @@ impl SaveGameRecord {
     /// Get output as pretty-print JSON
     #[must_use]
     pub fn to_json_pretty(&self) -> String {
-        serde_json::to_string_pretty(&self).unwrap_or("{}".to_string())
+        serde_json::to_string_pretty(&self).unwrap_or(String::from("{}"))
     }
 
     /// Get output as JSON
@@ -199,7 +199,7 @@ impl SaveGameRecord {
 
 impl std::fmt::Display for SaveGameRecord {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&serde_json::to_string(&self).unwrap())
+        f.write_str(&serde_json::to_string(&self).unwrap_or(String::from("{}")))
     }
 }
 
@@ -284,7 +284,8 @@ fn do_farms(save_record: &mut SaveGameRecord, abstract_file : &mut Box<dyn Abstr
     };
 
     let mut ran_more_than_once = false;
-    #[allow(clippy::cast_possible_truncation)]
+
+    #[expect(clippy::cast_possible_truncation)]
     for farm_entry in farms_document.descendants().filter(|n|n.has_tag_name("farm")) {
         let Some(farm_id)   = farm_entry.attribute("farmId").and_then(|n|n.parse::<usize>().ok()) else { continue; };
         let Some(farm_name) = farm_entry.attribute("name") else { continue; };
@@ -360,21 +361,21 @@ fn do_career(save_record: &mut SaveGameRecord, abstract_file : &mut Box<dyn Abst
         .descendants()
         .find(|n| n.has_tag_name("mapTitle"))
         .and_then(|n|n.text()) {
-            save_record.map_title = Some(value.to_string());
+            save_record.map_title = Some(value.to_owned());
     }
 
     if let Some(value) = career_document
         .descendants()
         .find(|n| n.has_tag_name("savegameName"))
         .and_then(|n|n.text()) {
-            save_record.name = Some(value.to_string());
+            save_record.name = Some(value.to_owned());
     }
 
     if let Some(value) = career_document
         .descendants()
         .find(|n| n.has_tag_name("saveDate"))
         .and_then(|n|n.text()) {
-            save_record.save_date = value.to_string();
+            value.clone_into(&mut save_record.save_date);
     }
 
     if let Some(value_f) = career_document

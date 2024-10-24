@@ -2,8 +2,7 @@
 //! 
 //! Reads crop data, weather data, and the map overview image
 use std::collections::{HashMap, HashSet};
-use regex::Regex;
-use crate::shared::convert_map_image;
+use crate::shared::{normalize_image_file, convert_map_image};
 use crate::shared::structs::ModRecord;
 use crate::shared::files::AbstractFileHandle;
 use crate::maps::structs::CropList;
@@ -27,8 +26,36 @@ mod tests {
     }
 
     #[test]
-    fn test_game_entry_key_valid() {
+    fn test_game_entry_key_valid_us() {
         let document = roxmltree::Document::parse(r#"<map><environment filename="$data/maps/mapUS/environment.xml" /></map>"#).unwrap();
+        let result = get_base_game_entry_key(&document);
+        assert_eq!(result, Some("mapUS".to_string()));
+    }
+
+    #[test]
+    fn test_game_entry_key_valid_fr() {
+        let document = roxmltree::Document::parse(r#"<map><environment filename="$data/maps/mapFR/environment.xml" /></map>"#).unwrap();
+        let result = get_base_game_entry_key(&document);
+        assert_eq!(result, Some("mapFR".to_string()));
+    }
+
+    #[test]
+    fn test_game_entry_key_valid_alpine() {
+        let document = roxmltree::Document::parse(r#"<map><environment filename="$data/maps/mapAlpine/environment.xml" /></map>"#).unwrap();
+        let result = get_base_game_entry_key(&document);
+        assert_eq!(result, Some("mapAlpine".to_string()));
+    }
+
+    #[test]
+    fn test_game_entry_key_valid_unknown() {
+        let document = roxmltree::Document::parse(r#"<map><environment filename="$data/maps/mapBullshit/environment.xml" /></map>"#).unwrap();
+        let result = get_base_game_entry_key(&document);
+        assert_eq!(result, Some("mapUS".to_string()));
+    }
+
+    #[test]
+    fn test_game_entry_key_missing_filename() {
+        let document = roxmltree::Document::parse(r#"<map><environment name="$data/maps/mapBullshit/environment.xml" /></map>"#).unwrap();
         let result = get_base_game_entry_key(&document);
         assert_eq!(result, Some("mapUS".to_string()));
     }
@@ -56,14 +83,14 @@ mod tests {
 }
 
 /// Convert array of booleans to vector of indexes
-#[allow(clippy::cast_possible_truncation)]
+#[expect(clippy::cast_possible_truncation)]
 fn bool_array_to_vector(input_array:[bool;12]) -> Vec<u8> {
     input_array.iter().enumerate().map(|(i,v)| if *v { i as u8 + 1_u8 } else {0_u8}).filter(|n| *n!=0_u8 ).collect()
 }
 
 /// Convert base game crop data to usable version
 fn crops_from_base_game() -> CropList {
-    let mut crop_list:CropList = CropList::new();
+    let mut crop_list = CropList::new();
 
     for crop in &BG_CROPS {
         crop_list.insert(crop.name.to_owned(), CropOutput {
@@ -101,10 +128,10 @@ fn weather_from_base_game(base_game_key : &str) -> MapEnvironment {
         if base_game_key == key.name {
             for season in key.seasons {
                 weather_map.insert(
-                    season.name.to_string(),
+                    season.name.to_owned(),
                     HashMap::from([
-                        ("min".to_string(), season.min),
-                        ("max".to_string(), season.max)
+                        (String::from("min"), season.min),
+                        (String::from("max"), season.max)
                     ])
                 );
             }
@@ -118,6 +145,32 @@ fn weather_from_base_game(base_game_key : &str) -> MapEnvironment {
     }
 }
 
+
+/// Map file information
+struct MapFiles {
+    /// fruitTypes file
+    pub fruits : Option<String>,
+    /// growth file
+    pub growth : Option<String>,
+    /// included enviroment
+    pub env_in : Option<String>,
+    /// base game enviroment key
+    pub env_base : Option<String>
+}
+
+impl MapFiles {
+    /// Make new map files struct
+    #[must_use]
+    #[inline]
+    fn new() -> Self {
+        MapFiles {
+            fruits : None,
+            growth : None,
+            env_in : None,
+            env_base : None,
+        }
+    }
+}
 /// Read basic details about the map
 /// 
 /// Includes weather, crops, if it's southern, and the map image
@@ -126,46 +179,35 @@ pub fn read_map_basics(mod_record : &mut ModRecord, file_handle: &mut Box<dyn Ab
         return;
     };
 
-    let (
-        fruits,
-        growth,
-        env_in,
-        env_base
-    ) = {
-        if let Ok(contents) = file_handle.as_text(map_config_file_name) {
-            if let Ok(map_config_tree) = roxmltree::Document::parse(&contents) {
-                mod_record.mod_desc.map_image = process_overview(&map_config_tree, mod_record, file_handle);
+    let mut map_config = MapFiles::new();
 
-                (
-                    nullify_base_game_entry(&map_config_tree, "fruitTypes"),
-                    nullify_base_game_entry(&map_config_tree, "growth"),
-                    nullify_base_game_entry(&map_config_tree, "environment"),
-                    get_base_game_entry_key(&map_config_tree)
-                )
-            } else {
-                (None, None, None, None)
-            }
-        } else {
-            (None, None, None, None)
+    if let Ok(contents) = file_handle.as_text(map_config_file_name) {
+        if let Ok(map_config_tree) = roxmltree::Document::parse(&contents) {
+            mod_record.mod_desc.map_image = process_overview(&map_config_tree, file_handle);
+
+            map_config.fruits = nullify_base_game_entry(&map_config_tree, "fruitTypes");
+            map_config.growth = nullify_base_game_entry(&map_config_tree, "growth");
+            map_config.env_in = nullify_base_game_entry(&map_config_tree, "environment");
+            map_config.env_base = get_base_game_entry_key(&map_config_tree);
         }
-    };
+    }
 
-    mod_record.mod_desc.map_custom_crop = fruits.is_some();
-    mod_record.mod_desc.map_custom_env = env_in.is_some();
-    mod_record.mod_desc.map_custom_grow = growth.is_some();
+    mod_record.mod_desc.map_custom_crop = map_config.fruits.is_some();
+    mod_record.mod_desc.map_custom_env  = map_config.env_in.is_some();
+    mod_record.mod_desc.map_custom_grow = map_config.growth.is_some();
 
-    let this_map_environment = populate_weather(file_handle, env_base, env_in);
+    let this_map_environment = populate_weather(file_handle, map_config.env_base, map_config.env_in);
     mod_record.mod_desc.map_is_south = this_map_environment.0;
     mod_record.mod_desc.crop_weather = this_map_environment.1;
 
-    if growth.is_none() {
+    if map_config.growth.is_none() {
         mod_record.mod_desc.crop_info = crops_from_base_game();
         return;
     }
 
-    let crop_builder = populate_crop_builder(file_handle, fruits);
+    let crop_builder = populate_crop_builder(file_handle, map_config.fruits);
 
-    match populate_crop_growth(file_handle, growth, &crop_builder) {
+    match populate_crop_growth(file_handle, map_config.growth, &crop_builder) {
         Some(value) => mod_record.mod_desc.crop_info = value,
         None => mod_record.mod_desc.crop_info = crops_from_base_game()
     }
@@ -173,35 +215,30 @@ pub fn read_map_basics(mod_record : &mut ModRecord, file_handle: &mut Box<dyn Ab
 }
 
 /// Decode a range argument and get the maximum from it
+#[inline]
 fn decode_max_range(range:Option<&str>) -> u8 {
-    match range {
-        Some(value) => { 
-            if value.contains('-') {
-                let ( _, end ) = value.split_at(value.find('-').unwrap()+1);
-                end.parse::<u8>().unwrap_or(0_u8)
-            } else {
-                value.parse::<u8>().unwrap_or(0_u8)
+    if let Some(value) = range {
+        if value.contains('-') {
+            if let Some(split_value) = value.split('-').last() {
+                return split_value.parse::<u8>().unwrap_or(0_u8);
             }
         }
-        None => 0
+        return value.parse::<u8>().unwrap_or(0_u8);
     }
+    0
 }
 
 /// Load and convert the overview image
 /// 
 /// Automatically crops to the center 1/4 of the image that contains the map
 /// and constrains the size to 512x512px
-fn process_overview(xml_tree: &roxmltree::Document, mod_record : &mut ModRecord, file_handle: &mut Box<dyn AbstractFileHandle>) -> Option<String> {
-    if let Some(filename) = xml_tree.root_element().attribute("imageFilename") {
-        let mut value_string = filename.to_string().replace('\\', "/");
+#[inline]
+fn process_overview(xml_tree: &roxmltree::Document, file_handle: &mut Box<dyn AbstractFileHandle>) -> Option<String> {
+    let image_file = normalize_image_file(xml_tree.root_element().attribute("imageFilename"));
 
-        if let Some(index) = value_string.find(".png") {
-            value_string.replace_range(index..value_string.len(), ".dds");
-        }
-        if mod_record.file_detail.image_dds.contains(&value_string) {
-            if let Ok(content) = file_handle.as_bin(&value_string) {
-                return convert_map_image(content)
-            }
+    if let Some(filename) = image_file.local_file {
+        if let Ok(content) = file_handle.as_bin(&filename) {
+            return convert_map_image(content)
         }
     }
     None
@@ -221,19 +258,14 @@ fn populate_crop_builder(file_handle: &mut Box<dyn AbstractFileHandle>, fruits :
 
                     let mut item_struct = CropTypeStateBuilder{
                         name        : item_name,
-                        max_harvest : item.children().find(|n|n.has_tag_name("harvest") && n.has_attribute("maxHarvestingGrowthState")).unwrap().attribute("maxHarvestingGrowthState").unwrap_or("20").parse::<u8>().unwrap_or(20_u8),
-                        min_harvest : item.children().find(|n|n.has_tag_name("harvest") && n.has_attribute("minHarvestingGrowthState")).unwrap().attribute("minHarvestingGrowthState").unwrap_or("20").parse::<u8>().unwrap_or(20_u8),
-                        states      : item.children().find(|n|n.has_tag_name("growth") && n.has_attribute("numGrowthStates")).unwrap().attribute("numGrowthStates").unwrap_or("20").parse::<u8>().unwrap_or(20_u8),
+                        max_harvest : get_crop_attribute(&item, "harvest", "maxHarvestingGrowthState", 20_u8),
+                        min_harvest : get_crop_attribute(&item, "harvest", "minHarvestingGrowthState", 20_u8),
+                        states      : get_crop_attribute(&item, "growth", "numGrowthStates", 20_u8),
                     };
 
-                    if let Some(prep_node) = item.children().find(|n|n.has_tag_name("preparing") && ( n.has_attribute("minGrowthState") || n.has_attribute("maxGrowthState"))) {
-                        if let Some(val) = prep_node.attribute("minGrowthState") {
-                            item_struct.min_harvest = val.parse::<u8>().unwrap_or(item_struct.min_harvest);
-                        }
-                        if let Some(val) = prep_node.attribute("maxGrowthState") {
-                            item_struct.max_harvest = val.parse::<u8>().unwrap_or(item_struct.max_harvest);
-                        }
-                    }
+                    item_struct.min_harvest = get_crop_attribute(&item, "preparing", "minGrowthState", item_struct.min_harvest);
+                    item_struct.max_harvest = get_crop_attribute(&item, "preparing", "maxGrowthState", item_struct.max_harvest);
+
                     new_build.push(item_struct);
                 }
                 return new_build
@@ -241,6 +273,17 @@ fn populate_crop_builder(file_handle: &mut Box<dyn AbstractFileHandle>, fruits :
         }
     }
     fruits_from_base_game()
+}
+
+#[inline]
+/// Get a crop attribute from a tag
+fn get_crop_attribute(xml_node: &roxmltree::Node, tag_name: &str, attr_name : &str, default : u8) -> u8 {
+    if let Some(node) = xml_node.children().find(|n|n.has_tag_name(tag_name)) {
+        if let Some(value) = node.attribute(attr_name) {
+            return value.parse::<u8>().unwrap_or(default);
+        }
+    }
+    default
 }
 
 /// Build the weather from base game or included XML file
@@ -254,7 +297,7 @@ fn populate_weather(file_handle: &mut Box<dyn AbstractFileHandle>, env_base: Opt
                 let mut is_south = false;
 
                 if let Some(node) = tree.descendants().find(|n|n.has_tag_name("latitude") && n.is_text()) {
-                    if node.text().unwrap().parse::<f32>().unwrap_or(0.1) < 0.0 {
+                    if node.text().unwrap_or("0.1").parse::<f32>().unwrap_or(0.1) < 0.0 {
                         is_south = true;
                     }
                 }
@@ -267,20 +310,22 @@ fn populate_weather(file_handle: &mut Box<dyn AbstractFileHandle>, env_base: Opt
                         min_temp = std::cmp::min(
                             min_temp,
                             variant.attribute("minTemperature")
-                                .unwrap().parse::<i8>()
+                                .unwrap_or("127")
+                                .parse::<i8>()
                                 .unwrap_or(127_i8) );
                         max_temp = std::cmp::max(
                             max_temp,
                             variant.attribute("maxTemperature")
-                                .unwrap().parse::<i8>()
+                                .unwrap_or("-127")
+                                .parse::<i8>()
                                 .unwrap_or(-127_i8) );
                     }
 
                     weather_map.insert(
-                        season.attribute("name").unwrap().to_string(),
+                        season.attribute("name").unwrap_or("invalid").to_owned(),
                         HashMap::from([
-                            ("min".to_string(), min_temp),
-                            ("max".to_string(), max_temp)
+                            (String::from("min"), min_temp),
+                            (String::from("max"), max_temp)
                         ])
                     );
                 }
@@ -313,7 +358,7 @@ fn populate_crop_growth(file_handle: &mut Box<dyn AbstractFileHandle>, growth : 
     let full_tree = roxmltree::Document::parse(&contents).ok()?;
     let seasonal_tree = full_tree.descendants().find(|n|n.has_tag_name("seasonal"))?;
 
-    let mut crop_list:CropList = CropList::new();
+    let mut crop_list = CropList::new();
     for fruit in seasonal_tree.descendants().filter(|n|n.has_tag_name("fruit")) {
         let fruit_name = fruit.attribute("name").unwrap_or("unknown").to_owned().to_lowercase();
 
@@ -323,11 +368,7 @@ fn populate_crop_growth(file_handle: &mut Box<dyn AbstractFileHandle>, growth : 
 
         let Some(builder_unwrapped) = builder else { continue; };
 
-        let mut crop_def = CropOutput {
-            growth_time : builder_unwrapped.states,
-            harvest_periods : vec![],
-            plant_periods : vec![]
-        };
+        let mut crop_def = CropOutput::new(builder_unwrapped.states);
 
         let mut possible_states:HashSet<u8> = HashSet::new();
 
@@ -390,10 +431,11 @@ fn populate_crop_growth(file_handle: &mut Box<dyn AbstractFileHandle>, growth : 
 }
 
 /// Get an included map support XML file
+#[inline]
 fn nullify_base_game_entry(xml_tree: &roxmltree::Document, tag : &str) -> Option<String> {
     match xml_tree.descendants().find(|n| n.has_tag_name(tag)) {
         Some(node) => match node.attribute("filename") {
-            Some(val) => if val.starts_with("$data") { None } else { Some(val.to_string()) },
+            Some(val) => if val.starts_with("$data") { None } else { Some(val.to_owned()) },
             None => None
         },
         None => None
@@ -401,15 +443,21 @@ fn nullify_base_game_entry(xml_tree: &roxmltree::Document, tag : &str) -> Option
 }
 
 /// Get a map base game entry key
+#[inline]
 fn get_base_game_entry_key(xml_tree: &roxmltree::Document) -> Option<String> {
-    match xml_tree.descendants().find(|n| n.has_tag_name("environment")) {
-        Some(node) => match node.attribute("filename") {
-            Some(val) => if val.starts_with("$data") {
-                let re = Regex::new(r"(map[A-Z][A-Za-z]+)").unwrap();
-                re.captures(val).map(|capture| capture.get(0).unwrap().as_str().to_owned())
-            } else { None },
-            None => None
-        },
-        None => None
+    if let Some(node) = xml_tree.descendants().find(|n| n.has_tag_name("environment")) {
+        if let Some(filename) = node.attribute("filename") {
+            return match filename {
+                x if ! x.starts_with("$data") => None,
+                x if x.contains("mapUS") => Some(String::from("mapUS")),
+                x if x.contains("mapFR") => Some(String::from("mapFR")),
+                x if x.contains("mapAlpine") => Some(String::from("mapAlpine")),
+                // starts with data, but unrecognized.  default to US map.
+                _ => Some(String::from("mapUS"))
+            }
+        }
     }
+    // xml element exists, but no filename field
+    // this is invalid for a mod, but let's fallback to mapUS anyway
+    Some(String::from("mapUS"))
 }

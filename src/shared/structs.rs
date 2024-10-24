@@ -63,8 +63,8 @@ impl ModRecord {
             include_detail     : None,
             include_save_game  : None,
             l10n               : ModDescL10N{
-                title       : HashMap::from([("en".to_string(), "--".to_string())]),
-                description : HashMap::from([("en".to_string(), "--".to_string())])
+                title       : HashMap::from([(String::from("en"), String::from("--"))]),
+                description : HashMap::from([(String::from("en"), String::from("--"))])
             },
             md5_sum            : None,
             mod_desc           : ModDesc::new(),
@@ -104,7 +104,7 @@ impl ModRecord {
     /// Output as pretty-print JSON
     #[must_use]
     pub fn to_json_pretty(&self) -> String {
-        serde_json::to_string_pretty(&self).unwrap_or("{}".to_string())
+        serde_json::to_string_pretty(&self).unwrap_or(String::from("{}"))
     }
 
     /// Output as JSON
@@ -115,15 +115,33 @@ impl ModRecord {
 }
 impl std::fmt::Display for ModRecord {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&serde_json::to_string(&self).unwrap())
+        f.write_str(&serde_json::to_string(&self).unwrap_or(String::from("{}")))
     }
+}
+
+#[test]
+fn test_blank_mod_record_json() {
+    let record = ModRecord::new("foo.txt", false);
+
+    let byte_length = record.to_json().len() as i32;
+	let byte_expected:i32 = 861;
+	let byte_margin = 20;
+	assert!(
+		(byte_length - byte_expected).abs() < byte_margin,
+		"assertion failed: `(left !== right)` \
+		(left: `{:?}`, right: `{:?}`, expect diff: `{:?}`, real diff: `{:?}`)",
+		byte_length,
+		byte_expected,
+		byte_margin,
+		(byte_length - byte_expected).abs()
+	);
 }
 
 
 /// ModDesc.xml specific fields from a mod
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
-#[allow(clippy::struct_excessive_bools)]
+#[expect(clippy::struct_excessive_bools)]
 pub struct ModDesc {
     /// Keyboard actions
     pub actions         : HashMap<String, String>,
@@ -250,7 +268,7 @@ impl ModFile {
             extra_files   : vec![],
             file_date     : String::new(),
             file_size     : 0,
-            full_path     : file.to_str().unwrap().to_string(),
+            full_path     : file.to_string_lossy().to_string(),
             i3d_files     : vec![],
             image_dds     : vec![],
             image_non_dds : vec![],
@@ -258,7 +276,7 @@ impl ModFile {
             is_save_game  : false,
             is_mod_pack   : false,
             png_texture   : vec![],
-            short_name    : file.file_stem().unwrap().to_str().unwrap().to_owned(),
+            short_name    : file.file_stem().unwrap_or(file.as_os_str()).to_string_lossy().to_string(),
             space_files   : vec![],
             too_big_files : vec![],
             zip_files     : vec![],
@@ -267,7 +285,7 @@ impl ModFile {
 }
 
 /// Badge information for a mod
-#[allow(clippy::struct_excessive_bools)]
+#[expect(clippy::struct_excessive_bools)]
 #[derive(PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
 pub struct ModBadges {
     /// is broken (likely unusable)
@@ -304,14 +322,14 @@ impl Serialize for ModBadges {
         S: Serializer,
     {
         let mut name_array:Vec<String> = vec![];
-        if self.broken   { name_array.push("broken".to_string()) }
-        if self.folder   { name_array.push("folder".to_string()) }
-        if self.malware  { name_array.push("malware".to_string()) }
-        if self.no_mp    { name_array.push("noMP".to_string()) }
-        if self.notmod   { name_array.push("notmod".to_string()) }
-        if self.pconly   { name_array.push("pconly".to_string()) }
-        if self.problem  { name_array.push("problem".to_string()) }
-        if self.savegame { name_array.push("savegame".to_string()) }
+        if self.broken   { name_array.push(String::from("broken")) }
+        if self.folder   { name_array.push(String::from("folder")) }
+        if self.malware  { name_array.push(String::from("malware")) }
+        if self.no_mp    { name_array.push(String::from("noMP")) }
+        if self.notmod   { name_array.push(String::from("notmod")) }
+        if self.pconly   { name_array.push(String::from("pconly")) }
+        if self.problem  { name_array.push(String::from("problem")) }
+        if self.savegame { name_array.push(String::from("savegame")) }
         name_array.serialize(serializer)
     }
 }

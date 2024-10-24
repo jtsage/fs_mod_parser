@@ -73,6 +73,18 @@ pub struct CropOutput {
     pub plant_periods : Vec<u8>,
 }
 
+impl CropOutput {
+    /// create new crop output
+    #[must_use]
+    pub fn new(growth_time: u8) -> Self {
+        CropOutput {
+            growth_time,
+            harvest_periods : vec![],
+            plant_periods : vec![],
+        }
+    }
+}
+
 /// Temporary struct for serializing crop data properly
 #[derive(serde::Serialize)]
 struct CropSerializerOutput {
@@ -96,6 +108,16 @@ pub struct CropList {
 }
 
 impl CropList {
+    /// Number of crops in list
+    #[must_use]
+    pub fn len(&self) -> usize {
+        self.list.len()
+    }
+    /// is crop list empty?
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.list.is_empty()
+    }
     /// Add a crop to the list
     pub fn insert(&mut self, key : String, value : CropOutput) {
         self.list.insert(key.clone(), value);

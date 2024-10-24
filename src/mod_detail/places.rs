@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use crate::ModParserOptions;
 use crate::mod_detail::structs::{VehicleCapability, ModDetailPlace, ModDetailProduction, ProductionIngredient, ProductionIngredients, ProductionBoost};
 use crate::shared::files::AbstractFileHandle;
-use super::{xml_extract_text_as_opt_string, xml_extract_text_as_opt_u32, normalize_icon_name};
-use crate::shared::convert_mod_icon;
+use super::{xml_extract_text_as_opt_string, xml_extract_text_as_opt_u32};
+use crate::shared::{extract_and_normalize_image, convert_mod_icon};
 
 /// Parse a placeable
 /// 
@@ -71,10 +71,12 @@ pub fn place_parse(xml_tree : &roxmltree::Document, file_handle: &mut Box<dyn Ab
     }
 
     if !options.skip_detail_icons {
-        if let Some(image_entry) = xml_tree.descendants().find(|n|n.has_tag_name("image")).and_then(|n|n.text()) {
-            if image_entry.starts_with("$data") {
-                this_place.icon_base = Some(image_entry.to_string());
-            } else if let Ok(file_content) = file_handle.as_bin(&normalize_icon_name(image_entry)) {
+        let image_entry = extract_and_normalize_image(xml_tree, "image");
+
+        if let Some(filename) = image_entry.base_game {
+            this_place.icon_base = Some(filename);
+        } else if let Some(filename) = image_entry.local_file {
+            if let Ok(file_content) = file_handle.as_bin(&filename) {
                 this_place.icon_file = convert_mod_icon(file_content);
             }
         }
@@ -91,10 +93,10 @@ fn place_parse_production(xml_node : &roxmltree::Node) -> ModDetailProduction {
     let mut mix_inputs:HashMap<String, ProductionIngredients> = HashMap::new();
 
     if let Some(name) = xml_node.attribute("name") {
-        this_production.name = name.to_string();
+        name.clone_into(& mut this_production.name);
     }
     if let Some(params) = xml_node.attribute("params") {
-        this_production.params = params.to_string();
+        params.clone_into(&mut this_production.params);
     }
 
     if let Some(costs) = xml_node.attribute("costsPerActiveHour") {
@@ -130,7 +132,7 @@ fn place_parse_production(xml_node : &roxmltree::Node) -> ModDetailProduction {
         let Some(fill) = output.attribute("fillType") else { continue; };
         let Some(amount) = output.attribute("amount").and_then(|n|n.parse::<f32>().ok())  else { continue; };
 
-        this_production.output.push(ProductionIngredient::new(fill.to_string().to_lowercase(), amount));
+        this_production.output.push(ProductionIngredient::new(fill.to_owned().to_lowercase(), amount));
     }
 
     for input in xml_node.descendants().filter(|n|n.has_tag_name("input")) {
@@ -142,17 +144,17 @@ fn place_parse_production(xml_node : &roxmltree::Node) -> ModDetailProduction {
             Some("boost") => {
                 // a booster
                 let Some(boost_factor) = input.attribute("boostfactor").and_then(|n|n.parse::<f32>().ok())  else { continue; };
-                this_production.boosts.push(ProductionBoost::new(fill.to_string().to_lowercase(), amount, boost_factor));
+                this_production.boosts.push(ProductionBoost::new(fill.to_owned().to_lowercase(), amount, boost_factor));
             },
             Some(index) => {
                 //multi-input
-                let this_mix = mix_inputs.entry(index.to_string()).or_default();
-                this_mix.push(ProductionIngredient::new(fill.to_string().to_lowercase(), amount));
+                let this_mix = mix_inputs.entry(index.to_owned()).or_default();
+                this_mix.push(ProductionIngredient::new(fill.to_owned().to_lowercase(), amount));
             },
             _ => {
                 // single
                 let this_input:ProductionIngredients = vec![
-                    ProductionIngredient::new(fill.to_string().to_lowercase(), amount)
+                    ProductionIngredient::new(fill.to_owned().to_lowercase(), amount)
                 ];
                 this_production.recipe.push(this_input);
             }
@@ -177,10 +179,10 @@ fn place_parse_storage(xml_tree : &roxmltree::Document, this_place : &mut ModDet
             capacity.push(fill_unit.attribute("capacity"));
     
             if let Some(cats) = fill_unit.attribute("fillTypeCategories") {
-                this_place.storage.silo_fill_cats.extend(cats.split(' ').map(|n|n.to_lowercase().to_string()));
+                this_place.storage.silo_fill_cats.extend(cats.split(' ').map(|n|n.to_lowercase().clone()));
             }
             if let Some(cats) = fill_unit.attribute("fillTypes") {
-                this_place.storage.silo_fill_types.extend(cats.split(' ').map(|n|n.to_lowercase().to_string()));
+                this_place.storage.silo_fill_types.extend(cats.split(' ').map(|n|n.to_lowercase().clone()));
             }
         }
 

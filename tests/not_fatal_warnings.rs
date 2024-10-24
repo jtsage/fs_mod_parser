@@ -103,3 +103,38 @@ fn no_version() {
 	});
 }
 
+
+
+#[test]
+fn server_warnings() {
+	let test_file_path = Path::new("./tests/test_mods/WARNING_Size_Test_Mod.zip");
+	assert!(test_file_path.exists());
+
+	let mod_record = parser(test_file_path);
+
+	assert_eq!(mod_record.can_not_use, false);
+
+	let expected_errors:HashSet<ModError> = HashSet::from([
+		ModError::PerformanceOversizeDDS,
+		ModError::PerformanceOversizeGDM,
+		ModError::PerformanceOversizeI3D,
+		ModError::PerformanceOversizeSHAPES,
+		ModError::PerformanceOversizeXML,
+		ModError::PerformanceQuantityGRLE,
+		ModError::PerformanceQuantityPDF,
+		ModError::PerformanceQuantityTXT
+	]);
+	assert_eq!(mod_record.issues, expected_errors);
+
+	assert_eq!(mod_record.badge_array, ModBadges {
+		broken   : false,
+		folder   : false,
+		malware  : false,
+		no_mp    : false,
+		notmod   : false,
+		pconly   : false,
+		problem  : true,
+		savegame : false,
+	});
+}
+

@@ -3,7 +3,6 @@ use serde::ser::{Serialize, Serializer};
 
 /// Possible Detectable Mod Errors
 #[derive(PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
-#[allow(dead_code)]
 pub enum ModError {
 	/// File is not the right type for a mod
 	FileErrorGarbageFile,

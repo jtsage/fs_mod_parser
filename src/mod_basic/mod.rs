@@ -3,13 +3,13 @@ use crate::ModParserOptions;
 use crate::shared::errors::ModError;
 use crate::shared::files::{AbstractFileHandle, AbstractFolder, AbstractZipFile, FileDefinition};
 use crate::shared::structs::{ModRecord, ZipPackFile};
-use crate::shared::convert_mod_icon;
+use crate::maps::read_map_basics;
+use crate::shared::{extract_and_normalize_image, convert_mod_icon};
 use crate::savegame::parse_open_file as savegame_parse;
 use crate::mod_detail::parse_open_file as detail_parse;
 
 use std::{time::SystemTime, path::Path};
 use chrono::{DateTime, SecondsFormat, Utc};
-use regex::{Regex, RegexBuilder};
 
 /// Known false positives for the malware check
 pub const NOT_MALWARE: [&str; 11] = [
@@ -26,6 +26,27 @@ pub const NOT_MALWARE: [&str; 11] = [
     "FS19_GlobalCompany",
 ];
 
+/// one megabyte
+const MB:u64          = 0x0010_0000;
+/// max size allowed for I3D Cache files, 10MB
+const SIZE_CACHE:u64  = 10 * MB;
+/// max size allowed for DDS files, 12MB
+const SIZE_DDS: u64   = 12 * MB;
+/// max size allowed for GDM files, 18 MB
+const SIZE_GDM:u64    = 18 * MB;
+/// max size allowed for SHAPES files, 256MB
+const SIZE_SHAPES:u64 = 256 * MB;
+/// max size allowed for XML files, 256KB / 0.25MB
+const SIZE_XML:u64    = MB / 4;
+
+/// max allowed GRLE files
+const MAX_GRLE:u32 = 10;
+/// max allowed PDF files
+const MAX_PDF:u32  = 1;
+/// max allowed PNG files
+const MAX_PNG:u32  = 128;
+/// max allowed TXT files
+const MAX_TXT:u32  = 2;
 
 /* cSpell: disable */
 /// Test a mod file against known game limitations
@@ -50,19 +71,30 @@ pub const NOT_MALWARE: [&str; 11] = [
 /// 
 /// # Quantity Limits
 /// ```
-/// let mut max_grle = 10;
-/// let mut max_pdf = 1;
-/// let mut max_png = 128;
-/// let mut max_txt = 2;
+/// /// one megabyte
+/// const MB:u64          = 0x0010_0000;
+/// /// max size allowed for I3D Cache files, 10MB
+/// const SIZE_CACHE:u64  = 10 * MB;
+/// /// max size allowed for DDS files, 12MB
+/// const SIZE_DDS: u64   = 12 * MB;
+/// /// max size allowed for GDM files, 18 MB
+/// const SIZE_GDM:u64    = 18 * MB;
+/// /// max size allowed for SHAPES files, 256MB
+/// const SIZE_SHAPES:u64 = 256 * MB;
+/// /// max size allowed for XML files, 256KB / 0.25MB
+/// const SIZE_XML:u64    = MB / 4;
 /// ```
 /// 
 /// # Size Limits (in bytes)
 /// ```
-/// let size_cache :u64  = 10_485_760;
-/// let size_dds :u64    = 12_582_912;
-/// let size_gdm :u64    = 18_874_368;
-/// let size_shapes :u64 = 268_435_456;
-/// let size_xml :u64    = 262_144;
+/// /// max allowed GRLE files
+/// const MAX_GRLE:u32 = 10;
+/// /// max allowed PDF files
+/// const MAX_PDF:u32  = 1;
+/// /// max allowed PNG files
+/// const MAX_PNG:u32  = 128;
+/// /// max allowed TXT files
+/// const MAX_TXT:u32  = 2;
 /// ```
 /// 
 /// # Sample Output
@@ -151,7 +183,7 @@ pub fn parser_with_options<P: AsRef<Path>>(full_path :P, options : &ModParserOpt
     let is_folder = full_path.as_ref().is_dir();
     let mut mod_record = ModRecord::new(&full_path, is_folder);
 
-    mod_record.can_not_use = !test_file_name(&mut mod_record);
+    mod_record.can_not_use = !check_file_name(&mut mod_record);
 
     if mod_record.can_not_use {
         mod_record.add_issue(ModError::FileErrorNameInvalid);
@@ -204,7 +236,7 @@ pub fn parser_with_options<P: AsRef<Path>>(full_path :P, options : &ModParserOpt
     }
 
     if ! abstract_file.is_folder() {
-        if let Some(list) = test_mod_pack(&abstract_file_list) {
+        if let Some(list) = check_mod_pack(&abstract_file_list) {
             mod_record.file_detail.zip_files   = list;
             mod_record.file_detail.is_mod_pack = true;
             mod_record.add_fatal(ModError::FileErrorLikelyZipPack).update_badges();
@@ -231,21 +263,17 @@ pub fn parser_with_options<P: AsRef<Path>>(full_path :P, options : &ModParserOpt
         if let Some(filename) = &mod_record.mod_desc.icon_file_name {
             if let Ok(binary_file) = abstract_file.as_bin(filename) {
                 mod_record.mod_desc.icon_image = convert_mod_icon(binary_file);
+            } else {
+                mod_record.add_issue(ModError::ModDescNoModIcon);
             }
         }
     }
 
-    if ! NOT_MALWARE.contains(&mod_record.file_detail.short_name.clone().as_str()) {
-        let re = RegexBuilder::new(r"\.delete(File|Folder)")
-            .multi_line(true)
-            .build();
-
-        if let Ok(re) = re {
-            for lua_file in abstract_file_list.iter().filter(|n|n.extension == "lua" ) {
-                if let Ok(content) = abstract_file.as_text(&lua_file.name) {
-                    if re.is_match(content.as_str()) {
-                        mod_record.add_issue(ModError::InfoMaliciousCode);
-                    }
+    if ! NOT_MALWARE.iter().any(|n|*n == mod_record.file_detail.short_name) {
+        for lua_file in abstract_file_list.iter().filter(|n|n.extension == "lua" ) {
+            if let Ok(content) = abstract_file.as_text(&lua_file.name) {
+                if content.contains(".deleteFolder") || content.contains(".deleteFile") {
+                    mod_record.add_issue(ModError::InfoMaliciousCode);
                 }
             }
         }
@@ -253,7 +281,7 @@ pub fn parser_with_options<P: AsRef<Path>>(full_path :P, options : &ModParserOpt
 
     if mod_record.mod_desc.desc_version >= 60 {
         // Map Parsing not implemented for <FS22
-        crate::maps::read_map_basics(&mut mod_record, &mut abstract_file);
+        read_map_basics(&mut mod_record, &mut abstract_file);
     }
 
     mod_record.update_badges();
@@ -268,7 +296,7 @@ pub fn parser_with_options<P: AsRef<Path>>(full_path :P, options : &ModParserOpt
 
 
 /// Check if mod is actually a mod pack
-fn test_mod_pack(file_list : &Vec<FileDefinition>) -> Option<Vec<ZipPackFile>> {
+fn check_mod_pack(file_list : &Vec<FileDefinition>) -> Option<Vec<ZipPackFile>> {
     let mut zip_list:Vec<ZipPackFile> = vec![];
     let mut max_non_zip_files = 2;
     let mut zip_files = false;
@@ -295,12 +323,29 @@ fn test_mod_pack(file_list : &Vec<FileDefinition>) -> Option<Vec<ZipPackFile>> {
     
     Some(zip_list)
 }
+
+#[test]
+fn test_file_name_assumptions() {
+    assert!(check_file_name(&mut ModRecord::new("Example.zip", false)));
+    assert!(check_file_name(&mut ModRecord::new("ExampleUNZIP.zip", false)));
+
+    // digit start
+    assert!(!check_file_name(&mut ModRecord::new("1Example.zip", false)));
+    // space
+    assert!(!check_file_name(&mut ModRecord::new("Hello There.zip", false)));
+    // dash
+    assert!(!check_file_name(&mut ModRecord::new("Howdy-Ho.zip", false)));
+    // invalid extensions
+    assert!(!check_file_name(&mut ModRecord::new("GoodName.7z", false)));
+    assert!(!check_file_name(&mut ModRecord::new("GoodName.rar", false)));
+    assert!(!check_file_name(&mut ModRecord::new("GoodName.txt", false)));
+}
 /// Test a mod file name against known game limitations
-fn test_file_name(mod_record : &mut ModRecord) -> bool {
+fn check_file_name(mod_record : &mut ModRecord) -> bool {
     if !mod_record.file_detail.is_folder {
         let file_path = Path::new(&mod_record.file_detail.full_path);
         let extension = match file_path.extension() {
-            Some(ext) => ext.to_str().unwrap().to_owned().to_ascii_lowercase(),
+            Some(ext) => ext.to_str().unwrap_or("").to_owned().to_ascii_lowercase(),
             None => String::new(),
         };
 
@@ -314,30 +359,21 @@ fn test_file_name(mod_record : &mut ModRecord) -> bool {
         }
     }
 
-    let regex_zip_pack = RegexBuilder::new(r"unzip")
-        .case_insensitive(true)
-        .build()
-        .unwrap();
-
-    if regex_zip_pack.is_match(&mod_record.file_detail.short_name) {
+    if mod_record.file_detail.short_name.to_ascii_lowercase().contains("unzip") {
         mod_record.add_issue(ModError::FileErrorLikelyZipPack);
     }
 
-    let regex_digit = Regex::new(r"^\d").unwrap();
-
-    if regex_digit.is_match(&mod_record.file_detail.short_name) {
+    if mod_record.file_detail.short_name.chars().next().map_or(true, |c|c.is_ascii_digit()) {
         mod_record.add_issue(ModError::FileErrorNameStartsDigit);
+        return false
     }
 
-    let regex_good_file = Regex::new(r"^[A-Z_a-z]\w+$").unwrap();
-    let regex_copy_capture = Regex::new(r"^(?<name>[A-Za-z]\w+)(?: - .+$| \(.+$)").unwrap();
-
-    if ! regex_good_file.is_match(&mod_record.file_detail.short_name) {
-        let Some(caps) = regex_copy_capture.captures(&mod_record.file_detail.short_name) else {
-            return false
-        };
-        mod_record.issues.insert(ModError::FileErrorLikelyCopy);
-        mod_record.file_detail.copy_name = Some(caps["name"].to_owned());
+    if ! &mod_record.file_detail.short_name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '.' ) {
+        let copy_name: Vec<&str> = mod_record.file_detail.short_name.split_inclusive(|c: char| !c.is_ascii_alphanumeric() && c != '_').map(str::trim).collect();
+        if copy_name[0].chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '.' ) {
+            mod_record.issues.insert(ModError::FileErrorLikelyCopy);
+            mod_record.file_detail.copy_name = Some(copy_name[0].to_owned());
+        }
         return false
     }
 
@@ -346,16 +382,10 @@ fn test_file_name(mod_record : &mut ModRecord) -> bool {
 
 /// Count contained files in the mod
 fn do_file_counts(mod_record : &mut ModRecord, file_list : &Vec<FileDefinition>) {
-    let mut max_grle = 10;
-    let mut max_pdf  = 1;
-    let mut max_png  = 128;
-    let mut max_txt  = 2;
-
-    let size_cache :u64  = 10_485_760;
-    let size_dds :u64    = 12_582_912;
-    let size_gdm :u64    = 18_874_368;
-    let size_shapes :u64 = 268_435_456;
-    let size_xml :u64    = 262_144;
+    let mut found_grle:u32 = 0;
+    let mut found_pdf:u32  = 0;
+    let mut found_png:u32  = 0;
+    let mut found_txt:u32  = 0;
 
     let known_good = vec!["png", "dds", "i3d", "shapes", "lua", "gdm", "cache", "xml", "grle", "pdf", "txt", "gls", "anim", "ogg"];
 
@@ -374,41 +404,41 @@ fn do_file_counts(mod_record : &mut ModRecord, file_list : &Vec<FileDefinition>)
                         mod_record.file_detail.image_non_dds.push(file.name.clone());
                         mod_record.file_detail.png_texture.push(file.name.clone());
                     }
-                    max_png -= 1;
+                    found_png += 1;
                 },
-                "pdf"  => max_pdf -= 1,
-                "grle" => max_grle -= 1,
-                "txt"  => max_txt -= 1,
-                "cache"  => if file.size > size_cache {
+                "pdf"  => found_pdf += 1,
+                "grle" => found_grle += 1,
+                "txt"  => found_txt += 1,
+                "cache"  => if file.size > SIZE_CACHE {
                     mod_record.add_issue(ModError::PerformanceOversizeI3D);
                     mod_record.file_detail.too_big_files.push(file.name.clone());
                 },
                 "dds"    => {
                     mod_record.file_detail.image_dds.push(file.name.clone());
-                    if file.size > size_dds {
+                    if file.size > SIZE_DDS {
                         mod_record.add_issue(ModError::PerformanceOversizeDDS);
                         mod_record.file_detail.too_big_files.push(file.name.clone());
                     }
                 },
-                "gdm"    => if file.size > size_gdm { 
+                "gdm"    => if file.size > SIZE_GDM { 
                     mod_record.add_issue(ModError::PerformanceOversizeGDM);
                     mod_record.file_detail.too_big_files.push(file.name.clone());
                 },
-                "shapes" => if file.size > size_shapes {
+                "shapes" => if file.size > SIZE_SHAPES {
                     mod_record.add_issue(ModError::PerformanceOversizeSHAPES);
                     mod_record.file_detail.too_big_files.push(file.name.clone());
                 },
-                "xml"    => if file.size > size_xml { 
+                "xml"    => if file.size > SIZE_XML { 
                     mod_record.add_issue(ModError::PerformanceOversizeXML);
                     mod_record.file_detail.too_big_files.push(file.name.clone());
                 },
                 _ => {},
             }
 
-            if max_grle < 0 { mod_record.add_issue(ModError::PerformanceQuantityGRLE); }
-            if max_pdf < 0 { mod_record.add_issue(ModError::PerformanceQuantityPDF); }
-            if max_png < 0 { mod_record.add_issue(ModError::PerformanceQuantityPNG); }
-            if max_txt < 0 { mod_record.add_issue(ModError::PerformanceQuantityTXT); }
+            if found_grle > MAX_GRLE { mod_record.add_issue(ModError::PerformanceQuantityGRLE); }
+            if found_pdf > MAX_PDF   { mod_record.add_issue(ModError::PerformanceQuantityPDF); }
+            if found_png > MAX_PNG   { mod_record.add_issue(ModError::PerformanceQuantityPNG); }
+            if found_txt > MAX_TXT   { mod_record.add_issue(ModError::PerformanceQuantityTXT); }
 
         } else {
             if file.extension == "dat" || file.extension == "l64" {
@@ -464,7 +494,8 @@ fn mod_desc_basics(mod_record : &mut ModRecord, mod_desc : &roxmltree::Document)
         mod_record.add_issue(ModError::InfoLikelyPiracy); 
     }
 
-    mod_record.mod_desc.icon_file_name = read_mod_icon_filename(mod_desc.descendants().find(|n| n.has_tag_name("iconFilename")), mod_record);
+    let image_record = extract_and_normalize_image(mod_desc, "iconFilename");
+    mod_record.mod_desc.icon_file_name = image_record.local_file;
 
     if mod_record.mod_desc.icon_file_name.is_none() {
         mod_record.add_issue(ModError::ModDescNoModIcon);
@@ -476,7 +507,7 @@ fn mod_desc_basics(mod_record : &mut ModRecord, mod_desc : &roxmltree::Document)
                 name.to_owned(),
                 match action.attribute("category") {
                     Some(cat) => cat.to_owned(),
-                    None => "ALL".to_string(),
+                    None => String::from("ALL"),
                 }
             );
         }
@@ -489,7 +520,7 @@ fn mod_desc_basics(mod_record : &mut ModRecord, mod_desc : &roxmltree::Document)
                 action
                     .children()
                     .filter(|n|n.has_tag_name("binding") && n.attribute("device") == Some("KB_MOUSE_DEFAULT") && n.has_attribute("input"))
-                    .map(|x| x.attribute("input").unwrap().to_string())
+                    .filter_map(|x| x.attribute("input").map(std::borrow::ToOwned::to_owned))
                     .collect()
             );
         }
@@ -499,15 +530,15 @@ fn mod_desc_basics(mod_record : &mut ModRecord, mod_desc : &roxmltree::Document)
         Some(titles) => {
             if titles.is_text() {
                 mod_record.l10n.title.insert(
-                    "en".to_string(),
-                    titles.text().unwrap_or("--").to_string()
+                    String::from("en"),
+                    titles.text().unwrap_or("--").to_owned()
                 );
                 mod_record.add_issue(ModError::PerformanceMissingL10N);
             } else {
                 for title in titles.children().filter(roxmltree::Node::is_element) {
                     mod_record.l10n.title.insert(
-                        title.tag_name().name().to_string(),
-                        title.text().unwrap_or("--").to_string()
+                        title.tag_name().name().to_owned(),
+                        title.text().unwrap_or("--").to_owned()
                     );
                 }
             }
@@ -519,42 +550,19 @@ fn mod_desc_basics(mod_record : &mut ModRecord, mod_desc : &roxmltree::Document)
         Some(descriptions) => {
             if descriptions.is_text() {
                 mod_record.l10n.description.insert(
-                    "en".to_string(),
-                    descriptions.text().unwrap_or("").to_string()
+                    String::from("en"),
+                    descriptions.text().unwrap_or("").to_owned()
                 );
                 mod_record.add_issue(ModError::PerformanceMissingL10N);
             } else {
                 for description in descriptions.children().filter(roxmltree::Node::is_element) {
                     mod_record.l10n.description.insert(
-                        description.tag_name().name().to_string(),
-                        description.text().unwrap_or("").to_string()
+                        description.tag_name().name().to_owned(),
+                        description.text().unwrap_or("").to_owned()
                     );
                 }
             }
         },
         None => { mod_record.add_issue(ModError::PerformanceMissingL10N); },
-    }
-}
-
-/// Get mod icon filename from entry
-fn read_mod_icon_filename(node : Option<roxmltree::Node>, mod_record : &mut ModRecord) -> Option<String> {
-    match node {
-        Some(node) => {
-            match node.text() {
-                Some(val) => {
-                    let mut value_string = val.to_string().replace('\\', "/");
-                    if let Some(index) = value_string.find(".png") {
-                        value_string.replace_range(index..value_string.len(), ".dds");
-                    }
-                    if mod_record.file_detail.image_dds.contains(&value_string) {
-                        Some(value_string)
-                    } else {
-                        None
-                    }
-                },
-                None => None
-            }
-        },
-        None => None
     }
 }

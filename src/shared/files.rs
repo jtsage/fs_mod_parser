@@ -63,7 +63,15 @@ impl AbstractFolder {
         let input_path = file_path.as_ref();
 
         if input_path.exists() {
-            Ok(AbstractFolder { path : input_path.to_path_buf() })
+            if input_path.is_absolute() {
+                Ok(AbstractFolder { path : input_path.to_path_buf() })
+            } else {
+                match path::absolute(input_path) {
+                    Ok(new_path) => Ok(AbstractFolder { path : new_path }),
+                    Err(..) => Ok(AbstractFolder { path : input_path.to_path_buf() })
+                }
+                // input_path.
+            }
         } else {
             Err(ModError::FileErrorUnreadableZip)
         }
@@ -81,25 +89,28 @@ impl AbstractFileHandle for AbstractFolder {
     fn is_folder(&self) -> bool { true }
     fn list(&mut self) -> Vec<FileDefinition> {
         let mut names: Vec<FileDefinition> = vec![];
+        let search_path = self.path.clone().join("**/*").to_string_lossy().to_string();
+        let Ok(glob_entries) = glob(&search_path) else { return names };
 
-        for entry in glob(format!("{}/**/*", self.path.to_string_lossy()).as_str()).unwrap().filter_map(Result::ok) {
-            let file_metadata = std::fs::metadata(&entry).unwrap();
-            let full_path = path::absolute(entry).unwrap();
+        for entry in glob_entries.filter_map(Result::ok) {
+            let Ok(file_metadata) = std::fs::metadata(&entry) else { continue; };
+            let Ok(full_path) = path::absolute(entry) else { continue; };
+
             let relative_path = match pathdiff::diff_paths(&full_path, &self.path) {
-                Some(good_path) => good_path.to_str().unwrap().to_owned(),
-                None => full_path.to_str().unwrap().to_owned(),
+                Some(good_path) => good_path.to_string_lossy().to_string(),
+                None => full_path.to_string_lossy().to_string(),
             };
 
             let extension = match full_path.extension() {
-                Some(ext) => ext.to_str().unwrap().to_owned().to_ascii_lowercase(),
+                Some(ext) => ext.to_string_lossy().to_ascii_lowercase(),
                 None => String::new(),
             };
 
             names.push(FileDefinition{
                 extension,
-                name : relative_path.replace('\\', "/"),
-                size : file_metadata.len(),
                 is_folder : file_metadata.is_dir(),
+                name      : relative_path.replace('\\', "/"),
+                size      : file_metadata.len(),
             });
         }
 
@@ -163,11 +174,11 @@ impl AbstractFileHandle for AbstractZipFile {
     fn list(&mut self) -> Vec<FileDefinition> {
         let mut names: Vec<FileDefinition> = vec![];
         for i in 0..self.archive.len() {
-            let file = self.archive.by_index(i).unwrap();
+            let Ok(file) = self.archive.by_index(i) else { continue; };
             let name = file.mangled_name().to_string_lossy().into_owned().replace('\\', "/");
 
             let extension = match Path::new(&name).extension() {
-                Some(ext) => ext.to_str().unwrap().to_owned().to_ascii_lowercase(),
+                Some(ext) => ext.to_string_lossy().to_ascii_lowercase(),
                 None => String::new(),
             };
 
@@ -205,7 +216,7 @@ impl AbstractNull {
         Ok(AbstractNull{})
     }
 }
-#[allow(unused_variables)]
+#[expect(unused_variables)]
 impl AbstractFileHandle for AbstractNull {
     fn as_text(&mut self, needle : &str) -> Result<String, std::io::Error> {
         Err(std::io::Error::new(std::io::ErrorKind::NotFound, "not implemented"))

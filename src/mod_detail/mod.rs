@@ -2,7 +2,7 @@
 use crate::ModParserOptions;
 use crate::mod_detail::structs::{ModDetail, ModDetailError};
 use crate::shared::files::{AbstractFileHandle, AbstractFolder, AbstractZipFile, FileDefinition};
-use crate::shared::convert_mod_icon;
+use crate::shared::{normalize_image_file, convert_mod_icon};
 use std::path::Path;
 
 pub mod structs;
@@ -75,7 +75,7 @@ pub fn parse_open_file( mut abstract_file: Box<dyn AbstractFileHandle>, mod_desc
 
     for store_item in mod_desc_doc.descendants().filter(|n| n.has_tag_name("storeItem")) {
         if let Some(file_name) = store_item.attribute("xmlFilename") {
-            let Ok(file_content) = abstract_file.as_text(&file_name.to_string().replace('\\', "/")) else { continue; };
+            let Ok(file_content) = abstract_file.as_text(&file_name.to_owned().replace('\\', "/")) else { continue; };
             let Ok(file_tree) = roxmltree::Document::parse(&file_content) else { continue; };
 
             if file_tree.root_element().has_tag_name("vehicle") {
@@ -102,20 +102,18 @@ fn do_brands(
         let Some(brand_name) = brand.attribute("name") else { continue; };
         let this_brand = mod_detail.add_brand(brand_name.to_uppercase().as_str(), brand.attribute("title"));
 
-        let Some(brand_icon_file) = brand.attribute("image") else { continue; };
+        let brand_icon_record = normalize_image_file(brand.attribute("image"));
 
-        if let Some(base_path) = brand_icon_file.strip_prefix("$data/") {
-            // Is base path
-            if let Some(base_filename) = Path::new(base_path).file_stem() {
-                this_brand.icon_base = Some(base_filename.to_string_lossy().to_string().to_lowercase());
+        if ! options.skip_detail_icons {
+            if let Some(filename) = brand_icon_record.base_game {
+                this_brand.icon_base = Some(filename);
+            } else if let Some(filename) = brand_icon_record.local_file {
+                let Ok(bin_file) = file_handle.as_bin(&filename) else {
+                    mod_detail.add_issue(ModDetailError::BrandMissingIcon);
+                    continue;
+                };
+                this_brand.icon_file = convert_mod_icon(bin_file);
             }
-        } else if !options.skip_detail_icons {
-            // Load from disk, if it exists.
-            let Ok(bin_file) = file_handle.as_bin(&normalize_icon_name(brand_icon_file)) else {
-                mod_detail.add_issue(ModDetailError::BrandMissingIcon);
-                continue;
-            };
-            this_brand.icon_file = convert_mod_icon(bin_file);
         }
     }
 }
@@ -200,13 +198,4 @@ fn xml_extract_text_as_opt_string(xml_tree : &roxmltree::Document, key : &str) -
         .descendants()
         .find(|n|n.has_tag_name(key))
         .and_then(|n|n.text().map(std::string::ToString::to_string))
-}
-
-/// Normalize an icon filename for loading (png->dds, fix slashes)
-fn normalize_icon_name(name : &str) -> String {
-    let mut value_string = name.to_string();
-    if let Some(index) = value_string.find(".png") {
-        value_string.replace_range(index..value_string.len(), ".dds");
-    }
-    value_string.replace('\\', "/")
 }

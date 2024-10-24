@@ -3,8 +3,8 @@ use crate::ModParserOptions;
 use crate::mod_detail::structs::{VehicleCapability, ModDetailVehicle, ModDetailSprayType};
 use crate::shared::files::AbstractFileHandle;
 use crate::mod_detail::structs::{MotorEntry, MotorValue};
-use super::{xml_extract_text_as_opt_string, xml_extract_text_as_opt_u32, normalize_icon_name};
-use crate::shared::convert_mod_icon;
+use super::{xml_extract_text_as_opt_string, xml_extract_text_as_opt_u32};
+use crate::shared::{extract_and_normalize_image, convert_mod_icon};
 use std::f32::consts::PI;
 
 /// Parse a vehicle
@@ -75,10 +75,12 @@ pub fn vehicle_parse(xml_tree : &roxmltree::Document, file_handle: &mut Box<dyn 
     vehicle_parse_motor(xml_tree, &mut this_vehicle);
 
     if !options.skip_detail_icons {
-        if let Some(image_entry) = xml_tree.descendants().find(|n|n.has_tag_name("image")).and_then(|n|n.text()) {
-            if image_entry.starts_with("$data") {
-                this_vehicle.icon_base = Some(image_entry.to_string());
-            } else if let Ok(file_content) = file_handle.as_bin(&normalize_icon_name(image_entry)) {
+        let image_entry = extract_and_normalize_image(xml_tree, "image");
+
+        if let Some(filename) = image_entry.base_game {
+            this_vehicle.icon_base = Some(filename);
+        } else if let Some(filename) = image_entry.local_file {
+            if let Ok(file_content) = file_handle.as_bin(&filename) {
                 this_vehicle.icon_file = convert_mod_icon(file_content);
             }
         }
@@ -116,9 +118,9 @@ impl TorqueEntry {
 /// Parse motor configurations
 fn vehicle_parse_motor(xml_tree : &roxmltree::Document, this_vehicle : &mut ModDetailVehicle) {
     let mut torque_entries: Vec<TorqueEntry> = vec![];
-    let mut motor_rpm:f32 = 1800_f32;
+    let mut motor_rpm = 1800_f32;
     let mut transmission_name = "";
-    let mut min_fwd_gear_and_axel_ratio:f32 = f32::MAX;
+    let mut min_fwd_gear_and_axel_ratio = f32::MAX;
 
     for motor_config in xml_tree.descendants().filter(|n|n.has_tag_name("motorConfiguration")) {
         // Get current motor RPM, or use last, or use default of 1800
@@ -151,7 +153,7 @@ fn vehicle_parse_motor(xml_tree : &roxmltree::Document, this_vehicle : &mut ModD
             if let Some(trans_name) = new_transmission.attribute("name") {
                 transmission_name = trans_name;
                 if this_vehicle.motor.transmission_type.is_none() {
-                    this_vehicle.motor.transmission_type = Some(transmission_name.to_string());
+                    this_vehicle.motor.transmission_type = Some(transmission_name.to_owned());
                 }
             }
 
@@ -241,10 +243,10 @@ fn vehicle_parse_fills(xml_tree : &roxmltree::Document, this_vehicle : &mut ModD
         capacity.push(fill_unit.attribute("capacity"));
 
         if let Some(cats) = fill_unit.attribute("fillTypeCategories") {
-            this_vehicle.fill_spray.fill_cat.extend(cats.split(' ').map(|n|n.to_lowercase().to_string()));
+            this_vehicle.fill_spray.fill_cat.extend(cats.split(' ').map(|n|n.to_lowercase().clone()));
         }
         if let Some(cats) = fill_unit.attribute("fillTypes") {
-            this_vehicle.fill_spray.fill_type.extend(cats.split(' ').map(|n|n.to_lowercase().to_string()));
+            this_vehicle.fill_spray.fill_type.extend(cats.split(' ').map(|n|n.to_lowercase().clone()));
         }
     }
 
@@ -273,7 +275,7 @@ fn vehicle_parse_fills(xml_tree : &roxmltree::Document, this_vehicle : &mut ModD
                 .map_or(vec![], |n| n
                     .split(' ')
                     .filter(|n|*n!="unknown")
-                    .map(|n|n.to_lowercase().to_string())
+                    .map(|n|n.to_lowercase().clone())
                     .collect()
                 )
         });
@@ -332,7 +334,7 @@ fn vehicle_parse_specs(xml_tree : &roxmltree::Document, this_vehicle : &mut ModD
         for spec in spec_node.children().filter(|n| !n.has_tag_name("combination")) {
             if let Some(value) = spec.text().and_then(|n|n.parse::<u32>().ok()) {
                 this_vehicle.specs.specs.insert(
-                    spec.tag_name().name().to_string(),
+                    spec.tag_name().name().to_owned(),
                     value
                 );
             }
