@@ -188,3 +188,32 @@ impl AbstractFileHandle for AbstractZipFile {
     }
 }
 
+
+/// Open nothing as an [`AbstractFileHandle`]
+pub struct AbstractNull {}
+
+impl AbstractNull {
+    /// Create a new [`AbstractFileHandle`] record from a null
+    /// 
+    /// Only used for testing purposes
+    ///
+    /// # Errors
+    /// 
+    /// Never returns an error, but all [`AbstractFileHandle`] implementations 
+    /// either fail (reads) or return empty (list)
+    pub fn new() -> Result<AbstractNull, ModError> {
+        Ok(AbstractNull{})
+    }
+}
+#[allow(unused_variables)]
+impl AbstractFileHandle for AbstractNull {
+    fn as_text(&mut self, needle : &str) -> Result<String, std::io::Error> {
+        Err(std::io::Error::new(std::io::ErrorKind::NotFound, "not implemented"))
+    }
+    fn as_bin(&mut self, needle : &str) -> Result<Vec<u8>, std::io::Error> {
+        Err(std::io::Error::new(std::io::ErrorKind::NotFound, "not implemented"))
+    }
+    fn is_folder(&self) -> bool { false }
+    fn list(&mut self) -> Vec<FileDefinition> { vec![] }
+    fn exists(&mut self, needle : &str) -> bool { false }
+}
