@@ -8,15 +8,15 @@ use fs_mod_parser::{parse_detail, parse_mod, parse_mod_with_options, parse_saveg
 use rayon::prelude::*;
 
 fn main() {
-    // let options = ModParserOptions{
-    //     skip_detail_icons : true,
-    //     ..Default::default()
-    // };
-    // let _out = parse_detail_with_options("./tests/test_mods/FS22_FSG_RealismProductions.zip", &options).to_json_pretty();
-    // println!("{_out}");
+    let options = ModParserOptions{
+        skip_detail_icons : true,
+        ..Default::default()
+    };
+    let _out = fs_mod_parser::parse_detail_with_options("./tests/test_mods/DETAIL_Samples", &options).to_json_pretty();
+    println!("{_out}");
 
     // detail_full_collection();
-    detail_full_collection_no_icon();
+    // detail_full_collection_no_icon();
     // scan_full_collection();
     // scan_all_save_games();
 }

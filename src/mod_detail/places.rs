@@ -113,15 +113,15 @@ fn place_parse_production(xml_node : &roxmltree::Node) -> ModDetailProduction {
         }
     }
 
-    if let Some(cycles) = xml_node.attribute("cyclesPerActiveHour") {
+    if let Some(cycles) = xml_node.attribute("cyclesPerHour") {
         if let Ok(value) = cycles.parse::<u32>() {
             this_production.cycles_per_hour = value;
         }
-    } else if let Some(cycles) = xml_node.attribute("cyclesPerActiveMinute") {
+    } else if let Some(cycles) = xml_node.attribute("cyclesPerMinute") {
         if let Ok(value) = cycles.parse::<u32>() {
             this_production.cycles_per_hour = value * 60;
         }
-    } else if let Some(cycles) = xml_node.attribute("cyclesPerActiveMonth") {
+    } else if let Some(cycles) = xml_node.attribute("cyclesPerMonth") {
         if let Ok(value) = cycles.parse::<u32>() {
             this_production.cycles_per_hour = value / 24;
         }
@@ -161,9 +161,23 @@ fn place_parse_production(xml_node : &roxmltree::Node) -> ModDetailProduction {
         }
     }
 
-    this_production.recipe.extend(mix_inputs.into_values());
+    for mut multi_value in mix_inputs.into_values() {
+        sort_by_key_prod_ingredient(&mut multi_value, |d| &d.fill_type);
+        this_production.recipe.push(multi_value);
+        // multi_value.sort_by_key("fill_type")
+    }
+    // this_production.recipe.extend(mix_inputs.into_values());
 
     this_production
+}
+
+/// sort production recipe ingredients by ingredient name
+fn sort_by_key_prod_ingredient<T, F, K>(slice: &mut [T], f: F)
+where
+    F: for<'a> Fn(&'a T) -> &'a K,
+    K: Ord,
+{
+    slice.sort_by(|a, b| f(a).cmp(f(b)));
 }
 
 /// Parse storage (bales and silos)

@@ -79,9 +79,9 @@ pub fn parse_open_file( mut abstract_file: Box<dyn AbstractFileHandle>, mod_desc
             let Ok(file_tree) = roxmltree::Document::parse(&file_content) else { continue; };
 
             if file_tree.root_element().has_tag_name("vehicle") {
-                mod_detail.vehicles.push(vehicles::vehicle_parse(&file_tree, &mut abstract_file, options));
+                mod_detail.vehicles.insert(file_name.to_owned(),vehicles::vehicle_parse(&file_tree, &mut abstract_file, options));
             } else if file_tree.root_element().has_tag_name("placeable") {
-                mod_detail.placeables.push(places::place_parse(&file_tree, &mut abstract_file, options));
+                mod_detail.placeables.insert(file_name.to_owned(), places::place_parse(&file_tree, &mut abstract_file, options));
             }
         }
     }

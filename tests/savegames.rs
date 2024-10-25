@@ -1,11 +1,10 @@
 use std::collections::HashSet;
 use std::path::Path;
-use fs_mod_parser::ModParserOptions;
-use fs_mod_parser::{parse_mod, parse_mod_with_options};
+use fs_mod_parser::{parse_mod, parse_mod_with_options, parse_savegame, ModParserOptions};
 use fs_mod_parser::shared::errors::ModError;
 use fs_mod_parser::shared::structs::ModBadges;
-use fs_mod_parser::parse_savegame;
 use fs_mod_parser::savegame::SaveError;
+
 use assert_json_diff::assert_json_include;
 use serde_json::json;
 

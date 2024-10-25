@@ -123,14 +123,16 @@ fn vehicle_parse_motor(xml_tree : &roxmltree::Document, this_vehicle : &mut ModD
     let mut min_fwd_gear_and_axel_ratio = f32::MAX;
 
     for motor_config in xml_tree.descendants().filter(|n|n.has_tag_name("motorConfiguration")) {
+        let Some(motor_entry) = motor_config.children().find(|n|n.has_tag_name("motor")) else { continue; };
+
         // Get current motor RPM, or use last, or use default of 1800
-        if let Some(max_rpm) = motor_config.attribute("maxRpm") {
+        if let Some(max_rpm) = motor_entry.attribute("maxRpm") {
             if let Ok(max_rpm_f) = max_rpm.parse::<f32>() {
                 motor_rpm = max_rpm_f;
             }
         }
 
-        let motor_scale = motor_config
+        let motor_scale = motor_entry
             .attribute("torqueScale")
             .map_or(1_f32, |n|n.parse::<f32>().unwrap_or(1_f32));
 
@@ -183,7 +185,7 @@ fn vehicle_parse_motor(xml_tree : &roxmltree::Document, this_vehicle : &mut ModD
         } // end new transmission
 
         // Get defined max speed for the motor
-        let defined_max_speed = motor_config
+        let defined_max_speed = motor_entry
             .attribute("maxForwardSpeed")
             .map_or(0, |n|n.parse::<u32>().unwrap_or(0));
 
@@ -268,7 +270,7 @@ fn vehicle_parse_fills(xml_tree : &roxmltree::Document, this_vehicle : &mut ModD
                 .children()
                 .find(|n|n.has_tag_name("usageScales"))
                 .and_then(|n|n.attribute("workingWidth"))
-                .and_then(|n|n.parse::<u32>().ok()),
+                .and_then(|n|n.parse::<f32>().ok()),
 
             fills : spray_type
                 .attribute("fillTypes")

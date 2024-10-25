@@ -24,9 +24,9 @@ pub struct ModDetail {
     /// l10n languages, keys, and strings
     pub l10n       : LanguageDefinition,
     /// placables
-    pub placeables : Vec<ModDetailPlace>,
+    pub placeables : HashMap<String, ModDetailPlace>,
     /// vehicles
-    pub vehicles   : Vec<ModDetailVehicle>,
+    pub vehicles   : HashMap<String, ModDetailVehicle>,
 }
 
 impl ModDetail {
@@ -37,8 +37,8 @@ impl ModDetail {
             brands     : HashMap::new(),
             issues     : HashSet::new(),
             l10n       : HashMap::new(),
-            placeables : vec![],
-            vehicles   : vec![],
+            placeables : HashMap::new(),
+            vehicles   : HashMap::new(),
         }
     }
 
@@ -248,7 +248,7 @@ pub struct ModDetailSprayType {
     /// fill types supported
     pub fills : Vec<String>,
     /// working width
-    pub width : Option<u32>,
+    pub width : Option<f32>,
 }
 
 /// Vehicle fill and spray sub-record
@@ -520,9 +520,9 @@ pub type ProductionRecipe = Vec<ProductionIngredients>;
 #[serde(rename_all = "camelCase")]
 pub struct ProductionIngredient {
     /// quantity for ingredient
-    amount : f32,
+    pub amount : f32,
     /// fill type of ingredient
-    fill_type : String
+    pub fill_type : String
 }
 impl ProductionIngredient {
     /// create new production ingredient
