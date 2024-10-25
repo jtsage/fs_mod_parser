@@ -10,6 +10,7 @@ fn broken_zip_file() {
 	assert!(test_file_path.exists());
 
 	let mod_record = parser(test_file_path);
+	let _ = mod_record.to_json();
 
 	assert_eq!(mod_record.can_not_use, true);
 
@@ -34,6 +35,7 @@ fn bad_crc_moddesc() {
 	assert!(test_file_path.exists());
 
 	let mod_record = parser(test_file_path);
+	let _ = mod_record.to_json();
 
 	assert_eq!(mod_record.can_not_use, true);
 
@@ -59,6 +61,7 @@ fn garbage_file() {
 	assert!(test_file_path.exists());
 
 	let mod_record = parser(test_file_path);
+	let _ = mod_record.to_json();
 
 	assert_eq!(mod_record.can_not_use, true);
 
@@ -83,6 +86,7 @@ fn missing_desc_version() {
 	assert!(test_file_path.exists());
 
 	let mod_record = parser(test_file_path);
+	let _ = mod_record.to_json();
 
 	assert_eq!(mod_record.can_not_use, false);
 
@@ -107,6 +111,7 @@ fn missing_moddesc() {
 	assert!(test_file_path.exists());
 
 	let mod_record = parser(test_file_path);
+	let _ = mod_record.to_json();
 
 	assert_eq!(mod_record.can_not_use, true);
 
@@ -132,6 +137,7 @@ fn invalid_file_copy() {
 	assert!(test_file_path.exists());
 
 	let mod_record = parser(test_file_path);
+	let _ = mod_record.to_json();
 
 	assert_eq!(mod_record.can_not_use, true);
 
@@ -159,6 +165,7 @@ fn malformed_moddesc() {
 	assert!(test_file_path.exists());
 
 	let mod_record = parser(test_file_path);
+	let _ = mod_record.to_json();
 
 	assert_eq!(mod_record.can_not_use, true);
 
@@ -185,6 +192,7 @@ fn starts_with_digit() {
 	assert!(test_file_path.exists());
 
 	let mod_record = parser(test_file_path);
+	let _ = mod_record.to_json();
 
 	assert_eq!(mod_record.can_not_use, true);
 

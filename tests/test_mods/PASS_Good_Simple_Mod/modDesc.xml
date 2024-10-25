@@ -36,7 +36,57 @@
 	<vehicleSchemaOverlays filename="textures/vehicleSchemaMantrid.dds" imageSize="256 256">
 		<overlay name="DOLLY"				uvs="28px 0px 64px 64px"     size="60px 30px"/>
 		<overlay name="DOLLY_SELECTED"		uvs="28px 65px 64px 64px"     size="60px 30px"/>
-			</vehicleSchemaOverlays>
+	</vehicleSchemaOverlays>
+
+	<actions>
+        <action name="aim_menu" category="SYSTEM" axisType="HALF" ignoreComboMask="false" />
+        <action name="aim_hot1" category="SYSTEM" axisType="HALF" ignoreComboMask="false" />
+        <action name="aim_hot2" category="SYSTEM" axisType="HALF" ignoreComboMask="false" />
+        <action name="aim_hot3" category="SYSTEM" axisType="HALF" ignoreComboMask="false" />
+        <action name="aim_hot4" category="SYSTEM" axisType="HALF" ignoreComboMask="false" />
+        <action name="aim_hot5" category="SYSTEM" axisType="HALF" ignoreComboMask="false" />
+        <action name="aim_hot6" category="SYSTEM" axisType="HALF" ignoreComboMask="false" />
+        <action name="aim_hot7" category="SYSTEM" axisType="HALF" ignoreComboMask="false" />
+        <action name="aim_hot8" category="SYSTEM" axisType="HALF" ignoreComboMask="false" />
+        <action name="aim_hot9" category="SYSTEM" axisType="HALF" ignoreComboMask="false" />
+        <action name="aim_togg" axisType="HALF" ignoreComboMask="false" />
+    </actions>
+    <inputBinding>
+        <actionBinding action="aim_menu">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_lshift KEY_slash" />
+            <binding device="KB_MOUSE_DEFAULT" input="MOUSE_BUTTON_X1" axisComponent="+" neutralInput="0" index="3"/>
+        </actionBinding>
+        <actionBinding action="aim_hot1">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_ralt KEY_KP_1" />
+        </actionBinding>
+        <actionBinding action="aim_hot2">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_ralt KEY_KP_2" />
+        </actionBinding>
+        <actionBinding action="aim_hot3">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_ralt KEY_KP_3" />
+        </actionBinding>
+        <actionBinding action="aim_hot4">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_ralt KEY_KP_4" />
+        </actionBinding>
+        <actionBinding action="aim_hot5">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_ralt KEY_KP_5" />
+        </actionBinding>
+        <actionBinding action="aim_hot6">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_ralt KEY_KP_6" />
+        </actionBinding>
+        <actionBinding action="aim_hot7">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_ralt KEY_KP_7" />
+        </actionBinding>
+        <actionBinding action="aim_hot8">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_ralt KEY_KP_8" />
+        </actionBinding>
+        <actionBinding action="aim_hot9">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_ralt KEY_KP_9" />
+        </actionBinding>
+        <actionBinding action="aim_togg">
+            <binding device="KB_MOUSE_DEFAULT" input="KEY_ralt KEY_KP_0" />
+        </actionBinding>
+    </inputBinding>
 
 
 </modDesc>

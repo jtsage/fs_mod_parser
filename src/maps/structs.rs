@@ -39,15 +39,6 @@ pub struct CropSeason {
     pub max : i8,
 }
 
-/// Static weather definition
-pub struct CropWeather {
-    /// Name of base map
-    pub name : &'static str,
-    /// Season definitions
-    pub seasons : [CropSeason; 4],
-}
-
-
 /// Static crop definition
 #[derive(Clone)]
 pub struct Crop {

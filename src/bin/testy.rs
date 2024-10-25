@@ -12,16 +12,7 @@ fn main() {
     //     skip_detail_icons : true,
     //     ..Default::default()
     // };
-    // println!("{}", parse_detail_json_pretty("./tests/test_mods/PASS_Good_Simple_Mod.zip"));
-
-    // let _out = parse_detail_json_pretty("./tests/test_mods/UNUSED_RealModForStoreItems.zip");
-
-    // println!("{_out}");
-
-    // println!("{}", parse_detail_json_pretty("./tests/test_mods/FSG_Color_Pack.zip"));
-    // println!("{}", parse_detail_json_pretty("./tests/test_mods/FS22_CaseTitanPack.zip"));
     // let _out = parse_detail_with_options("./tests/test_mods/FS22_FSG_RealismProductions.zip", &options).to_json_pretty();
-
     // println!("{_out}");
 
     // detail_full_collection();
@@ -160,7 +151,7 @@ fn scan_all_save_games() {
 fn detail_full_collection_no_icon() {
     let options = ModParserOptions{
         include_mod_detail : true,
-        skip_detail_icons : false,
+        skip_detail_icons : true,
         ..Default::default()
     };
 
@@ -178,7 +169,7 @@ fn detail_full_collection_no_icon() {
         match path::absolute(entry.clone()) {
             Ok(abs_path) => {
                 let _output = parse_mod_with_options(abs_path.as_path(), &options).to_json_pretty();
-                println!("{_output}");
+                // println!("{_output}");
                 println!("{} in {:.2?}", entry.clone().to_str().unwrap(), this_file_start.elapsed());
             },
             Err(e) => panic!("{}", e),

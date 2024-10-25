@@ -132,7 +132,7 @@ fn simple_good_mod_unzipped() {
 		"fileDetail": {
 			"copyName": null,
 			"extraFiles": [],
-			"fileSize": 35748,
+			"fileSize": 38511,
 			"i3dFiles": [],
 			"imageDDS": [
 				"modIcon.dds"

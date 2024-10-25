@@ -124,24 +124,22 @@ struct MapEnvironment (bool, Option<CropWeatherType>);
 fn weather_from_base_game(base_game_key : &str) -> MapEnvironment {
     let mut weather_map:CropWeatherType = HashMap::new();
 
-    for key in BG_CROP_WEATHER {
-        if base_game_key == key.name {
-            for season in key.seasons {
-                weather_map.insert(
-                    season.name.to_owned(),
-                    HashMap::from([
-                        (String::from("min"), season.min),
-                        (String::from("max"), season.max)
-                    ])
-                );
-            }
+    if let Some(found_weather) = BG_CROP_WEATHER.iter().find(|n|n.0 == base_game_key) {
+        for season in &found_weather.1 {
+            weather_map.insert(
+                season.name.to_owned(),
+                HashMap::from([
+                    (String::from("min"), season.min),
+                    (String::from("max"), season.max)
+                ])
+            );
         }
     }
 
     if weather_map.is_empty() { 
-        MapEnvironment( false, Some(weather_map.clone()) )
-    } else {
         MapEnvironment( false, None )
+    } else {
+        MapEnvironment( false, Some(weather_map.clone()) )
     }
 }
 
@@ -152,9 +150,9 @@ struct MapFiles {
     pub fruits : Option<String>,
     /// growth file
     pub growth : Option<String>,
-    /// included enviroment
+    /// included environment
     pub env_in : Option<String>,
-    /// base game enviroment key
+    /// base game environment key
     pub env_base : Option<String>
 }
 
@@ -296,7 +294,7 @@ fn populate_weather(file_handle: &mut Box<dyn AbstractFileHandle>, env_base: Opt
                 let mut weather_map:CropWeatherType = HashMap::new();
                 let mut is_south = false;
 
-                if let Some(node) = tree.descendants().find(|n|n.has_tag_name("latitude") && n.is_text()) {
+                if let Some(node) = tree.descendants().find(|n|n.has_tag_name("latitude")) {
                     if node.text().unwrap_or("0.1").parse::<f32>().unwrap_or(0.1) < 0.0 {
                         is_south = true;
                     }

@@ -15,6 +15,7 @@ fn mod_parse_save_detection() {
 	assert!(test_file_path.exists());
 
 	let mod_record = parse_mod(test_file_path);
+	let _ = mod_record.to_json();
 
 	assert_eq!(mod_record.can_not_use, true);
 
@@ -35,11 +36,29 @@ fn mod_parse_save_detection() {
 
 
 #[test]
+fn missing_file() {
+	let test_file_path = Path::new("./tests/test_mods/SAVEGAME_Fake_File.zip");
+	assert!(!test_file_path.exists());
+
+	let save_record = parse_savegame(test_file_path);
+	let _ = save_record.to_json();
+
+	assert_eq!(save_record.is_valid, false);
+
+	let expected_errors:HashSet<SaveError> = HashSet::from([SaveError::FileUnreadable]);
+	assert_eq!(save_record.error_list, expected_errors);
+
+	assert!(save_record.to_json().len() > 10);
+	assert!(save_record.to_json_pretty().len() > 10);
+}
+
+#[test]
 fn missing_career() {
 	let test_file_path = Path::new("./tests/test_mods/SAVEGAME_No_Career.zip");
 	assert!(test_file_path.exists());
 
 	let save_record = parse_savegame(test_file_path);
+	let _ = save_record.to_json();
 
 	assert_eq!(save_record.is_valid, false);
 
@@ -53,6 +72,7 @@ fn missing_farms() {
 	assert!(test_file_path.exists());
 
 	let save_record = parse_savegame(test_file_path);
+	let _ = save_record.to_json();
 
 	assert_eq!(save_record.is_valid, false);
 
@@ -67,6 +87,7 @@ fn missing_vehicles() {
 	assert!(test_file_path.exists());
 	
 	let save_record = parse_savegame(test_file_path);
+	let _ = save_record.to_json();
 
 	assert_eq!(save_record.is_valid, false);
 
@@ -81,10 +102,30 @@ fn missing_placeable() {
 	assert!(test_file_path.exists());
 
 	let save_record = parse_savegame(test_file_path);
+	let _ = save_record.to_json();
 
 	assert_eq!(save_record.is_valid, false);
 
 	let expected_errors:HashSet<SaveError> = HashSet::from([SaveError::PlaceableMissing]);
+	assert_eq!(save_record.error_list, expected_errors);
+}
+
+#[test]
+fn all_malformed() {
+	let test_file_path = Path::new("./tests/test_mods/SAVEGAME_Malformed.zip");
+	assert!(test_file_path.exists());
+
+	let save_record = parse_savegame(test_file_path);
+	let _ = save_record.to_json();
+
+	assert_eq!(save_record.is_valid, false);
+
+	let expected_errors:HashSet<SaveError> = HashSet::from([
+		SaveError::PlaceableParseError,
+		SaveError::CareerParseError,
+		SaveError::FarmsParseError,
+		SaveError::VehicleParseError,
+	]);
 	assert_eq!(save_record.error_list, expected_errors);
 }
 
@@ -94,6 +135,7 @@ fn good_multiplayer() {
 	assert!(test_file_path.exists());
 
 	let save_record = parse_savegame(test_file_path);
+	let _ = save_record.to_json();
 
 	assert_eq!(save_record.is_valid, true);
 	assert_eq!(save_record.error_list.len(), 0);
@@ -151,6 +193,7 @@ fn good_single_player() {
 	assert!(test_file_path.exists());
 
 	let save_record = parse_savegame(test_file_path);
+	let _ = save_record.to_json();
 
 	assert_eq!(save_record.is_valid, true);
 	assert_eq!(save_record.error_list.len(), 0);

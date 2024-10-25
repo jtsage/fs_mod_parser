@@ -20,6 +20,7 @@ fn test_custom_environment_and_growth() {
     assert_eq!(result.mod_desc.map_custom_crop, false);
     assert_eq!(result.mod_desc.map_custom_grow, true);
     assert_eq!(result.mod_desc.map_custom_env, true);
+    assert_eq!(result.mod_desc.map_is_south, true);
 
     let mut crop_info_vec = result.mod_desc.crop_info;
 
@@ -137,6 +138,7 @@ fn test_custom_growth() {
     assert_eq!(result.mod_desc.map_custom_crop, false);
     assert_eq!(result.mod_desc.map_custom_grow, true);
     assert_eq!(result.mod_desc.map_custom_env, false);
+    assert_eq!(result.mod_desc.map_is_south, false);
 
     assert_eq!(crop_info_vec.get("wheat"), Some(CropOutput{
         growth_time     : 8,
@@ -248,9 +250,62 @@ fn test_no_customs() {
 
     let result = parse_mod("./tests/test_mods/MAP_NoCustoms.zip");
 
+    let expect_env = json!({"modDesc" : { "cropWeather": {
+        "spring": { "min": 6, "max": 18 },
+        "summer": { "min": 13, "max": 34 },
+        "winter": { "min": -11, "max": 10 },
+        "autumn": { "min": 5, "max": 25 }
+    }}});
+
+    assert_json_include!(actual : json!(result), expected : expect_env);
+
     assert_eq!(result.mod_desc.map_custom_crop, false);
     assert_eq!(result.mod_desc.map_custom_grow, false);
     assert_eq!(result.mod_desc.map_custom_env, false);
+    assert_eq!(result.mod_desc.map_is_south, false);
     assert_eq!(result.mod_desc.crop_info.is_empty(), false);
     assert_eq!(result.mod_desc.crop_info.len(), 17);
+}
+
+#[test]
+fn test_added_crops() {
+
+    let result = parse_mod("./tests/test_mods/MAP_AddedCrops.zip");
+
+    let expect_env = json!({"modDesc" : { "cropWeather": {
+        "spring": { "min": 6, "max": 18 },
+        "summer": { "min": 13, "max": 34 },
+        "winter": { "min": -11, "max": 10 },
+        "autumn": { "min": 5, "max": 25 }
+    }}});
+
+    assert_json_include!(actual : json!(result), expected : expect_env);
+
+    assert_eq!(result.mod_desc.map_custom_crop, true);
+    assert_eq!(result.mod_desc.map_custom_grow, true);
+    assert_eq!(result.mod_desc.map_custom_env, true);
+    assert_eq!(result.mod_desc.map_is_south, false);
+
+    assert_eq!(result.mod_desc.crop_info.is_empty(), false);
+    assert_eq!(result.mod_desc.crop_info.len(), 20);
+
+    let mut crop_info_vec = result.mod_desc.crop_info;
+
+    assert_eq!(crop_info_vec.get("alfalfa"), Some(CropOutput{
+        growth_time     : 7,
+        harvest_periods : vec![2,3,4,5,6,7,8],
+        plant_periods   : vec![1,2,3,4,5,6,7,8,9],
+    }).as_ref(), "alfalfa");
+
+    assert_eq!(crop_info_vec.get("clover"), Some(CropOutput{
+        growth_time     : 7,
+        harvest_periods : vec![2,3,4,5,6,7,8],
+        plant_periods   : vec![1,2,3,4,5,6,7,8,9],
+    }).as_ref(), "clover");
+
+    assert_eq!(crop_info_vec.get("silage_corn"), Some(CropOutput{
+        growth_time     : 7,
+        harvest_periods : vec![8,9,10,11],
+        plant_periods   : vec![2,3],
+    }).as_ref(), "silage_corn");
 }

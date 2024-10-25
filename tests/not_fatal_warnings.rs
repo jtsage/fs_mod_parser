@@ -10,6 +10,7 @@ fn piracy_warning() {
 	assert!(test_file_path.exists());
 
 	let mod_record = parser(test_file_path);
+	let _ = mod_record.to_json();
 
 	assert_eq!(mod_record.can_not_use, false);
 
@@ -35,6 +36,7 @@ fn icon_not_found() {
 	assert!(test_file_path.exists());
 
 	let mod_record = parser(test_file_path);
+	let _ = mod_record.to_json();
 
 	assert_eq!(mod_record.can_not_use, false);
 
@@ -60,6 +62,7 @@ fn malicious_code_check() {
 	assert!(test_file_path.exists());
 
 	let mod_record = parser(test_file_path);
+	let _ = mod_record.to_json();
 
 	assert_eq!(mod_record.can_not_use, false);
 
@@ -85,6 +88,7 @@ fn no_version() {
 	assert!(test_file_path.exists());
 
 	let mod_record = parser(test_file_path);
+	let _ = mod_record.to_json();
 
 	assert_eq!(mod_record.can_not_use, false);
 
@@ -111,6 +115,7 @@ fn server_warnings() {
 	assert!(test_file_path.exists());
 
 	let mod_record = parser(test_file_path);
+	let _ = mod_record.to_json();
 
 	assert_eq!(mod_record.can_not_use, false);
 

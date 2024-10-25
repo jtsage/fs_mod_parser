@@ -1,5 +1,5 @@
 //! Base game data
-use super::structs::{Crop, CropSeason, CropTypeState, CropWeather};
+use super::structs::{Crop, CropSeason, CropTypeState};
 
 /// Crop types to ignore
 pub const SKIP_CROP_TYPES: [&str; 2] = [
@@ -29,25 +29,25 @@ pub const BG_CROP_TYPES: [CropTypeState; 17] = [
 ];
 
 /// Base game weather definitions, FS22
-pub const BG_CROP_WEATHER: [CropWeather; 3] = [
-    CropWeather { name : "mapUS", seasons : [
+pub const BG_CROP_WEATHER: [(&str, [CropSeason; 4]); 3] = [
+    ("mapUS", [
         CropSeason { name : "spring", min : 6, max : 18 },
         CropSeason { name : "summer", min : 13, max : 34 },
         CropSeason { name : "autumn", min : 5, max : 25 },
         CropSeason { name : "winter", min : -11, max : 10 },
-    ]},
-    CropWeather { name : "mapFR", seasons : [
+    ]),
+    ("mapFR", [
         CropSeason { name : "spring", min : 6, max : 18 },
         CropSeason { name : "summer", min : 13, max : 34 },
         CropSeason { name : "autumn", min : 5, max : 25 },
         CropSeason { name : "winter", min : -11, max : 10 },
-    ]},
-    CropWeather { name : "mapAlpine", seasons : [
+    ]),
+    ("mapAlpine", [
         CropSeason { name : "spring", min : 5, max : 18 },
         CropSeason { name : "summer", min : 10, max : 30 },
         CropSeason { name : "autumn", min : 4, max : 22 },
         CropSeason { name : "winter", min : -12, max : 8 },
-    ]},
+    ]),
 ];
 
 /// Base game crop definitions, FS22
