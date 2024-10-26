@@ -11,6 +11,10 @@ pub enum ModDetailError {
     NotModModDesc,
     /// Brand icon is missing
     BrandMissingIcon,
+    /// Bad storeItem Record
+    StoreItemMissing,
+    /// Bad storeItem XML
+    StoreItemBroken,
 }
 
 /// Mod Detail Data

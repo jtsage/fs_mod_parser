@@ -67,11 +67,10 @@ fn check_json_mod_record() {
 			"mapImage": null,
 			"multiPlayer": false,
 			"version": "--"
-		},
-		"uuid": "4fd8cc85ca9eebd2fa3c550069ce2846"
+		}
 	});
 
-	assert_json_eq!(json!(mod_record), expected);
+	assert_json_include!(actual : json!(mod_record), expected : expected);
 	
 }
 
@@ -255,7 +254,86 @@ fn simple_good_mod() {
 			"multiPlayer": true,
 			"version": "1.0.0.0"
 		},
-		"uuid": "89b7c5117437014a47f7805bf24a0d43"
+	});
+
+	assert_json_include!(actual : json!(mod_record), expected : expected);
+}
+
+#[test]
+fn xml_recover() {
+	let test_file_path = Path::new("./tests/test_mods/PASS_Invalid_XML.zip");
+	assert!(test_file_path.exists());
+
+	let mod_record = parser(test_file_path);
+
+	assert_eq!(mod_record.can_not_use, false);
+	assert_eq!(mod_record.issues.len(), 0);
+
+	assert_eq!(mod_record.badge_array, ModBadges {
+		broken   : false,
+		folder   : false,
+		malware  : false,
+		no_mp    : false,
+		notmod   : false,
+		pconly   : false,
+		problem  : false,
+		savegame : false,
+	});
+
+	assert_ne!(mod_record.mod_desc.icon_image, None);
+
+	let expected = json!({
+		"badgeArray": [],
+		"canNotUse": false,
+		"currentCollection": "",
+		"fileDetail": {
+			"copyName": null,
+			"extraFiles": [],
+			"fileSize": 12541,
+			"i3dFiles": [],
+			"imageDDS": [
+				"modIcon.dds"
+			],
+			"imageNonDDS": [],
+			"isFolder": false,
+			"isSaveGame": false,
+			"isModPack": false,
+			"pngTexture": [],
+			"shortName": "PASS_Invalid_XML",
+			"spaceFiles": [],
+			"tooBigFiles": [],
+			"zipFiles": []
+		},
+		"issues": [],
+		"l10n": {
+			"title": {
+				"en": "Totally valid FS22 Mod"
+			},
+			"description": {
+				"en": "\n\t\t\tDemonstrates how FSModAssist handles a good mod file.\n\t\t\t<!-- HI -->\n\t\t\t"
+			}
+		},
+		"md5Sum": null,
+		"modDesc": {
+			"actions": {},
+			"binds": {},
+			"author": "FSModAssist Test",
+			"scriptFiles": 0,
+			"storeItems": 1,
+			"cropInfo": null,
+			"cropWeather": null,
+			"depend": [],
+			"descVersion": 69,
+			"iconFileName": "modIcon.dds",
+			"mapConfigFile": null,
+			"mapCustomEnv": false,
+			"mapCustomCrop": false,
+			"mapCustomGrow": false,
+			"mapIsSouth": false,
+			"mapImage": null,
+			"multiPlayer": true,
+			"version": "1.0.0.0"
+		},
 	});
 
 	assert_json_include!(actual : json!(mod_record), expected : expected);

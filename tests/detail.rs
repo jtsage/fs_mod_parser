@@ -13,6 +13,7 @@ static NO_ICONS:ModParserOptions = ModParserOptions {
 };
 
 static PATH_TO_GOOD: &str = "./tests/test_mods/DETAIL_Samples.zip";
+static PATH_TO_BAD: &str = "./tests/test_mods/DETAIL_Internal_Failures.zip";
 
 #[test]
 fn missing_file() {
@@ -22,6 +23,34 @@ fn missing_file() {
     let detail_record = parse_detail(test_file_path);
 
     let expected_errors:HashSet<ModDetailError> = HashSet::from([ModDetailError::FileReadFail]);
+    assert_eq!(detail_record.issues, expected_errors);
+
+    assert!(detail_record.to_json().len() > 10);
+    assert!(detail_record.to_json_pretty().len() > 10);
+}
+
+#[test]
+fn invalid_folder() {
+    let test_file_path = Path::new("./tests/test_mods/FAILURE_Invalid_Folder");
+    assert!(test_file_path.exists());
+
+    let detail_record = parse_detail(test_file_path);
+
+    let expected_errors:HashSet<ModDetailError> = HashSet::from([ModDetailError::NotModModDesc]);
+    assert_eq!(detail_record.issues, expected_errors);
+
+    assert!(detail_record.to_json().len() > 10);
+    assert!(detail_record.to_json_pretty().len() > 10);
+}
+
+#[test]
+fn invalid_moddesc_folder() {
+    let test_file_path = Path::new("./tests/test_mods/FAILURE_Invalid_ModDesc");
+    assert!(test_file_path.exists());
+
+    let detail_record = parse_detail(test_file_path);
+
+    let expected_errors:HashSet<ModDetailError> = HashSet::from([ModDetailError::NotModModDesc]);
     assert_eq!(detail_record.issues, expected_errors);
 
     assert!(detail_record.to_json().len() > 10);
@@ -360,7 +389,7 @@ fn good_vehicle_sprayer_types() {
         let expected = json!({
             "fillSpray": {
                 "fillCat": [],
-                "fillLevel": 26000,
+                "fillLevel": 15000,
                 "fillType": [ "fertilizer", "lime", "seeds" ],
                 "sprayTypes": [
                     { "fills": [ "fertilizer" ] },
@@ -412,5 +441,48 @@ fn good_vehicle_sprayer_types() {
     };
 }
 
-// TODO: add multi-motor
-// TODO: add more error types "one or more xml's failed", "one or more icons failed"
+#[test]
+fn good_vehicle_multiple_motors() {
+    /* cSpell: disable */
+    if let Some (comp_key) = setup_good_store_items().vehicles.get("xml/example-multimotor.xml") {
+        assert_eq!(comp_key.motor.fuel_type, Some(String::from("electricCharge")));
+        assert_eq!(comp_key.motor.transmission_type, Some(String::from("$l10n_info_transmission_cvt")));
+        assert_eq!(comp_key.motor.motors.len(), 4);
+    }else {
+        panic!("key not found");
+    };
+}
+
+#[test]
+fn bad_store_items_overview() {
+    let test_file_path = Path::new(PATH_TO_BAD);
+    assert!(test_file_path.exists());
+
+    let detail_record = parse_detail(test_file_path);
+    let _ = detail_record.to_json();
+
+    let expected_errors:HashSet<ModDetailError> = HashSet::from([
+        ModDetailError::BrandMissingIcon,
+        ModDetailError::StoreItemBroken,
+        ModDetailError::StoreItemMissing
+    ]);
+    assert_eq!(detail_record.issues, expected_errors);
+    
+    assert_eq!(detail_record.brands.len(), 2);
+    assert_eq!(detail_record.l10n.len(), 2);
+    assert_eq!(detail_record.placeables.len(), 0);
+    assert_eq!(detail_record.vehicles.len(), 0);
+
+    let byte_length = detail_record.to_json_pretty().len() as i32;
+	let byte_expected:i32 = 1321;
+	let byte_margin = 100;
+	assert!(
+		(byte_length - byte_expected).abs() < byte_margin,
+		"assertion failed: `(left !== right)` \
+		(left: `{:?}`, right: `{:?}`, expect diff: `{:?}`, real diff: `{:?}`)",
+		byte_length,
+		byte_expected,
+		byte_margin,
+		(byte_length - byte_expected).abs()
+	);
+}

@@ -68,7 +68,7 @@ impl AbstractFolder {
             } else {
                 match path::absolute(input_path) {
                     Ok(new_path) => Ok(AbstractFolder { path : new_path }),
-                    Err(..) => Ok(AbstractFolder { path : input_path.to_path_buf() })
+                    Err(..) => Err(ModError::FileErrorUnreadableZip)
                 }
                 // input_path.
             }
@@ -201,8 +201,10 @@ impl AbstractFileHandle for AbstractZipFile {
 
 
 /// Open nothing as an [`AbstractFileHandle`]
+#[cfg(test)]
 pub struct AbstractNull {}
 
+#[cfg(test)]
 impl AbstractNull {
     /// Create a new [`AbstractFileHandle`] record from a null
     /// 
@@ -216,6 +218,7 @@ impl AbstractNull {
         Ok(AbstractNull{})
     }
 }
+#[cfg(test)]
 #[expect(unused_variables)]
 impl AbstractFileHandle for AbstractNull {
     fn as_text(&mut self, needle : &str) -> Result<String, std::io::Error> {
@@ -227,4 +230,34 @@ impl AbstractFileHandle for AbstractNull {
     fn is_folder(&self) -> bool { false }
     fn list(&mut self) -> Vec<FileDefinition> { vec![] }
     fn exists(&mut self, needle : &str) -> bool { false }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn null_adapter() {
+        let mut file_handle:Box<dyn AbstractFileHandle> = Box::new(AbstractNull::new().unwrap());
+
+        assert_eq!(file_handle.list().len(), 0);
+        assert_eq!(file_handle.is_folder(), false);
+        assert_eq!(file_handle.exists("foo.txt"), false);
+        assert!(file_handle.as_bin("foo.txt").is_err());
+        assert!(file_handle.as_text("foo.txt").is_err());
+    }
+
+    #[test]
+    fn absolute_path() {
+        let file_handle = AbstractFolder::new("C:\\").unwrap();
+
+        assert_eq!(file_handle.is_folder(), true);
+    }
+
+    #[test]
+    fn invalid_path() {
+        let file_handle = AbstractFolder::new("./foo/bar/foo");
+
+        assert!(file_handle.is_err());
+    }
 }

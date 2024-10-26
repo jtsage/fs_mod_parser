@@ -75,8 +75,14 @@ pub fn parse_open_file( mut abstract_file: Box<dyn AbstractFileHandle>, mod_desc
 
     for store_item in mod_desc_doc.descendants().filter(|n| n.has_tag_name("storeItem")) {
         if let Some(file_name) = store_item.attribute("xmlFilename") {
-            let Ok(file_content) = abstract_file.as_text(&file_name.to_owned().replace('\\', "/")) else { continue; };
-            let Ok(file_tree) = roxmltree::Document::parse(&file_content) else { continue; };
+            let Ok(file_content) = abstract_file.as_text(&file_name.to_owned().replace('\\', "/")) else {
+                mod_detail.add_issue(ModDetailError::StoreItemMissing);
+                continue;
+            };
+            let Ok(file_tree) = roxmltree::Document::parse(&file_content) else {
+                mod_detail.add_issue(ModDetailError::StoreItemBroken);
+                continue;
+            };
 
             if file_tree.root_element().has_tag_name("vehicle") {
                 mod_detail.vehicles.insert(file_name.to_owned(),vehicles::vehicle_parse(&file_tree, &mut abstract_file, options));

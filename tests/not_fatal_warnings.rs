@@ -66,7 +66,7 @@ fn malicious_code_check() {
 
 	assert_eq!(mod_record.can_not_use, false);
 
-	let expected_errors:HashSet<ModError> = HashSet::from([ModError::InfoMaliciousCode, ModError::PerformanceFileSpaces, ModError::ModDescNoModIcon]);
+	let expected_errors:HashSet<ModError> = HashSet::from([ModError::InfoMaliciousCode, ModError::ModDescNoModIcon]);
 	assert_eq!(mod_record.issues, expected_errors);
 
 	assert_eq!(mod_record.badge_array, ModBadges {
@@ -127,7 +127,9 @@ fn server_warnings() {
 		ModError::PerformanceOversizeXML,
 		ModError::PerformanceQuantityGRLE,
 		ModError::PerformanceQuantityPDF,
-		ModError::PerformanceQuantityTXT
+		ModError::PerformanceQuantityPNG,
+		ModError::PerformanceQuantityTXT,
+		ModError::PerformanceFileSpaces
 	]);
 	assert_eq!(mod_record.issues, expected_errors);
 

@@ -16,6 +16,15 @@ use data::{BG_CROPS, BG_CROP_TYPES, BG_CROP_WEATHER, SKIP_CROP_TYPES};
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::shared::files::AbstractNull;
+
+    #[test]
+    fn base_game_weather_invalid_id() {
+        let weather = weather_from_base_game("foo");
+
+        assert_eq!(weather.0, false);
+        assert!(weather.1.is_none());
+    }
 
     #[test]
     fn test_array_convert() {
@@ -61,6 +70,13 @@ mod tests {
     }
 
     #[test]
+    fn test_game_null_entry_key_missing_filename() {
+        let document = roxmltree::Document::parse(r#"<map><environment name="$data/maps/mapBullshit/environment.xml" /></map>"#).unwrap();
+        let result = nullify_base_game_entry(&document, "environment");
+        assert_eq!(result, None);
+    }
+
+    #[test]
     fn test_game_entry_key_invalid() {
         let document = roxmltree::Document::parse(r#"<map><environment filename="maps/mapUS/environment.xml" /></map>"#).unwrap();
         let result = get_base_game_entry_key(&document);
@@ -79,6 +95,27 @@ mod tests {
         let document = roxmltree::Document::parse(r#"<map><environment filename="maps/mapUS/environment.xml" /></map>"#).unwrap();
         let result = nullify_base_game_entry(&document, "environment");
         assert_eq!(result, Some("maps/mapUS/environment.xml".to_string()));
+    }
+
+    #[test]
+    fn test_range() {
+        // Invalid options
+        assert_eq!(decode_max_range(Some("1-4-8")), 8_u8);
+        assert_eq!(decode_max_range(Some("1-")), 0_u8);
+        assert_eq!(decode_max_range(Some("-6")), 6_u8);
+        // Valid options
+        assert_eq!(decode_max_range(Some("1-4")), 4_u8);
+        assert_eq!(decode_max_range(Some("3")), 3_u8);
+        assert_eq!(decode_max_range(None), 0_u8);
+    }
+
+    #[test]
+    fn missing_overview() {
+        let minimum_xml = r#"<map></map>"#;
+        let minimum_doc = roxmltree::Document::parse(&minimum_xml).unwrap();
+        let mut file_handle:Box<dyn AbstractFileHandle> = Box::new(AbstractNull::new().unwrap());
+        let result = process_overview(&minimum_doc, &mut file_handle);
+        assert_eq!(result, None);
     }
 }
 

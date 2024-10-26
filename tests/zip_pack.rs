@@ -5,11 +5,48 @@ use fs_mod_parser::shared::errors::ModError;
 use fs_mod_parser::shared::structs::{ModBadges, ZipPackFile};
 
 #[test]
+fn is_seven_zip() {
+	let test_file_path = Path::new("./tests/test_mods/UNSUPPORTED.7z");
+	assert!(!test_file_path.exists());
+
+	let mod_record = parser(test_file_path);
+	let _ = mod_record.to_json();
+
+	assert_eq!(mod_record.can_not_use, true);
+
+	let expected_errors:HashSet<ModError> = HashSet::from([
+		ModError::FileErrorUnsupportedArchive,
+		ModError::FileErrorUnreadableZip,
+		ModError::FileErrorNameInvalid
+	]);
+	assert_eq!(mod_record.issues, expected_errors);
+}
+
+#[test]
+fn is_rar() {
+	let test_file_path = Path::new("./tests/test_mods/UNSUPPORTED.rar");
+	assert!(!test_file_path.exists());
+
+	let mod_record = parser(test_file_path);
+	let _ = mod_record.to_json();
+
+	assert_eq!(mod_record.can_not_use, true);
+
+	let expected_errors:HashSet<ModError> = HashSet::from([
+		ModError::FileErrorUnsupportedArchive,
+		ModError::FileErrorUnreadableZip,
+		ModError::FileErrorNameInvalid
+	]);
+	assert_eq!(mod_record.issues, expected_errors);
+}
+
+#[test]
 fn is_zip_pack() {
 	let test_file_path = Path::new("./tests/test_mods/VARIANT_Mod_Pack.zip");
 	assert!(test_file_path.exists());
 
 	let mod_record = parser(test_file_path);
+	let _ = mod_record.to_json();
 
 	assert_eq!(mod_record.can_not_use, true);
 

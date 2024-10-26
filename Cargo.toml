@@ -1,11 +1,16 @@
 [package]
-name = "fs_mod_parser"
-version = "0.1.0"
+authors = ["JTSage <jtsage@gmail.com>"]
+categories = ["parsing-tools", "parser-implementations"]
+description = "Mod File Parser for Farming Simulator"
+documentation = "https://docs.rs/fs_mod_parser"
 edition = "2021"
-
-[profile.release-with-debug]
-inherits = "release"
-debug = true
+homepage = "https://github.com/jtsage/fs_mod_parser"
+keywords = ["farming simulator", "game modules"]
+license = "ISC"
+name = "fs_mod_parser"
+readme = "README.md"
+repository = "https://github.com/jtsage/fs_mod_parser"
+version = "0.1.0"
 
 [dependencies]
 base64 = "0.22.1"
