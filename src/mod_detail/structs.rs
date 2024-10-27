@@ -49,7 +49,7 @@ impl ModDetail {
     /// Create new mod detail record with a single error condition
     #[must_use]
     pub fn fast_fail(e : ModDetailError) -> Self {
-        let mut record = ModDetail::new();
+        let mut record = ModDetail::default();
         record.add_issue(e);
         record
     }
@@ -569,9 +569,9 @@ pub struct ModDetailProduction {
     /// list of boosts
     pub boosts          : Vec<ProductionBoost>,
     /// cost per hour
-    pub cost_per_hour   : u32,
+    pub cost_per_hour   : f32,
     /// cycles per hour
-    pub cycles_per_hour : u32,
+    pub cycles_per_hour : f32,
     /// name of production
     pub name            : String,
     /// output types - multiples are AND
@@ -588,8 +588,8 @@ impl ModDetailProduction {
     pub fn new() -> Self {
         ModDetailProduction {
             boosts          : vec![],
-            cost_per_hour   : 1,
-            cycles_per_hour : 1,
+            cost_per_hour   : 1_f32,
+            cycles_per_hour : 1_f32,
             name            : String::from("--"),
             output          : vec![],
             params          : String::new(),

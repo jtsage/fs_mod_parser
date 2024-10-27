@@ -23,7 +23,8 @@
 			"args": [
 				"doc",
 				"--no-deps",
-				"--document-private-items"
+				"--document-private-items",
+				"--examples"
 			],
 			"group": {
 				"kind": "test",

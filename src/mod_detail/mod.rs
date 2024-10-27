@@ -68,7 +68,7 @@ pub fn parser_with_options<P: AsRef<Path>>(full_path :P, options : &ModParserOpt
 /// Parse mod details with an open [`AbstractFileHandle`]
 #[must_use]
 pub fn parse_open_file( mut abstract_file: Box<dyn AbstractFileHandle>, mod_desc_doc : &roxmltree::Document, abstract_file_list: &[FileDefinition], options : &ModParserOptions ) -> ModDetail {
-    let mut mod_detail = ModDetail::new();
+    let mut mod_detail = ModDetail::default();
 
     do_languages(&mut mod_detail, &mut abstract_file, mod_desc_doc, abstract_file_list);
     do_brands(&mut mod_detail, &mut abstract_file, mod_desc_doc, options);
@@ -154,12 +154,14 @@ fn do_languages(
         for lang_entry in lang_key.children() {
             let Some(l10n_key) = lang_entry.attribute("name") else { continue; };
             lang_entry.children().for_each(|n| {
-                if let Some(l10n_value) = n.text() {
-                    mod_detail.add_lang(
-                        n.tag_name().name(),
-                        l10n_key,
-                        l10n_value
-                    );
+                if n.tag_name().name() != "" {
+                    if let Some(l10n_value) = n.text() {
+                        mod_detail.add_lang(
+                            n.tag_name().name(),
+                            l10n_key,
+                            l10n_value
+                        );
+                    }
                 }
             });
         }
@@ -204,4 +206,51 @@ fn xml_extract_text_as_opt_string(xml_tree : &roxmltree::Document, key : &str) -
         .descendants()
         .find(|n|n.has_tag_name(key))
         .and_then(|n|n.text().map(std::string::ToString::to_string))
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::shared::files::AbstractNull;
+    use serde_json::json;
+    use assert_json_diff::assert_json_eq;
+
+    #[test]
+    fn embedded_l10n_entries() {
+        /* cSpell: disable */
+        let minimum_xml = r#"<modDesc>
+            <l10n>
+                <text name="fillType_limestone"> <en>Limestone</en> <de>Kalkstein</de> <fr>Calcaire</fr> </text>
+                <text name="fillType_gravel"> <en>Gravel</en> <de>Schotter</de> <fr>Gravier</fr> </text>
+                <text name="fillType_sand"> <en>Sand</en> <de>Sand</de> <fr>Sable</fr> </text>
+            </l10n>
+            </modDesc>"#;
+        let minimum_doc = roxmltree::Document::parse(&minimum_xml).unwrap();
+        let mut file_handle:Box<dyn AbstractFileHandle> = Box::new(AbstractNull::new().unwrap());
+        let empty_file_list:Vec<FileDefinition> = vec![];
+        let mut mod_detail = ModDetail::default();
+
+        do_languages(&mut mod_detail, &mut file_handle, &minimum_doc, &empty_file_list);
+        let actual = json!(mod_detail.l10n);
+        let expected = json!({
+            "de": {
+                "filltype_gravel": "Schotter",
+                "filltype_limestone": "Kalkstein",
+                "filltype_sand": "Sand"
+            },
+            "en": {
+                "filltype_gravel": "Gravel",
+                "filltype_limestone": "Limestone",
+                "filltype_sand": "Sand"
+            },
+            "fr": {
+                "filltype_gravel": "Gravier",
+                "filltype_limestone": "Calcaire",
+                "filltype_sand": "Sable"
+            }
+        });
+        /* cSpell: enable */
+        // assert_eq!(actual.to_string(), expected.to_string());
+        assert_json_eq!(actual, expected);
+    }
 }

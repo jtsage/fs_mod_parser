@@ -189,24 +189,24 @@ fn good_place_deep_production() {
             "productions": [
             {
                 "boosts": [],
-                "costPerHour": 2,
-                "cyclesPerHour": 10,
+                "costPerHour": 2.0,
+                "cyclesPerHour": 10.0,
                 "name": "$l10n_FS22_ProductionRevamp_Productions_productline_pigfood",
                 "output": [ { "amount": 1000.0, "fillType": "pigfood" } ],
                 "params": "",
             },
             {
                 "boosts": [],
-                "costPerHour": 2,
-                "cyclesPerHour": 8,
+                "costPerHour": 2.0,
+                "cyclesPerHour": 8.0,
                 "name": "$l10n_FS22_ProductionRevamp_Productions_productline_forage",
                 "output": [ { "amount": 2000.0, "fillType": "forage" } ],
                 "params": "",
             },
             {
                 "boosts": [],
-                "costPerHour": 2,
-                "cyclesPerHour": 8,
+                "costPerHour": 2.0,
+                "cyclesPerHour": 8.0,
                 "name": "$l10n_FS22_ProductionRevamp_Productions_productline_drygrass",
                 "output": [ { "amount": 1000.0, "fillType": "drygrass_windrow" } ],
                 "params": "",
@@ -256,8 +256,8 @@ fn good_place_simple_production() {
             "productions": [
             {
                 "boosts": [ { "amount": 1.0, "fillType": "silage_additive" } ],
-                "costPerHour": 2,
-                "cyclesPerHour": 1,
+                "costPerHour": 2.0,
+                "cyclesPerHour": 1.0,
                 "name": "$l10n_FS22_ProductionRevamp_Productions_productline_silage",
                 "output": [ { "amount": 40000.0, "fillType": "silage" } ],
                 "params": "",

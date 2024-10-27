@@ -66,7 +66,7 @@ use std::f32::consts::PI;
 ///}
 /// ```
 pub fn vehicle_parse(xml_tree : &roxmltree::Document, file_handle: &mut Box<dyn AbstractFileHandle>,  options : &ModParserOptions ) -> ModDetailVehicle {
-    let mut this_vehicle = ModDetailVehicle::new();
+    let mut this_vehicle = ModDetailVehicle::default();
     
     vehicle_parse_sorting(xml_tree, &mut this_vehicle);
     vehicle_parse_flags(xml_tree, &mut this_vehicle);
@@ -425,7 +425,7 @@ mod test {
                 </sprayType>
             </sprayTypes>"#;
         let minimum_doc = roxmltree::Document::parse(&minimum_xml).unwrap();
-        let mut this_vehicle = ModDetailVehicle::new();
+        let mut this_vehicle = ModDetailVehicle::default();
 
         vehicle_parse_fills(&minimum_doc, &mut this_vehicle);
 
@@ -460,7 +460,7 @@ mod test {
         </fillUnitConfigurations>"#;
 
         let minimum_doc = roxmltree::Document::parse(&minimum_xml).unwrap();
-        let mut this_vehicle = ModDetailVehicle::new();
+        let mut this_vehicle = ModDetailVehicle::default();
 
         vehicle_parse_fills(&minimum_doc, &mut this_vehicle);
 
@@ -487,7 +487,7 @@ mod test {
         </fillUnitConfigurations>"#;
 
         let minimum_doc = roxmltree::Document::parse(&minimum_xml).unwrap();
-        let mut this_vehicle = ModDetailVehicle::new();
+        let mut this_vehicle = ModDetailVehicle::default();
 
         vehicle_parse_fills(&minimum_doc, &mut this_vehicle);
 
@@ -520,7 +520,7 @@ mod test {
         </motorConfigurations>"#;
 
         let minimum_doc = roxmltree::Document::parse(&minimum_xml).unwrap();
-        let mut this_vehicle = ModDetailVehicle::new();
+        let mut this_vehicle = ModDetailVehicle::default();
 
         vehicle_parse_motor(&minimum_doc, &mut this_vehicle);
 
@@ -593,7 +593,7 @@ mod test {
         </vehicle>"#;
 
         let minimum_doc = roxmltree::Document::parse(&minimum_xml).unwrap();
-        let mut this_vehicle = ModDetailVehicle::new();
+        let mut this_vehicle = ModDetailVehicle::default();
 
         vehicle_parse_motor(&minimum_doc, &mut this_vehicle);
 
