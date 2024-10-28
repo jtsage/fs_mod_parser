@@ -1,77 +1,83 @@
 //! Shared data
-use std::io::Cursor;
 use base64::{engine::general_purpose, Engine as _};
-use image::{DynamicImage, imageops::FilterType};
+use image::{imageops::FilterType, DynamicImage};
 use image_dds::ddsfile;
+use std::io::Cursor;
 use webp::{Encoder, WebPMemory};
 
 pub mod errors;
-pub mod structs;
 pub mod files;
+pub mod structs;
 
 /// Image tag information
 #[cfg_attr(test, derive(Debug, PartialEq, Eq, PartialOrd, Ord))]
 pub struct ImageFile {
     /// is a base game reference
-    pub base_game : Option<String>,
+    pub base_game: Option<String>,
     /// is a local file
-    pub local_file : Option<String>
+    pub local_file: Option<String>,
 }
 impl ImageFile {
     /// did not find tag
     fn fail() -> Self {
         ImageFile {
-            base_game : None,
-            local_file : None
+            base_game: None,
+            local_file: None,
         }
     }
     /// found a base game reference
-    fn base(name : String) -> Self {
+    fn base(name: String) -> Self {
         ImageFile {
-            base_game : Some(name),
-            local_file : None
+            base_game: Some(name),
+            local_file: None,
         }
     }
     /// found a local reference
-    fn local(name : String) -> Self {
+    fn local(name: String) -> Self {
         ImageFile {
-            base_game : None,
-            local_file : Some(name)
+            base_game: None,
+            local_file: Some(name),
         }
     }
 }
 /// Extract the text from an image file tag and normalize the name
-/// 
+///
 /// - test if a base game reference
 /// - .png -> .dds
 /// - Fix slashes
 #[must_use]
-pub fn extract_and_normalize_image(xml_tree : &roxmltree::Document, tag_name : &str) -> ImageFile {
-    normalize_image_file(xml_tree.descendants().find(|n|n.has_tag_name(tag_name)).and_then(|n|n.text()))
+pub fn extract_and_normalize_image(xml_tree: &roxmltree::Document, tag_name: &str) -> ImageFile {
+    normalize_image_file(
+        xml_tree
+            .descendants()
+            .find(|n| n.has_tag_name(tag_name))
+            .and_then(|n| n.text()),
+    )
 }
 
 /// Extract the text from an image file option string and normalize
-/// 
+///
 /// - test if a base game reference
 /// - .png -> .dds
 /// - Fix slashes
 #[must_use]
 #[inline]
-pub fn normalize_image_file(file_node:Option<&str>) -> ImageFile {
+pub fn normalize_image_file(file_node: Option<&str>) -> ImageFile {
     if let Some(entry_text) = file_node {
         if entry_text.starts_with("$data") {
-            return ImageFile::base(entry_text.to_owned())
+            return ImageFile::base(entry_text.to_owned());
         }
-        
+
         let mut entry_text = entry_text.to_owned().replace('\\', "/");
 
         if std::path::Path::new(&entry_text)
             .extension()
-            .map_or(false, |ext| ext.eq_ignore_ascii_case("png")) {
-                entry_text.replace_range(entry_text.len()-4.., ".dds");
+            .map_or(false, |ext| ext.eq_ignore_ascii_case("png"))
+        {
+            entry_text.replace_range(entry_text.len() - 4.., ".dds");
         }
 
-        return ImageFile::local(entry_text)
+        return ImageFile::local(entry_text);
     }
     ImageFile::fail()
 }
@@ -84,9 +90,9 @@ mod test {
     fn test_image_file_base() {
         let response = normalize_image_file(Some("$data/something.dds"));
 
-        let expected = ImageFile{
-            base_game : Some(String::from("$data/something.dds")),
-            local_file : None
+        let expected = ImageFile {
+            base_game: Some(String::from("$data/something.dds")),
+            local_file: None,
         };
 
         assert_eq!(response, expected);
@@ -96,9 +102,9 @@ mod test {
     fn test_image_file_local_dds() {
         let response = normalize_image_file(Some("./data/something.dds"));
 
-        let expected = ImageFile{
-            base_game : None,
-            local_file : Some(String::from("./data/something.dds"))
+        let expected = ImageFile {
+            base_game: None,
+            local_file: Some(String::from("./data/something.dds")),
         };
 
         assert_eq!(response, expected);
@@ -108,9 +114,9 @@ mod test {
     fn test_image_file_local_png() {
         let response = normalize_image_file(Some("./data/something.PNG"));
 
-        let expected = ImageFile{
-            base_game : None,
-            local_file : Some(String::from("./data/something.dds"))
+        let expected = ImageFile {
+            base_game: None,
+            local_file: Some(String::from("./data/something.dds")),
         };
 
         assert_eq!(response, expected);
@@ -120,9 +126,9 @@ mod test {
     fn test_image_file_fail() {
         let response = normalize_image_file(None);
 
-        let expected = ImageFile{
-            base_game : None,
-            local_file : None
+        let expected = ImageFile {
+            base_game: None,
+            local_file: None,
         };
 
         assert_eq!(response, expected);
@@ -130,10 +136,10 @@ mod test {
 }
 
 /// Load the mod icon, and convert to webp
-/// 
+///
 /// Returns the webp as a base64 string suitable for use
 /// with an `<image src="...">` tag.
-/// 
+///
 /// Supports DDS BC1-BC7 in one pass, in-memory
 #[must_use]
 pub fn convert_mod_icon(bin_file: Vec<u8>) -> Option<String> {
@@ -149,10 +155,10 @@ pub fn convert_mod_icon(bin_file: Vec<u8>) -> Option<String> {
 }
 
 /// Load the map image resize, crop, and convert to webp
-/// 
+///
 /// Returns the webp as a base64 string suitable for use
 /// with an `<image src="...">` tag.
-/// 
+///
 /// Supports DDS BC1-BC7 in one pass, in-memory
 #[must_use]
 pub fn convert_map_image(bin_file: Vec<u8>) -> Option<String> {

@@ -1,14 +1,15 @@
 //! Parse vehicles
-use crate::ModParserOptions;
-use crate::mod_detail::structs::{VehicleCapability, ModDetailVehicle, ModDetailSprayType};
+use super::{default_float_parse, xml_extract_text_as_opt_string, xml_extract_text_as_opt_u32};
+use crate::mod_detail::structs::{
+    ModDetailSprayType, ModDetailVehicle, MotorEntry, MotorValue, VehicleCapability,
+};
 use crate::shared::files::AbstractFileHandle;
-use crate::mod_detail::structs::{MotorEntry, MotorValue};
-use super::{xml_extract_text_as_opt_string, xml_extract_text_as_opt_u32};
-use crate::shared::{extract_and_normalize_image, convert_mod_icon};
+use crate::shared::{convert_mod_icon, extract_and_normalize_image};
+use crate::ModParserOptions;
 use std::f32::consts::PI;
 
 /// Parse a vehicle
-/// 
+///
 /// # Sample Output
 /// ```json
 ///{
@@ -65,9 +66,13 @@ use std::f32::consts::PI;
 ///    }
 ///}
 /// ```
-pub fn vehicle_parse(xml_tree : &roxmltree::Document, file_handle: &mut Box<dyn AbstractFileHandle>,  options : &ModParserOptions ) -> ModDetailVehicle {
+pub fn vehicle_parse(
+    xml_tree: &roxmltree::Document,
+    file_handle: &mut Box<dyn AbstractFileHandle>,
+    options: &ModParserOptions,
+) -> ModDetailVehicle {
     let mut this_vehicle = ModDetailVehicle::default();
-    
+
     vehicle_parse_sorting(xml_tree, &mut this_vehicle);
     vehicle_parse_flags(xml_tree, &mut this_vehicle);
     vehicle_parse_specs(xml_tree, &mut this_vehicle);
@@ -92,54 +97,61 @@ pub fn vehicle_parse(xml_tree : &roxmltree::Document, file_handle: &mut Box<dyn 
 /// Transient motor torque entry
 struct TorqueEntry {
     /// Torque
-    pub torque   : f32,
+    pub torque: f32,
     /// motor RPM
-    pub rpm      : f32
+    pub rpm: f32,
 }
 
 impl TorqueEntry {
     /// Create new torque entry
-    fn new(node : &roxmltree::Node, motor_rpm : f32) -> Self {
+    fn new(node: &roxmltree::Node, motor_rpm: f32) -> Self {
         let norm_rpm = node
             .attribute("normRpm")
-            .map_or(1_f32, |n|n.parse::<f32>().unwrap_or(1_f32));
+            .map_or(1_f32, |n| n.parse::<f32>().unwrap_or(1_f32));
 
         TorqueEntry {
-            torque : node
+            torque: node
                 .attribute("torque")
-                .map_or(1_f32, |n|n.parse::<f32>().unwrap_or(1_f32)),
-            rpm : node
-                .attribute("rpm")
-                .map_or(motor_rpm * norm_rpm, |n|n.parse::<f32>().unwrap_or(motor_rpm * norm_rpm))
+                .map_or(1_f32, |n| n.parse::<f32>().unwrap_or(1_f32)),
+            rpm: node.attribute("rpm").map_or(motor_rpm * norm_rpm, |n| {
+                n.parse::<f32>().unwrap_or(motor_rpm * norm_rpm)
+            }),
         }
     }
 }
 
-
-
 /// Parse motor configurations
-fn vehicle_parse_motor(xml_tree : &roxmltree::Document, this_vehicle : &mut ModDetailVehicle) {
+fn vehicle_parse_motor(xml_tree: &roxmltree::Document, this_vehicle: &mut ModDetailVehicle) {
     let mut torque_entries: Vec<TorqueEntry> = vec![];
     let mut motor_rpm = 1800_f32;
     let mut transmission_name = "";
     let mut min_fwd_gear_and_axel_ratio = f32::MAX;
 
-    for motor_config in xml_tree.descendants().filter(|n|n.has_tag_name("motorConfiguration")) {
-        let Some(motor_entry) = motor_config.children().find(|n|n.has_tag_name("motor")) else { continue; };
+    for motor_config in xml_tree
+        .descendants()
+        .filter(|n| n.has_tag_name("motorConfiguration"))
+    {
+        let Some(motor_entry) = motor_config.children().find(|n| n.has_tag_name("motor")) else {
+            continue;
+        };
 
         // Get current motor RPM, or use last, or use default of 1800
-        if let Some(max_rpm) = motor_entry.attribute("maxRpm") {
-            if let Ok(max_rpm_f) = max_rpm.parse::<f32>() {
-                motor_rpm = max_rpm_f;
-            }
+        if let Some(max_rpm) = motor_entry
+            .attribute("maxRpm")
+            .and_then(|n| n.parse::<f32>().ok())
+        {
+            motor_rpm = max_rpm;
         }
 
         let motor_scale = motor_entry
             .attribute("torqueScale")
-            .map_or(1_f32, |n|n.parse::<f32>().unwrap_or(1_f32));
+            .map_or(1_f32, |n| n.parse::<f32>().unwrap_or(1_f32));
 
         // If new torque entries exist, replace the "last" list
-        let mut torque_iter = motor_config.descendants().filter(|n|n.has_tag_name("torque")).peekable();
+        let mut torque_iter = motor_config
+            .descendants()
+            .filter(|n| n.has_tag_name("torque"))
+            .peekable();
 
         if torque_iter.peek().is_some() {
             torque_entries.clear();
@@ -149,7 +161,10 @@ fn vehicle_parse_motor(xml_tree : &roxmltree::Document, this_vehicle : &mut ModD
         }
 
         // Check for a transmission definition
-        if let Some(new_transmission) = motor_config.children().find(|n|n.has_tag_name("transmission")) {
+        if let Some(new_transmission) = motor_config
+            .children()
+            .find(|n| n.has_tag_name("transmission"))
+        {
             // Invalidate the old ratio
             min_fwd_gear_and_axel_ratio = f32::MAX;
 
@@ -163,23 +178,29 @@ fn vehicle_parse_motor(xml_tree : &roxmltree::Document, this_vehicle : &mut ModD
 
             let axel_ratio = new_transmission
                 .attribute("axleRatio")
-                .map_or(1_f32, |n|n.parse::<f32>().unwrap_or(1_f32));
+                .map_or(1_f32, |n| n.parse::<f32>().unwrap_or(1_f32));
 
             if let Some(fwd_gear_ratio) = new_transmission.attribute("minForwardGearRatio") {
                 // found minForwardGearRatio, can calculate `min_fwd_gear_and_axel_ratio`
-                min_fwd_gear_and_axel_ratio = axel_ratio * fwd_gear_ratio.parse::<f32>().unwrap_or(1_f32);
+                min_fwd_gear_and_axel_ratio =
+                    axel_ratio * default_float_parse(fwd_gear_ratio, 1_f32);
             } else {
                 // we have to calculate the ratio
-                for forward_gear in new_transmission.children().filter(|n|n.has_tag_name("forwardGear")) {
+                for forward_gear in new_transmission
+                    .children()
+                    .filter(|n| n.has_tag_name("forwardGear"))
+                {
                     if let Some(known_ratio) = forward_gear.attribute("gearRatio") {
                         min_fwd_gear_and_axel_ratio = f32::min(
-                            min_fwd_gear_and_axel_ratio, 
-                            axel_ratio * known_ratio.parse::<f32>().unwrap_or(1_f32)
+                            min_fwd_gear_and_axel_ratio,
+                            axel_ratio * default_float_parse(known_ratio, 1_f32),
                         );
                     } else if let Some(known_max) = forward_gear.attribute("maxSpeed") {
                         min_fwd_gear_and_axel_ratio = f32::min(
-                            min_fwd_gear_and_axel_ratio, 
-                            axel_ratio * (motor_rpm * PI / ( known_max.parse::<f32>().unwrap_or(1_f32) / 3.6_f32 * 30_f32 ))
+                            min_fwd_gear_and_axel_ratio,
+                            axel_ratio
+                                * (motor_rpm * PI
+                                    / (default_float_parse(known_max, 1_f32) / 3.6_f32 * 30_f32)),
                         );
                     }
                 }
@@ -190,15 +211,11 @@ fn vehicle_parse_motor(xml_tree : &roxmltree::Document, this_vehicle : &mut ModD
         // Get defined max speed for the motor
         let defined_max_speed = motor_entry
             .attribute("maxForwardSpeed")
-            .map_or(0, |n|n.parse::<u32>().unwrap_or(0));
+            .map_or(0, |n| n.parse::<u32>().unwrap_or(0));
 
+        let mut full_name = motor_config.attribute("name").unwrap_or("--").to_owned();
 
-        let mut full_name = motor_config
-            .attribute("name")
-            .unwrap_or("--")
-            .to_owned();
-
-        if ! transmission_name.is_empty() {
+        if !transmission_name.is_empty() {
             full_name.push(' ');
             full_name.push_str(transmission_name);
         }
@@ -208,52 +225,84 @@ fn vehicle_parse_motor(xml_tree : &roxmltree::Document, this_vehicle : &mut ModD
             full_name.push_str(motor_hp_name);
         }
 
-        let mut motor_record = MotorEntry::new(full_name, defined_max_speed);
-
-        for torque_entry in &torque_entries {
-            motor_record.horse_power.push(MotorValue::new(
-                torque_entry.rpm,
-                motor_scale * ( 1.359_621_6 * PI * torque_entry.rpm * torque_entry.torque ) / 30.0
-            ));
-            motor_record.speed_kph.push(MotorValue::new(
-                torque_entry.rpm,
-                3.6 * ( ( torque_entry.rpm * PI ) / ( 30.0 * min_fwd_gear_and_axel_ratio ) )
-            ));
-            motor_record.speed_mph.push(MotorValue::new(
-                torque_entry.rpm,
-                3.6 * ( ( torque_entry.rpm * PI ) / ( 30.0 * min_fwd_gear_and_axel_ratio ) * 0.621_371 )
-            ));
-        }
-        this_vehicle.motor.motors.push(motor_record);
+        this_vehicle.motor.motors.push(vehicle_build_motor(
+            full_name,
+            defined_max_speed,
+            &torque_entries,
+            min_fwd_gear_and_axel_ratio,
+            motor_scale,
+        ));
     } // end motor_config
 
     this_vehicle.motor.fuel_type = xml_tree
         .descendants()
-        .find(|n|n.has_tag_name ("consumer"))
-        .and_then(|n|n.attribute("fillType"))
+        .find(|n| n.has_tag_name("consumer"))
+        .and_then(|n| n.attribute("fillType"))
         .map(std::string::ToString::to_string);
 }
 
+/// Build motor entry for vehicle record
+#[inline]
+fn vehicle_build_motor(
+    full_name: String,
+    defined_max_speed: u32,
+    torque_entries: &Vec<TorqueEntry>,
+    min_fwd_gear_and_axel_ratio: f32,
+    motor_scale: f32,
+) -> MotorEntry {
+    let mut motor_record = MotorEntry::new(full_name, defined_max_speed);
+
+    for torque_entry in torque_entries {
+        motor_record.horse_power.push(MotorValue::new(
+            torque_entry.rpm,
+            motor_scale * (1.359_621_6 * PI * torque_entry.rpm * torque_entry.torque) / 30.0,
+        ));
+        motor_record.speed_kph.push(MotorValue::new(
+            torque_entry.rpm,
+            3.6 * ((torque_entry.rpm * PI) / (30.0 * min_fwd_gear_and_axel_ratio)),
+        ));
+        motor_record.speed_mph.push(MotorValue::new(
+            torque_entry.rpm,
+            3.6 * ((torque_entry.rpm * PI) / (30.0 * min_fwd_gear_and_axel_ratio) * 0.621_371),
+        ));
+    }
+
+    motor_record
+}
 /// Parse fill levels
-fn vehicle_parse_fills(xml_tree : &roxmltree::Document, this_vehicle : &mut ModDetailVehicle) {
-    let mut capacity:Vec<Option<&str>> = vec![];
+fn vehicle_parse_fills(xml_tree: &roxmltree::Document, this_vehicle: &mut ModDetailVehicle) {
+    let mut capacity: Vec<Option<&str>> = vec![];
     let mut total_capacity = 0_u32;
 
-    for fill_config in xml_tree.descendants().filter(|n|n.has_tag_name("fillUnitConfiguration")) {
+    for fill_config in xml_tree
+        .descendants()
+        .filter(|n| n.has_tag_name("fillUnitConfiguration"))
+    {
         capacity.clear();
 
-        for fill_unit in fill_config.descendants().filter(|n|n.has_tag_name("fillUnit") && (n.has_attribute("fillTypes") || n.has_attribute("fillTypeCategories"))) {
+        for fill_unit in fill_config.descendants().filter(|n| {
+            n.has_tag_name("fillUnit")
+                && (n.has_attribute("fillTypes") || n.has_attribute("fillTypeCategories"))
+        }) {
             if let Some(skipper) = fill_unit.attribute("showInShop") {
-                if skipper == "false" { continue; }
+                if skipper == "false" {
+                    continue;
+                }
             }
 
             capacity.push(fill_unit.attribute("capacity"));
 
             if let Some(cats) = fill_unit.attribute("fillTypeCategories") {
-                this_vehicle.fill_spray.fill_cat.extend(cats.split(' ').map(|n|n.to_lowercase().clone()));
+                this_vehicle
+                    .fill_spray
+                    .fill_cat
+                    .extend(cats.split(' ').map(|n| n.to_lowercase().clone()));
             }
             if let Some(cats) = fill_unit.attribute("fillTypes") {
-                this_vehicle.fill_spray.fill_type.extend(cats.split(' ').map(|n|n.to_lowercase().clone()));
+                this_vehicle
+                    .fill_spray
+                    .fill_type
+                    .extend(cats.split(' ').map(|n| n.to_lowercase().clone()));
             }
 
             let this_capacity = capacity
@@ -274,113 +323,143 @@ fn vehicle_parse_fills(xml_tree : &roxmltree::Document, this_vehicle : &mut ModD
     this_vehicle.fill_spray.fill_type.sort();
     this_vehicle.fill_spray.fill_type.dedup();
 
-    for spray_type in xml_tree.descendants().filter(|n|n.has_tag_name("sprayType")) {
-        this_vehicle.fill_spray.spray_types.push(ModDetailSprayType{
+    for spray_type in xml_tree
+        .descendants()
+        .filter(|n| n.has_tag_name("sprayType"))
+    {
+        this_vehicle
+            .fill_spray
+            .spray_types
+            .push(ModDetailSprayType {
+                width: spray_type
+                    .children()
+                    .find(|n| n.has_tag_name("usageScales"))
+                    .and_then(|n| n.attribute("workingWidth"))
+                    .and_then(|n| n.parse::<f32>().ok()),
 
-            width : spray_type
-                .children()
-                .find(|n|n.has_tag_name("usageScales"))
-                .and_then(|n|n.attribute("workingWidth"))
-                .and_then(|n|n.parse::<f32>().ok()),
-
-            fills : spray_type
-                .attribute("fillTypes")
-                .map_or(vec![], |n| n
-                    .split(' ')
-                    .filter(|n|*n!="unknown")
-                    .map(|n|n.to_lowercase().clone())
-                    .collect()
-                )
-        });
+                fills: spray_type.attribute("fillTypes").map_or(vec![], |n| {
+                    n.split(' ')
+                        .filter(|n| *n != "unknown")
+                        .map(|n| n.to_lowercase().clone())
+                        .collect()
+                }),
+            });
     }
 }
 
 /// Parse vehicle sorting info
-fn vehicle_parse_sorting(xml_tree : &roxmltree::Document, this_vehicle : &mut ModDetailVehicle) {
+fn vehicle_parse_sorting(xml_tree: &roxmltree::Document, this_vehicle: &mut ModDetailVehicle) {
     this_vehicle.sorting.name = xml_extract_text_as_opt_string(xml_tree, "name");
     this_vehicle.sorting.brand = xml_extract_text_as_opt_string(xml_tree, "brand");
     this_vehicle.sorting.category = xml_extract_text_as_opt_string(xml_tree, "category");
     this_vehicle.sorting.type_description = xml_extract_text_as_opt_string(xml_tree, "typeDesc");
-    this_vehicle.sorting.type_name = xml_tree.root_element().attribute("type").map(std::string::ToString::to_string);
+    this_vehicle.sorting.type_name = xml_tree
+        .root_element()
+        .attribute("type")
+        .map(std::string::ToString::to_string);
     this_vehicle.sorting.year = xml_extract_text_as_opt_u32(xml_tree, "year");
 
-    this_vehicle.sorting.combos = xml_tree.descendants()
+    this_vehicle.sorting.combos = xml_tree
+        .descendants()
         .filter(|n| n.has_tag_name("combination"))
-        .filter_map(|n|n.attribute("xmlFilename"))
+        .filter_map(|n| n.attribute("xmlFilename"))
         .map(std::string::ToString::to_string)
         .collect();
 }
 
 /// Parse vehicle flags
-fn vehicle_parse_flags(xml_tree : &roxmltree::Document, this_vehicle : &mut ModDetailVehicle) {
-    if xml_tree.descendants().any(|n|n.has_tag_name("beaconLights")) {
+fn vehicle_parse_flags(xml_tree: &roxmltree::Document, this_vehicle: &mut ModDetailVehicle) {
+    if xml_tree
+        .descendants()
+        .any(|n| n.has_tag_name("beaconLights"))
+    {
         this_vehicle.flags.beacons = VehicleCapability::Yes;
     }
-    if xml_tree.descendants().any(|n|n.has_tag_name("baseMaterialConfiguration")) {
+    if xml_tree
+        .descendants()
+        .any(|n| n.has_tag_name("baseMaterialConfiguration"))
+    {
         this_vehicle.flags.color = VehicleCapability::Yes;
     }
-    if xml_tree.descendants().any(|n|n.has_tag_name("enterable")) {
+    if xml_tree.descendants().any(|n| n.has_tag_name("enterable")) {
         this_vehicle.flags.enterable = VehicleCapability::Yes;
     }
-    if xml_tree.descendants().any(|n|n.has_tag_name("realLights")) {
+    if xml_tree.descendants().any(|n| n.has_tag_name("realLights")) {
         this_vehicle.flags.lights = VehicleCapability::Yes;
     }
-    if xml_tree.descendants().any(|n|n.has_tag_name("motorized")) {
+    if xml_tree.descendants().any(|n| n.has_tag_name("motorized")) {
         this_vehicle.flags.motorized = VehicleCapability::Yes;
     }
-    if xml_tree.descendants().filter(|n|n.has_tag_name("wheelConfiguration")).count() > 1 {
+    if xml_tree
+        .descendants()
+        .filter(|n| n.has_tag_name("wheelConfiguration"))
+        .count()
+        > 1
+    {
         this_vehicle.flags.wheels = VehicleCapability::Yes;
     }
 }
 
 /// Parse vehicle specs
-fn vehicle_parse_specs(xml_tree : &roxmltree::Document, this_vehicle : &mut ModDetailVehicle) {
-    if let Some(node) = xml_tree.descendants().find(|n| n.has_tag_name("speedLimit")) {
-        if let Some(value) = node
-            .attribute("value")
-            .and_then(|n|n.parse::<u32>().ok()) {
-                this_vehicle.specs.specs.insert(String::from("speedLimit"), value);
+fn vehicle_parse_specs(xml_tree: &roxmltree::Document, this_vehicle: &mut ModDetailVehicle) {
+    if let Some(node) = xml_tree
+        .descendants()
+        .find(|n| n.has_tag_name("speedLimit"))
+    {
+        if let Some(value) = node.attribute("value").and_then(|n| n.parse::<u32>().ok()) {
+            this_vehicle
+                .specs
+                .specs
+                .insert(String::from("speedLimit"), value);
         }
     }
 
-    if let Some(spec_node) = xml_tree.descendants().find(|n|n.has_tag_name("specs")) {
-        for spec in spec_node.children().filter(|n| !n.has_tag_name("combination")) {
-            if let Some(value) = spec.text().and_then(|n|n.parse::<u32>().ok()) {
-                this_vehicle.specs.specs.insert(
-                    spec.tag_name().name().to_owned(),
-                    value
-                );
+    if let Some(spec_node) = xml_tree.descendants().find(|n| n.has_tag_name("specs")) {
+        for spec in spec_node
+            .children()
+            .filter(|n| !n.has_tag_name("combination"))
+        {
+            if let Some(value) = spec.text().and_then(|n| n.parse::<u32>().ok()) {
+                this_vehicle
+                    .specs
+                    .specs
+                    .insert(spec.tag_name().name().to_owned(), value);
             }
         }
     }
 
     this_vehicle.specs.price = xml_extract_text_as_opt_u32(xml_tree, "price").unwrap_or(0);
-    this_vehicle.specs.name  = xml_extract_text_as_opt_string(xml_tree, "name").unwrap_or(String::from("--"));
+    this_vehicle.specs.name =
+        xml_extract_text_as_opt_string(xml_tree, "name").unwrap_or(String::from("--"));
 
-    this_vehicle.specs.functions = xml_tree.descendants()
-        .filter(|n|n.has_tag_name("function"))
-        .filter_map(|n|n.text())//(|n|Some(n))
+    this_vehicle.specs.functions = xml_tree
+        .descendants()
+        .filter(|n| n.has_tag_name("function"))
+        .filter_map(|n| n.text()) //(|n|Some(n))
         .map(std::string::ToString::to_string)
         .collect();
 
-    this_vehicle.specs.weight = xml_tree.descendants()
+    this_vehicle.specs.weight = xml_tree
+        .descendants()
         .filter(|n| n.has_tag_name("component"))
         .filter_map(|n| n.attribute("mass"))
-        .filter_map(|n| n.parse::<u32>().ok() )
+        .filter_map(|n| n.parse::<u32>().ok())
         .sum::<u32>();
 
-    this_vehicle.specs.joint_accepts =  xml_tree.descendants()
-        .filter(|n|n.has_tag_name("attacherJoint"))
-        .filter_map(|n|n.attribute("jointType"))
+    this_vehicle.specs.joint_accepts = xml_tree
+        .descendants()
+        .filter(|n| n.has_tag_name("attacherJoint"))
+        .filter_map(|n| n.attribute("jointType"))
         .map(std::string::ToString::to_string)
         .collect();
 
     this_vehicle.specs.joint_accepts.sort();
     this_vehicle.specs.joint_accepts.dedup();
 
-    this_vehicle.specs.joint_requires =  xml_tree.descendants()
-        .filter(|n|n.has_tag_name("inputAttacherJoint"))
-        .filter_map(|n|n.attribute("jointType"))
+    this_vehicle.specs.joint_requires = xml_tree
+        .descendants()
+        .filter(|n| n.has_tag_name("inputAttacherJoint"))
+        .filter_map(|n| n.attribute("jointType"))
         .map(std::string::ToString::to_string)
         .collect();
 
@@ -388,13 +467,12 @@ fn vehicle_parse_specs(xml_tree : &roxmltree::Document, this_vehicle : &mut ModD
     this_vehicle.specs.joint_requires.dedup();
 }
 
-
 #[cfg(test)]
 mod test {
     use super::*;
     use crate::shared::files::AbstractNull;
-    use serde_json::json;
     use assert_json_diff::assert_json_include;
+    use serde_json::json;
 
     #[test]
     fn base_game_icon() {
@@ -404,11 +482,17 @@ mod test {
             </storeData></vehicle>"#;
         let minimum_doc = roxmltree::Document::parse(&minimum_xml).unwrap();
 
-        let mut file_handle:Box<dyn AbstractFileHandle> = Box::new(AbstractNull::new().unwrap());
-        let this_vehicle = vehicle_parse(&minimum_doc, &mut file_handle, &ModParserOptions::default());
+        let mut file_handle: Box<dyn AbstractFileHandle> = Box::new(AbstractNull::new().unwrap());
+        let this_vehicle =
+            vehicle_parse(&minimum_doc, &mut file_handle, &ModParserOptions::default());
 
         // let veh = json!(this_vehicle);
-        assert_eq!(this_vehicle.icon_base, Some(String::from("$data/vehicles/albutt/frontloaderShovel/store_albuttFrontloaderShovel.png")));
+        assert_eq!(
+            this_vehicle.icon_base,
+            Some(String::from(
+                "$data/vehicles/albutt/frontloaderShovel/store_albuttFrontloaderShovel.png"
+            ))
+        );
         assert_eq!(this_vehicle.icon_file, None);
         /* cSpell: enable */
     }

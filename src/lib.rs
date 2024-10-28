@@ -21,16 +21,15 @@ pub mod shared;
 #[expect(clippy::struct_excessive_bools)]
 /// Parsing options
 pub struct ModParserOptions {
-	/// Include save game parsing in mod output
-	pub include_save_game  : bool,
-	/// Include detail parsing in mod output
-	pub include_mod_detail : bool,
-	/// Skip icon processing for detail items
-	pub skip_detail_icons  : bool,
-	/// Skip icon processing for mod
-	pub skip_mod_icons     : bool,
+    /// Include save game parsing in mod output
+    pub include_save_game: bool,
+    /// Include detail parsing in mod output
+    pub include_mod_detail: bool,
+    /// Skip icon processing for detail items
+    pub skip_detail_icons: bool,
+    /// Skip icon processing for mod
+    pub skip_mod_icons: bool,
 }
-
 
 pub use savegame::parser as parse_savegame;
 

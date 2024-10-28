@@ -1,15 +1,18 @@
 //! Parse placeables and productions
-use std::collections::HashMap;
-use crate::ModParserOptions;
-use crate::mod_detail::structs::{VehicleCapability, ModDetailPlace, ModDetailProduction, ProductionIngredient, ProductionIngredients, ProductionBoost};
-use crate::shared::files::AbstractFileHandle;
 use super::{xml_extract_text_as_opt_string, xml_extract_text_as_opt_u32};
-use crate::shared::{extract_and_normalize_image, convert_mod_icon};
+use crate::mod_detail::structs::{
+    ModDetailPlace, ModDetailProduction, ProductionBoost, ProductionIngredient,
+    ProductionIngredients, VehicleCapability,
+};
+use crate::shared::files::AbstractFileHandle;
+use crate::shared::{convert_mod_icon, extract_and_normalize_image};
+use crate::ModParserOptions;
+use std::collections::HashMap;
 
 /// Parse a placeable
-/// 
+///
 /// Also processed productions if found
-/// 
+///
 /// # Sample output:
 /// ```json
 /// {
@@ -59,15 +62,24 @@ use crate::shared::{extract_and_normalize_image, convert_mod_icon};
 ///    }
 /// },
 /// ```
-pub fn place_parse(xml_tree : &roxmltree::Document, file_handle: &mut Box<dyn AbstractFileHandle>,  options : &ModParserOptions ) -> ModDetailPlace {
+pub fn place_parse(
+    xml_tree: &roxmltree::Document,
+    file_handle: &mut Box<dyn AbstractFileHandle>,
+    options: &ModParserOptions,
+) -> ModDetailPlace {
     let mut this_place = ModDetailPlace::default();
-    
+
     place_parse_sorting(xml_tree, &mut this_place);
     place_parse_storage(xml_tree, &mut this_place);
     place_parse_animals(xml_tree, &mut this_place);
 
-    for production in xml_tree.descendants().filter(|n|n.has_tag_name("production")) {
-        this_place.productions.push(place_parse_production(&production));
+    for production in xml_tree
+        .descendants()
+        .filter(|n| n.has_tag_name("production"))
+    {
+        this_place
+            .productions
+            .push(place_parse_production(&production));
     }
 
     if !options.skip_detail_icons {
@@ -86,14 +98,14 @@ pub fn place_parse(xml_tree : &roxmltree::Document, file_handle: &mut Box<dyn Ab
 }
 
 /// Parse productions
-fn place_parse_production(xml_node : &roxmltree::Node) -> ModDetailProduction {
+fn place_parse_production(xml_node: &roxmltree::Node) -> ModDetailProduction {
     let mut this_production = ModDetailProduction::default();
 
     // let single_input:ProductionRecipe = vec![];
-    let mut mix_inputs:HashMap<String, ProductionIngredients> = HashMap::new();
+    let mut mix_inputs: HashMap<String, ProductionIngredients> = HashMap::new();
 
     if let Some(name) = xml_node.attribute("name") {
-        name.clone_into(& mut this_production.name);
+        name.clone_into(&mut this_production.name);
     }
     if let Some(params) = xml_node.attribute("params") {
         params.clone_into(&mut this_production.params);
@@ -127,35 +139,65 @@ fn place_parse_production(xml_node : &roxmltree::Node) -> ModDetailProduction {
         }
     }
 
-    for output in xml_node.descendants().filter(|n|n.has_tag_name("output")) {
+    for output in xml_node.descendants().filter(|n| n.has_tag_name("output")) {
         // Vec<ProductionIngredient> (all are produced)
-        let Some(fill) = output.attribute("fillType") else { continue; };
-        let Some(amount) = output.attribute("amount").and_then(|n|n.parse::<f32>().ok())  else { continue; };
+        let Some(fill) = output.attribute("fillType") else {
+            continue;
+        };
+        let Some(amount) = output
+            .attribute("amount")
+            .and_then(|n| n.parse::<f32>().ok())
+        else {
+            continue;
+        };
 
-        this_production.output.push(ProductionIngredient::new(fill.to_owned().to_lowercase(), amount));
+        this_production.output.push(ProductionIngredient::new(
+            fill.to_owned().to_lowercase(),
+            amount,
+        ));
     }
 
-    for input in xml_node.descendants().filter(|n|n.has_tag_name("input")) {
+    for input in xml_node.descendants().filter(|n| n.has_tag_name("input")) {
         // fillType and amount always appear for well-formed inputs
-        let Some(fill) = input.attribute("fillType") else { continue; };
-        let Some(amount) = input.attribute("amount").and_then(|n|n.parse::<f32>().ok())  else { continue; };
+        let Some(fill) = input.attribute("fillType") else {
+            continue;
+        };
+        let Some(amount) = input
+            .attribute("amount")
+            .and_then(|n| n.parse::<f32>().ok())
+        else {
+            continue;
+        };
 
         match input.attribute("mix") {
             Some("boost") => {
                 // a booster
-                let Some(boost_factor) = input.attribute("boostfactor").and_then(|n|n.parse::<f32>().ok())  else { continue; };
-                this_production.boosts.push(ProductionBoost::new(fill.to_owned().to_lowercase(), amount, boost_factor));
-            },
+                let Some(boost_factor) = input
+                    .attribute("boostfactor")
+                    .and_then(|n| n.parse::<f32>().ok())
+                else {
+                    continue;
+                };
+                this_production.boosts.push(ProductionBoost::new(
+                    fill.to_owned().to_lowercase(),
+                    amount,
+                    boost_factor,
+                ));
+            }
             Some(index) => {
                 //multi-input
                 let this_mix = mix_inputs.entry(index.to_owned()).or_default();
-                this_mix.push(ProductionIngredient::new(fill.to_owned().to_lowercase(), amount));
-            },
+                this_mix.push(ProductionIngredient::new(
+                    fill.to_owned().to_lowercase(),
+                    amount,
+                ));
+            }
             _ => {
                 // single
-                let this_input:ProductionIngredients = vec![
-                    ProductionIngredient::new(fill.to_owned().to_lowercase(), amount)
-                ];
+                let this_input: ProductionIngredients = vec![ProductionIngredient::new(
+                    fill.to_owned().to_lowercase(),
+                    amount,
+                )];
                 this_production.recipe.push(this_input);
             }
         }
@@ -181,22 +223,39 @@ where
 }
 
 /// Parse storage (bales and silos)
-fn place_parse_storage(xml_tree : &roxmltree::Document, this_place : &mut ModDetailPlace) {
-    if let Some(obj_store) = xml_tree.root().descendants().find(|n|n.has_tag_name("objectStorage")) {
-        this_place.storage.objects =  Some(str::parse(obj_store.attribute("capacity").unwrap_or("250")).unwrap_or(250));
+fn place_parse_storage(xml_tree: &roxmltree::Document, this_place: &mut ModDetailPlace) {
+    if let Some(obj_store) = xml_tree
+        .root()
+        .descendants()
+        .find(|n| n.has_tag_name("objectStorage"))
+    {
+        this_place.storage.objects =
+            Some(str::parse(obj_store.attribute("capacity").unwrap_or("250")).unwrap_or(250));
     }
 
-    if let Some(silo_node) = xml_tree.descendants().find(|n|n.has_tag_name("silo") || n.has_tag_name("siloExtension")) {
-        let mut capacity:Vec<Option<&str>> = vec![];
+    if let Some(silo_node) = xml_tree
+        .descendants()
+        .find(|n| n.has_tag_name("silo") || n.has_tag_name("siloExtension"))
+    {
+        let mut capacity: Vec<Option<&str>> = vec![];
 
-        for fill_unit in silo_node.descendants().filter(|n|n.has_tag_name("storage")) {    
+        for fill_unit in silo_node
+            .descendants()
+            .filter(|n| n.has_tag_name("storage"))
+        {
             capacity.push(fill_unit.attribute("capacity"));
-    
+
             if let Some(cats) = fill_unit.attribute("fillTypeCategories") {
-                this_place.storage.silo_fill_cats.extend(cats.split(' ').map(|n|n.to_lowercase().clone()));
+                this_place
+                    .storage
+                    .silo_fill_cats
+                    .extend(cats.split(' ').map(|n| n.to_lowercase().clone()));
             }
             if let Some(cats) = fill_unit.attribute("fillTypes") {
-                this_place.storage.silo_fill_types.extend(cats.split(' ').map(|n|n.to_lowercase().clone()));
+                this_place
+                    .storage
+                    .silo_fill_types
+                    .extend(cats.split(' ').map(|n| n.to_lowercase().clone()));
             }
         }
 
@@ -218,35 +277,50 @@ fn place_parse_storage(xml_tree : &roxmltree::Document, this_place : &mut ModDet
 }
 
 /// Parse animal husbandry and beehives
-fn place_parse_animals(xml_tree : &roxmltree::Document, this_place : &mut ModDetailPlace) {
-    if let Some(this_beehive) = xml_tree.descendants().find(|n|n.has_tag_name("beehive")) {
+fn place_parse_animals(xml_tree: &roxmltree::Document, this_place: &mut ModDetailPlace) {
+    if let Some(this_beehive) = xml_tree.descendants().find(|n| n.has_tag_name("beehive")) {
         this_place.animals.beehive_exists = true;
-        this_place.animals.beehive_per_day = str::parse(this_beehive.attribute("litersHoneyPerDay").unwrap_or("0")).unwrap_or(0);
-        this_place.animals.beehive_radius = str::parse(this_beehive.attribute("actionRadius").unwrap_or("0")).unwrap_or(0);
+        this_place.animals.beehive_per_day =
+            str::parse(this_beehive.attribute("litersHoneyPerDay").unwrap_or("0")).unwrap_or(0);
+        this_place.animals.beehive_radius =
+            str::parse(this_beehive.attribute("actionRadius").unwrap_or("0")).unwrap_or(0);
     }
 
-    if let Some(this_pen) = xml_tree.descendants().find(|n|n.has_tag_name("animals")) {
+    if let Some(this_pen) = xml_tree.descendants().find(|n| n.has_tag_name("animals")) {
         this_place.animals.husbandry_exists = true;
-        this_place.animals.husbandry_animals = str::parse(this_pen.attribute("maxNumAnimals").unwrap_or("0")).unwrap_or(0);
-        this_place.animals.husbandry_type = this_pen.attribute("type").map(std::string::ToString::to_string);
+        this_place.animals.husbandry_animals =
+            str::parse(this_pen.attribute("maxNumAnimals").unwrap_or("0")).unwrap_or(0);
+        this_place.animals.husbandry_type = this_pen
+            .attribute("type")
+            .map(std::string::ToString::to_string);
     }
 }
 
 /// Parse placeable sorting data
-fn place_parse_sorting(xml_tree : &roxmltree::Document, this_place : &mut ModDetailPlace) {
+fn place_parse_sorting(xml_tree: &roxmltree::Document, this_place: &mut ModDetailPlace) {
     this_place.sorting.category = xml_extract_text_as_opt_string(xml_tree, "category");
-    this_place.sorting.income_per_hour = xml_extract_text_as_opt_u32(xml_tree, "incomePerHour").unwrap_or(0);
+    this_place.sorting.income_per_hour =
+        xml_extract_text_as_opt_u32(xml_tree, "incomePerHour").unwrap_or(0);
     this_place.sorting.name = xml_extract_text_as_opt_string(xml_tree, "name");
     this_place.sorting.price = xml_extract_text_as_opt_u32(xml_tree, "price").unwrap_or(0);
-    this_place.sorting.type_name = xml_tree.root_element().attribute("type").map(std::string::ToString::to_string);
+    this_place.sorting.type_name = xml_tree
+        .root_element()
+        .attribute("type")
+        .map(std::string::ToString::to_string);
 
-    if xml_tree.descendants().filter(|n|n.has_tag_name("color")).count() > 1 {
+    if xml_tree
+        .descendants()
+        .filter(|n| n.has_tag_name("color"))
+        .count()
+        > 1
+    {
         this_place.sorting.has_color = VehicleCapability::Yes;
     }
 
-    this_place.sorting.functions = xml_tree.descendants()
-        .filter(|n|n.has_tag_name("function"))
-        .filter_map(|n|n.text())
+    this_place.sorting.functions = xml_tree
+        .descendants()
+        .filter(|n| n.has_tag_name("function"))
+        .filter_map(|n| n.text())
         .map(std::string::ToString::to_string)
         .collect();
 }
@@ -255,8 +329,8 @@ fn place_parse_sorting(xml_tree : &roxmltree::Document, this_place : &mut ModDet
 mod test {
     use super::*;
     use crate::shared::files::AbstractNull;
-    use serde_json::json;
     use assert_json_diff::assert_json_include;
+    use serde_json::json;
 
     #[test]
     fn base_game_icon() {
@@ -266,14 +340,18 @@ mod test {
             </storeData></vehicle>"#;
         let minimum_doc = roxmltree::Document::parse(&minimum_xml).unwrap();
 
-        let mut file_handle:Box<dyn AbstractFileHandle> = Box::new(AbstractNull::new().unwrap());
+        let mut file_handle: Box<dyn AbstractFileHandle> = Box::new(AbstractNull::new().unwrap());
         let this_place = place_parse(&minimum_doc, &mut file_handle, &ModParserOptions::default());
 
-        assert_eq!(this_place.icon_base, Some(String::from("$data/vehicles/albutt/frontloaderShovel/store_albuttFrontloaderShovel.png")));
+        assert_eq!(
+            this_place.icon_base,
+            Some(String::from(
+                "$data/vehicles/albutt/frontloaderShovel/store_albuttFrontloaderShovel.png"
+            ))
+        );
         assert_eq!(this_place.icon_file, None);
         /* cSpell: enable */
     }
-
 
     #[test]
     fn placeable_animal_beehive() {
@@ -322,7 +400,7 @@ mod test {
         // assert_eq!(actual.to_string(), expected.to_string());
         assert_json_include!(actual : actual, expected : expected);
     }
-    
+
     #[test]
     fn placeable_silo_extension() {
         /* cSpell: disable */
@@ -377,7 +455,7 @@ mod test {
         assert_json_include!(actual : actual, expected : expected);
         /* cSpell: enable */
     }
-    
+
     #[test]
     fn placeable_object_storage() {
         /* cSpell: disable */
@@ -433,7 +511,6 @@ mod test {
         assert_json_include!(actual : actual, expected : expected);
         /* cSpell: enable */
     }
-
 
     #[test]
     fn placeable_duration_in_months() {

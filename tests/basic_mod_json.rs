@@ -14,7 +14,7 @@ fn check_json_mod_record() {
 		"badgeArray": [
 			"noMP"
 		],
-		"canNotUse": true,
+		"canNotUse": false,
 		"currentCollection": "",
 		"detailIconLoaded" : false,
 		"fileDetail": {
