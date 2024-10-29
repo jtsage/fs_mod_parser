@@ -1,11 +1,11 @@
 [package]
 authors = ["JTSage <jtsage@gmail.com>"]
-categories = ["parsing-tools", "parser-implementations"]
+categories = ["parser-implementations"]
 description = "Mod File Parser for Farming Simulator"
 documentation = "https://docs.rs/fs_mod_parser"
 edition = "2021"
 homepage = "https://github.com/jtsage/fs_mod_parser"
-keywords = ["farming simulator", "game modules"]
+keywords = ["parse", "farm_sim"]
 license = "ISC"
 name = "fs_mod_parser"
 readme = "README.md"
