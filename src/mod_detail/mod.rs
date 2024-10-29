@@ -108,6 +108,21 @@ pub fn parse_open_file(
                     places::place_parse(&file_tree, &mut abstract_file, options),
                 );
             }
+
+            for found_item in &mod_detail.vehicles {
+                if let Some(value) = found_item.1.sorting.brand.clone() {
+                    mod_detail.item_brands.insert(value);
+                }
+                if let Some(value) = found_item.1.sorting.category.clone() {
+                    mod_detail.item_categories.insert(value);
+                }
+            }
+
+            for found_item in &mod_detail.placeables {
+                if let Some(value) = found_item.1.sorting.category.clone() {
+                    mod_detail.item_categories.insert(value);
+                }
+            }
         }
     }
 

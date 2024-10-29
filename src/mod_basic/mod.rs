@@ -349,28 +349,6 @@ fn check_mod_pack(file_list: &Vec<FileDefinition>) -> Option<Vec<ZipPackFile>> {
     Some(zip_list)
 }
 
-#[test]
-fn test_file_name_assumptions() {
-    assert!(check_file_name(&mut ModRecord::new("Example.zip", false)));
-    assert!(check_file_name(&mut ModRecord::new(
-        "ExampleUNZIP.zip",
-        false
-    )));
-
-    // digit start
-    assert!(!check_file_name(&mut ModRecord::new("1Example.zip", false)));
-    // space
-    assert!(!check_file_name(&mut ModRecord::new(
-        "Hello There.zip",
-        false
-    )));
-    // dash
-    assert!(!check_file_name(&mut ModRecord::new("Howdy-Ho.zip", false)));
-    // invalid extensions
-    assert!(!check_file_name(&mut ModRecord::new("GoodName.7z", false)));
-    assert!(!check_file_name(&mut ModRecord::new("GoodName.rar", false)));
-    assert!(!check_file_name(&mut ModRecord::new("GoodName.txt", false)));
-}
 /// Test a mod file name against known game limitations
 fn check_file_name(mod_record: &mut ModRecord) -> bool {
     if !mod_record.file_detail.is_folder {
@@ -583,7 +561,7 @@ fn mod_desc_basics(mod_record: &mut ModRecord, mod_desc: &roxmltree::Document) {
 
     for depend in mod_desc
         .descendants()
-        .filter(|n| n.has_tag_name("dependency") && n.is_text())
+        .filter(|n| n.has_tag_name("dependency"))
     {
         mod_record
             .mod_desc
@@ -615,19 +593,20 @@ fn mod_desc_basics(mod_record: &mut ModRecord, mod_desc: &roxmltree::Document) {
 fn mod_desc_l10n(mod_record: &mut ModRecord, mod_desc: &roxmltree::Document) {
     match mod_desc.descendants().find(|n| n.has_tag_name("title")) {
         Some(titles) => {
-            if titles.is_text() {
-                mod_record
-                    .l10n
-                    .title
-                    .insert(String::from("en"), titles.text().unwrap_or("--").to_owned());
-                mod_record.add_issue(ModError::PerformanceMissingL10N);
-            } else {
+            let title_text = titles.text().unwrap_or("").trim();
+            if title_text.is_empty() {
                 for title in titles.children().filter(roxmltree::Node::is_element) {
                     mod_record.l10n.title.insert(
                         title.tag_name().name().to_owned(),
                         title.text().unwrap_or("--").to_owned(),
                     );
                 }
+            } else {
+                mod_record
+                    .l10n
+                    .title
+                    .insert(String::from("en"), titles.text().unwrap_or("--").to_owned());
+                mod_record.add_issue(ModError::PerformanceMissingL10N);
             }
         }
         None => {
@@ -640,19 +619,20 @@ fn mod_desc_l10n(mod_record: &mut ModRecord, mod_desc: &roxmltree::Document) {
         .find(|n| n.has_tag_name("description"))
     {
         Some(descriptions) => {
-            if descriptions.is_text() {
-                mod_record.l10n.description.insert(
-                    String::from("en"),
-                    descriptions.text().unwrap_or("").to_owned(),
-                );
-                mod_record.add_issue(ModError::PerformanceMissingL10N);
-            } else {
+            let desc_text = descriptions.text().unwrap_or("").trim();
+            if desc_text.is_empty() {
                 for description in descriptions.children().filter(roxmltree::Node::is_element) {
                     mod_record.l10n.description.insert(
                         description.tag_name().name().to_owned(),
                         description.text().unwrap_or("").to_owned(),
                     );
                 }
+            } else {
+                mod_record.l10n.description.insert(
+                    String::from("en"),
+                    descriptions.text().unwrap_or("").to_owned(),
+                );
+                mod_record.add_issue(ModError::PerformanceMissingL10N);
             }
         }
         None => {
@@ -694,4 +674,113 @@ fn mod_desc_actions(mod_record: &mut ModRecord, mod_desc: &roxmltree::Document) 
             );
         }
     }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_file_name_assumptions() {
+        assert!(check_file_name(&mut ModRecord::new("Example.zip", false)));
+        assert!(check_file_name(&mut ModRecord::new(
+            "ExampleUNZIP.zip",
+            false
+        )));
+
+        // digit start
+        assert!(!check_file_name(&mut ModRecord::new("1Example.zip", false)));
+        // space
+        assert!(!check_file_name(&mut ModRecord::new(
+            "Hello There.zip",
+            false
+        )));
+        // dash
+        assert!(!check_file_name(&mut ModRecord::new("Howdy-Ho.zip", false)));
+        // invalid extensions
+        assert!(!check_file_name(&mut ModRecord::new("GoodName.7z", false)));
+        assert!(!check_file_name(&mut ModRecord::new("GoodName.rar", false)));
+        assert!(!check_file_name(&mut ModRecord::new("GoodName.txt", false)));
+    }
+
+    #[test]
+    fn old_version_title_desc() {
+        let minimum_xml = r#"<modDesc descVersion="66">
+            <title>Lizard L125 Flatbed</title>
+            <description>Flatbed Description</description>
+        </modDesc>"#;
+    
+        let minimum_doc = roxmltree::Document::parse(&minimum_xml).unwrap();
+        let mut mod_record = ModRecord::new("Example.zip", false);
+        mod_desc_l10n(&mut mod_record, &minimum_doc);
+        let _ = mod_record.to_json();
+    
+        assert!(mod_record.l10n.title.contains_key("en"));
+        assert_eq!(mod_record.l10n.title.get("en"), Some(&String::from("Lizard L125 Flatbed")));
+
+        assert!(mod_record.l10n.description.contains_key("en"));
+        assert_eq!(mod_record.l10n.description.get("en"), Some(&String::from("Flatbed Description")));
+
+        assert!(mod_record.issues.contains(&ModError::PerformanceMissingL10N));
+    }
+
+    #[test]
+    fn single_entry_title_desc() {
+        let minimum_xml = r#"<modDesc descVersion="66">
+            <title>
+                <en>Lizard L125 Flatbed</en>
+            </title>
+            <description><en>Flatbed Description</en></description>
+        </modDesc>"#;
+    
+        let minimum_doc = roxmltree::Document::parse(&minimum_xml).unwrap();
+        let mut mod_record = ModRecord::new("Example.zip", false);
+        mod_desc_l10n(&mut mod_record, &minimum_doc);
+    
+        assert!(mod_record.l10n.title.contains_key("en"));
+        assert_eq!(mod_record.l10n.title.get("en"), Some(&String::from("Lizard L125 Flatbed")));
+        assert!(mod_record.l10n.description.contains_key("en"));
+        assert_eq!(mod_record.l10n.description.get("en"), Some(&String::from("Flatbed Description")));
+    }
+
+    #[test]
+    fn multi_entry_title_desc() {
+        let minimum_xml = r#"<modDesc descVersion="66">
+            <title>
+                <en>Lizard L125 Flatbed</en>
+                <de>Something Else</de>
+            </title>
+            <description>
+                <en>Flatbed Description</en>
+                <de>German Description</de>
+            </description>
+        </modDesc>"#;
+    
+        let minimum_doc = roxmltree::Document::parse(&minimum_xml).unwrap();
+        let mut mod_record = ModRecord::new("Example.zip", false);
+        mod_desc_l10n(&mut mod_record, &minimum_doc);
+    
+        assert!(mod_record.l10n.title.contains_key("en"));
+        assert_eq!(mod_record.l10n.title.get("en"), Some(&String::from("Lizard L125 Flatbed")));
+        assert!(mod_record.l10n.description.contains_key("en"));
+        assert_eq!(mod_record.l10n.description.get("en"), Some(&String::from("Flatbed Description")));
+    }
+
+
+    #[test]
+    fn read_dependency() {
+        let minimum_xml = r#"<modDesc descVersion="66">
+            <dependencies>
+                <dependency>FS22_RedBarnPack</dependency>
+            </dependencies>
+        </modDesc>"#;
+    
+        let minimum_doc = roxmltree::Document::parse(&minimum_xml).unwrap();
+        let mut mod_record = ModRecord::new("Example.zip", false);
+        mod_desc_basics(&mut mod_record, &minimum_doc);
+
+        assert_eq!(mod_record.mod_desc.depend.len(), 1);
+        assert!(mod_record.mod_desc.depend.contains(&String::from("FS22_RedBarnPack")));
+    }
+    
 }

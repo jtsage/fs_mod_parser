@@ -1,15 +1,15 @@
+use assert_json_diff::{assert_json_eq, assert_json_include};
+use fs_mod_parser::mod_detail::structs::{ModDetail, ModDetailError};
+use fs_mod_parser::{parse_detail, parse_mod_with_options, parse_detail_with_options, ModParserOptions};
+use serde_json::json;
 use std::collections::HashSet;
 use std::path::Path;
-use fs_mod_parser::{parse_detail, parse_detail_with_options, ModParserOptions};
-use fs_mod_parser::mod_detail::structs::{ModDetailError, ModDetail};
-use assert_json_diff::{assert_json_include, assert_json_eq};
-use serde_json::json;
 
-static NO_ICONS:ModParserOptions = ModParserOptions {
-    include_mod_detail : true,
-    include_save_game  : false,
-    skip_detail_icons  : true,
-    skip_mod_icons     : false,
+static NO_ICONS: ModParserOptions = ModParserOptions {
+    include_mod_detail: true,
+    include_save_game: false,
+    skip_detail_icons: true,
+    skip_mod_icons: false,
 };
 
 static PATH_TO_GOOD: &str = "./tests/test_mods/DETAIL_Samples.zip";
@@ -22,7 +22,7 @@ fn missing_file() {
 
     let detail_record = parse_detail(test_file_path);
 
-    let expected_errors:HashSet<ModDetailError> = HashSet::from([ModDetailError::FileReadFail]);
+    let expected_errors: HashSet<ModDetailError> = HashSet::from([ModDetailError::FileReadFail]);
     assert_eq!(detail_record.issues, expected_errors);
 
     assert!(detail_record.to_json().len() > 10);
@@ -36,7 +36,7 @@ fn invalid_folder() {
 
     let detail_record = parse_detail(test_file_path);
 
-    let expected_errors:HashSet<ModDetailError> = HashSet::from([ModDetailError::NotModModDesc]);
+    let expected_errors: HashSet<ModDetailError> = HashSet::from([ModDetailError::NotModModDesc]);
     assert_eq!(detail_record.issues, expected_errors);
 
     assert!(detail_record.to_json().len() > 10);
@@ -50,7 +50,7 @@ fn invalid_moddesc_folder() {
 
     let detail_record = parse_detail(test_file_path);
 
-    let expected_errors:HashSet<ModDetailError> = HashSet::from([ModDetailError::NotModModDesc]);
+    let expected_errors: HashSet<ModDetailError> = HashSet::from([ModDetailError::NotModModDesc]);
     assert_eq!(detail_record.issues, expected_errors);
 
     assert!(detail_record.to_json().len() > 10);
@@ -59,6 +59,54 @@ fn invalid_moddesc_folder() {
 
 #[test]
 fn good_store_items_overview() {
+    let test_file_path = Path::new(PATH_TO_GOOD);
+    assert!(test_file_path.exists());
+
+    let mod_record = parse_mod_with_options(test_file_path, &NO_ICONS);
+    let mod_record_json = mod_record.to_json_pretty().clone();
+
+    let detail_record = &mod_record.include_detail.unwrap();
+
+    assert_eq!(detail_record.issues.len(), 0);
+    assert_eq!(detail_record.brands.len(), 2);
+    assert_eq!(detail_record.l10n.len(), 2);
+    assert_eq!(detail_record.placeables.len(), 3);
+    assert_eq!(detail_record.vehicles.len(), 3);
+
+    /* cSpell: disable */
+    let expect_brand = HashSet::from([
+        String::from("KRAMPE"),
+        String::from("JOHNDEERE"),
+        String::from("CASEIH"),
+    ]);
+    let expect_cat = HashSet::from([
+        String::from("fertilizerSpreaders"),
+        String::from("productionPoints"),
+        String::from("trailers"),
+        String::from("animalpens"),
+        String::from("tractorsL"),
+    ]);
+    /* cSpell: enable */
+    assert_eq!(detail_record.item_brands, expect_brand);
+    assert_eq!(detail_record.item_categories, expect_cat);
+
+    let byte_length = mod_record_json.len() as i32;
+    let byte_expected: i32 = 30369;
+    let byte_margin = 100;
+    assert!(
+        (byte_length - byte_expected).abs() < byte_margin,
+        "assertion failed: `(left !== right)` \
+		(left: `{:?}`, right: `{:?}`, expect diff: `{:?}`, real diff: `{:?}`)",
+        byte_length,
+        byte_expected,
+        byte_margin,
+        (byte_length - byte_expected).abs()
+    );
+}
+
+
+#[test]
+fn good_store_items_overview_full() {
     let test_file_path = Path::new(PATH_TO_GOOD);
     assert!(test_file_path.exists());
 
@@ -71,19 +119,37 @@ fn good_store_items_overview() {
     assert_eq!(detail_record.placeables.len(), 3);
     assert_eq!(detail_record.vehicles.len(), 3);
 
+    /* cSpell: disable */
+    let expect_brand = HashSet::from([
+        String::from("KRAMPE"),
+        String::from("JOHNDEERE"),
+        String::from("CASEIH"),
+    ]);
+    let expect_cat = HashSet::from([
+        String::from("fertilizerSpreaders"),
+        String::from("productionPoints"),
+        String::from("trailers"),
+        String::from("animalpens"),
+        String::from("tractorsL"),
+    ]);
+    /* cSpell: enable */
+    assert_eq!(detail_record.item_brands, expect_brand);
+    assert_eq!(detail_record.item_categories, expect_cat);
+
     let byte_length = detail_record.to_json_pretty().len() as i32;
-	let byte_expected:i32 = 106552;
-	let byte_margin = 500;
-	assert!(
-		(byte_length - byte_expected).abs() < byte_margin,
-		"assertion failed: `(left !== right)` \
+    let byte_expected: i32 = 106552;
+    let byte_margin = 500;
+    assert!(
+        (byte_length - byte_expected).abs() < byte_margin,
+        "assertion failed: `(left !== right)` \
 		(left: `{:?}`, right: `{:?}`, expect diff: `{:?}`, real diff: `{:?}`)",
-		byte_length,
-		byte_expected,
-		byte_margin,
-		(byte_length - byte_expected).abs()
-	);
+        byte_length,
+        byte_expected,
+        byte_margin,
+        (byte_length - byte_expected).abs()
+    );
 }
+
 
 fn setup_good_store_items() -> ModDetail {
     let test_file_path = Path::new(PATH_TO_GOOD);
@@ -128,7 +194,10 @@ fn good_store_l10n() {
 #[test]
 fn good_place_husbandry() {
     /* cSpell: disable */
-    if let Some (comp_key) = setup_good_store_items().placeables.get("xml/place-husbandry.xml") {
+    if let Some(comp_key) = setup_good_store_items()
+        .placeables
+        .get("xml/place-husbandry.xml")
+    {
         let actual = json!(comp_key);
         let expected = json!({
             "animals": {
@@ -164,7 +233,7 @@ fn good_place_husbandry() {
         });
         /* cSpell: enable */
         assert_json_eq!(actual, expected);
-    }else {
+    } else {
         panic!("key not found");
     };
 }
@@ -172,7 +241,10 @@ fn good_place_husbandry() {
 #[test]
 fn good_place_deep_production() {
     /* cSpell: disable */
-    if let Some (comp_key) = setup_good_store_items().placeables.get("xml/production-deep.xml") {
+    if let Some(comp_key) = setup_good_store_items()
+        .placeables
+        .get("xml/production-deep.xml")
+    {
         let actual = json!(comp_key);
         let expected = json!({
             "animals": {
@@ -231,7 +303,7 @@ fn good_place_deep_production() {
         });
         /* cSpell: enable */
         assert_json_include!(actual : actual, expected : expected);
-    }else {
+    } else {
         panic!("key not found");
     };
 }
@@ -239,7 +311,10 @@ fn good_place_deep_production() {
 #[test]
 fn good_place_simple_production() {
     /* cSpell: disable */
-    if let Some (comp_key) = setup_good_store_items().placeables.get("xml/production-simple.xml") {
+    if let Some(comp_key) = setup_good_store_items()
+        .placeables
+        .get("xml/production-simple.xml")
+    {
         let actual = json!(comp_key);
         let expected = json!({
             "animals": {
@@ -289,7 +364,7 @@ fn good_place_simple_production() {
         });
         /* cSpell: enable */
         assert_json_include!(actual : actual, expected : expected);
-    }else {
+    } else {
         panic!("key not found");
     };
 }
@@ -320,14 +395,15 @@ fn good_store_brands() {
 
     assert!(detail_record.brands["HONEYBEE"].icon_file.is_some());
     assert_json_include!(actual : actual, expected : expected);
-
 }
-
 
 #[test]
 fn good_vehicle_fill_unit() {
     /* cSpell: disable */
-    if let Some (comp_key) = setup_good_store_items().vehicles.get("xml/example-fillunit.xml") {
+    if let Some(comp_key) = setup_good_store_items()
+        .vehicles
+        .get("xml/example-fillunit.xml")
+    {
         let actual = json!(comp_key);
         let expected = json!({
             "fillSpray": {
@@ -376,7 +452,7 @@ fn good_vehicle_fill_unit() {
         });
         /* cSpell: enable */
         assert_json_include!(actual : actual, expected : expected);
-    }else {
+    } else {
         panic!("key not found");
     };
 }
@@ -384,7 +460,10 @@ fn good_vehicle_fill_unit() {
 #[test]
 fn good_vehicle_sprayer_types() {
     /* cSpell: disable */
-    if let Some (comp_key) = setup_good_store_items().vehicles.get("xml/example-spraytypes.xml") {
+    if let Some(comp_key) = setup_good_store_items()
+        .vehicles
+        .get("xml/example-spraytypes.xml")
+    {
         let actual = json!(comp_key);
         let expected = json!({
             "fillSpray": {
@@ -436,7 +515,7 @@ fn good_vehicle_sprayer_types() {
         });
         /* cSpell: enable */
         assert_json_include!(actual : actual, expected : expected);
-    }else {
+    } else {
         panic!("key not found");
     };
 }
@@ -444,11 +523,20 @@ fn good_vehicle_sprayer_types() {
 #[test]
 fn good_vehicle_multiple_motors() {
     /* cSpell: disable */
-    if let Some (comp_key) = setup_good_store_items().vehicles.get("xml/example-multimotor.xml") {
-        assert_eq!(comp_key.motor.fuel_type, Some(String::from("electricCharge")));
-        assert_eq!(comp_key.motor.transmission_type, Some(String::from("$l10n_info_transmission_cvt")));
+    if let Some(comp_key) = setup_good_store_items()
+        .vehicles
+        .get("xml/example-multimotor.xml")
+    {
+        assert_eq!(
+            comp_key.motor.fuel_type,
+            Some(String::from("electricCharge"))
+        );
+        assert_eq!(
+            comp_key.motor.transmission_type,
+            Some(String::from("$l10n_info_transmission_cvt"))
+        );
         assert_eq!(comp_key.motor.motors.len(), 4);
-    }else {
+    } else {
         panic!("key not found");
     };
 }
@@ -461,28 +549,28 @@ fn bad_store_items_overview() {
     let detail_record = parse_detail(test_file_path);
     let _ = detail_record.to_json();
 
-    let expected_errors:HashSet<ModDetailError> = HashSet::from([
+    let expected_errors: HashSet<ModDetailError> = HashSet::from([
         ModDetailError::BrandMissingIcon,
         ModDetailError::StoreItemBroken,
-        ModDetailError::StoreItemMissing
+        ModDetailError::StoreItemMissing,
     ]);
     assert_eq!(detail_record.issues, expected_errors);
-    
+
     assert_eq!(detail_record.brands.len(), 2);
     assert_eq!(detail_record.l10n.len(), 2);
     assert_eq!(detail_record.placeables.len(), 0);
     assert_eq!(detail_record.vehicles.len(), 0);
 
     let byte_length = detail_record.to_json_pretty().len() as i32;
-	let byte_expected:i32 = 1321;
-	let byte_margin = 100;
-	assert!(
-		(byte_length - byte_expected).abs() < byte_margin,
-		"assertion failed: `(left !== right)` \
+    let byte_expected: i32 = 1321;
+    let byte_margin = 100;
+    assert!(
+        (byte_length - byte_expected).abs() < byte_margin,
+        "assertion failed: `(left !== right)` \
 		(left: `{:?}`, right: `{:?}`, expect diff: `{:?}`, real diff: `{:?}`)",
-		byte_length,
-		byte_expected,
-		byte_margin,
-		(byte_length - byte_expected).abs()
-	);
+        byte_length,
+        byte_expected,
+        byte_margin,
+        (byte_length - byte_expected).abs()
+    );
 }

@@ -155,9 +155,14 @@ impl Serialize for CropList {
     }
 }
 
-#[test]
-fn empty_crop_list() {
-    let mine = CropList::default();
+#[cfg(test)]
+mod test {
+    use super::*;
 
-    assert_eq!(String::from("null"), serde_json::to_string(&mine).unwrap())
+    #[test]
+    fn empty_crop_list() {
+        let mine = CropList::default();
+
+        assert_eq!(String::from("null"), serde_json::to_string(&mine).unwrap())
+    }
 }

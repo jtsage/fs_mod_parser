@@ -245,8 +245,14 @@ impl MapFiles {
 /// Read basic details about the map
 ///
 /// Includes weather, crops, if it's southern, and the map image
-pub fn read_map_basics(desc_version: u32, mod_record: &mut ModRecord, file_handle: &mut Box<dyn AbstractFileHandle>) {
-    if desc_version < 60 { return }
+pub fn read_map_basics(
+    desc_version: u32,
+    mod_record: &mut ModRecord,
+    file_handle: &mut Box<dyn AbstractFileHandle>,
+) {
+    if desc_version < 60 {
+        return;
+    }
 
     let Some(map_config_file_name) = &mod_record.mod_desc.map_config_file else {
         return;

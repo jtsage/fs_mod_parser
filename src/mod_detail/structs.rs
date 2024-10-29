@@ -52,6 +52,10 @@ pub struct ModDetail {
     pub brands: BrandDefinition,
     /// list of detected issues
     pub issues: HashSet<ModDetailError>,
+    /// Item brands
+    pub item_brands: HashSet<String>,
+    /// Item categories
+    pub item_categories: HashSet<String>,
     /// l10n languages, keys, and strings
     pub l10n: LanguageDefinition,
     /// placables
@@ -67,6 +71,8 @@ impl ModDetail {
         ModDetail {
             brands: HashMap::new(),
             issues: HashSet::new(),
+            item_brands: HashSet::new(),
+            item_categories: HashSet::new(),
             l10n: HashMap::new(),
             placeables: HashMap::new(),
             vehicles: HashMap::new(),

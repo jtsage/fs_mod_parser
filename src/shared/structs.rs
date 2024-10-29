@@ -124,22 +124,27 @@ impl std::fmt::Display for ModRecord {
     }
 }
 
-#[test]
-fn test_blank_mod_record_json() {
-    let record = ModRecord::new("foo.txt", false);
+#[cfg(test)]
+mod test {
+    use super::*;
 
-    let byte_length = record.to_json().len() as i32;
-    let byte_expected: i32 = 861;
-    let byte_margin = 20;
-    assert!(
-        (byte_length - byte_expected).abs() < byte_margin,
-        "assertion failed: `(left !== right)` \
-		(left: `{:?}`, right: `{:?}`, expect diff: `{:?}`, real diff: `{:?}`)",
-        byte_length,
-        byte_expected,
-        byte_margin,
-        (byte_length - byte_expected).abs()
-    );
+    #[test]
+    fn test_blank_mod_record_json() {
+        let record = ModRecord::new("foo.txt", false);
+
+        let byte_length = record.to_json().len() as i32;
+        let byte_expected: i32 = 861;
+        let byte_margin = 20;
+        assert!(
+            (byte_length - byte_expected).abs() < byte_margin,
+            "assertion failed: `(left !== right)` \
+            (left: `{:?}`, right: `{:?}`, expect diff: `{:?}`, real diff: `{:?}`)",
+            byte_length,
+            byte_expected,
+            byte_margin,
+            (byte_length - byte_expected).abs()
+        );
+    }
 }
 
 /// ModDesc.xml specific fields from a mod
