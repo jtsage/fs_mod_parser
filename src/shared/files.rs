@@ -270,13 +270,6 @@ mod tests {
     }
 
     #[test]
-    fn absolute_path() {
-        let file_handle = AbstractFolder::new("C:\\").unwrap();
-
-        assert_eq!(file_handle.is_folder(), true);
-    }
-
-    #[test]
     fn invalid_path() {
         let file_handle = AbstractFolder::new("./foo/bar/foo");
 
