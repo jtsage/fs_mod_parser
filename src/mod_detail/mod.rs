@@ -152,6 +152,8 @@ fn do_brands(
 
         let brand_icon_record = normalize_image_file(brand.attribute("image"));
 
+        brand_icon_record.original.clone_into(&mut this_brand.icon_orig);
+
         if !options.skip_detail_icons {
             if let Some(filename) = brand_icon_record.base_game {
                 this_brand.icon_base = Some(filename);

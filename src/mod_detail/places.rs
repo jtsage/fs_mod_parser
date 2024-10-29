@@ -85,6 +85,8 @@ pub fn place_parse(
     if !options.skip_detail_icons {
         let image_entry = extract_and_normalize_image(xml_tree, "image");
 
+        image_entry.original.clone_into(&mut this_place.icon_orig);
+
         if let Some(filename) = image_entry.base_game {
             this_place.icon_base = Some(filename);
         } else if let Some(filename) = image_entry.local_file {

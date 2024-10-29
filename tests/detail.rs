@@ -91,7 +91,7 @@ fn good_store_items_overview() {
     assert_eq!(detail_record.item_categories, expect_cat);
 
     let byte_length = mod_record_json.len() as i32;
-    let byte_expected: i32 = 30369;
+    let byte_expected: i32 = 30635;
     let byte_margin = 100;
     assert!(
         (byte_length - byte_expected).abs() < byte_margin,
@@ -137,7 +137,7 @@ fn good_store_items_overview_full() {
     assert_eq!(detail_record.item_categories, expect_cat);
 
     let byte_length = detail_record.to_json_pretty().len() as i32;
-    let byte_expected: i32 = 106552;
+    let byte_expected: i32 = 107134;
     let byte_margin = 500;
     assert!(
         (byte_length - byte_expected).abs() < byte_margin,
@@ -210,6 +210,7 @@ fn good_place_husbandry() {
             },
             "iconBase": null,
             "iconFile": null,
+            "iconOrig": null,
             "masterType": "placeable",
             "productions": [],
             "sorting": {
@@ -562,7 +563,7 @@ fn bad_store_items_overview() {
     assert_eq!(detail_record.vehicles.len(), 0);
 
     let byte_length = detail_record.to_json_pretty().len() as i32;
-    let byte_expected: i32 = 1321;
+    let byte_expected: i32 = 1497;
     let byte_margin = 100;
     assert!(
         (byte_length - byte_expected).abs() < byte_margin,

@@ -151,6 +151,8 @@ pub struct ModDetailBrand {
     pub icon_file: Option<String>,
     /// icon path, if it references the base game
     pub icon_base: Option<String>,
+    /// icon original entry
+    pub icon_orig: Option<String>
 }
 
 impl ModDetailBrand {
@@ -160,6 +162,7 @@ impl ModDetailBrand {
             title: String::new(),
             icon_file: None,
             icon_base: None,
+            icon_orig: None,
         }
     }
 }
@@ -365,6 +368,8 @@ pub struct ModDetailVehicle {
     pub icon_base: Option<String>,
     /// base64 webp icon, if loaded
     pub icon_file: Option<String>,
+    /// original icon path
+    pub icon_orig: Option<String>,
     /// master type (vehicle)
     pub master_type: String,
     /// motor information
@@ -384,6 +389,7 @@ impl ModDetailVehicle {
             flags: ModDetailVehicleFlags::new(),
             icon_base: None,
             icon_file: None,
+            icon_orig: None,
             master_type: String::from("vehicle"),
             motor: ModDetailVehicleEngine::new(),
             sorting: ModDetailVehicleSorting::new(),
@@ -646,6 +652,8 @@ pub struct ModDetailPlace {
     pub icon_base: Option<String>,
     /// base64 webp icon, if loaded
     pub icon_file: Option<String>,
+    /// original icon path
+    pub icon_orig: Option<String>,
     /// master type, is "placeable"
     pub master_type: String,
     /// production list
@@ -664,6 +672,7 @@ impl ModDetailPlace {
             animals: ModDetailPlaceAnimals::new(),
             icon_base: None,
             icon_file: None,
+            icon_orig: None,
             master_type: String::from("placeable"),
             productions: vec![],
             sorting: ModDetailPlaceSorting::new(),

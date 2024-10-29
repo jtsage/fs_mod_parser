@@ -16,6 +16,8 @@ pub struct ImageFile {
     pub base_game: Option<String>,
     /// is a local file
     pub local_file: Option<String>,
+    /// original string
+    pub original: Option<String>
 }
 impl ImageFile {
     /// did not find tag
@@ -23,18 +25,22 @@ impl ImageFile {
         ImageFile {
             base_game: None,
             local_file: None,
+            original: None,
         }
     }
     /// found a base game reference
     fn base(name: String) -> Self {
         ImageFile {
+            original: Some(name.clone()),
             base_game: Some(name),
             local_file: None,
+            
         }
     }
     /// found a local reference
     fn local(name: String) -> Self {
         ImageFile {
+            original: Some(name.clone()),
             base_game: None,
             local_file: Some(name),
         }
@@ -91,6 +97,7 @@ mod test {
         let response = normalize_image_file(Some("$data/something.dds"));
 
         let expected = ImageFile {
+            original: Some(String::from("$data/something.dds")),
             base_game: Some(String::from("$data/something.dds")),
             local_file: None,
         };
@@ -103,6 +110,7 @@ mod test {
         let response = normalize_image_file(Some("./data/something.dds"));
 
         let expected = ImageFile {
+            original: Some(String::from("./data/something.dds")),
             base_game: None,
             local_file: Some(String::from("./data/something.dds")),
         };
@@ -115,6 +123,7 @@ mod test {
         let response = normalize_image_file(Some("./data/something.PNG"));
 
         let expected = ImageFile {
+            original: Some(String::from("./data/something.dds")),
             base_game: None,
             local_file: Some(String::from("./data/something.dds")),
         };
@@ -129,6 +138,7 @@ mod test {
         let expected = ImageFile {
             base_game: None,
             local_file: None,
+            original: None,
         };
 
         assert_eq!(response, expected);
