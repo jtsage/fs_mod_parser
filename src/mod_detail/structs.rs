@@ -374,6 +374,8 @@ pub struct ModDetailVehicle {
     pub master_type: String,
     /// motor information
     pub motor: ModDetailVehicleEngine,
+    /// File is a sub of a different item
+    pub parent_item : Option<String>,
     /// sorting information
     pub sorting: ModDetailVehicleSorting,
     /// vehicle specs
@@ -391,6 +393,7 @@ impl ModDetailVehicle {
             icon_file: None,
             icon_orig: None,
             master_type: String::from("vehicle"),
+            parent_item : None,
             motor: ModDetailVehicleEngine::new(),
             sorting: ModDetailVehicleSorting::new(),
             specs: ModDetailVehicleSpecs::new(),
@@ -656,6 +659,8 @@ pub struct ModDetailPlace {
     pub icon_orig: Option<String>,
     /// master type, is "placeable"
     pub master_type: String,
+    /// File is a sub of a different item
+    pub parent_item : Option<String>,
     /// production list
     pub productions: Vec<ModDetailProduction>,
     /// placeable sorting information
@@ -674,6 +679,7 @@ impl ModDetailPlace {
             icon_file: None,
             icon_orig: None,
             master_type: String::from("placeable"),
+            parent_item : None,
             productions: vec![],
             sorting: ModDetailPlaceSorting::new(),
             storage: ModDetailPlaceStorage::new(),

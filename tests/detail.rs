@@ -71,12 +71,13 @@ fn good_store_items_overview() {
     assert_eq!(detail_record.brands.len(), 2);
     assert_eq!(detail_record.l10n.len(), 2);
     assert_eq!(detail_record.placeables.len(), 3);
-    assert_eq!(detail_record.vehicles.len(), 3);
+    assert_eq!(detail_record.vehicles.len(), 4);
 
     /* cSpell: disable */
     let expect_brand = HashSet::from([
         String::from("KRAMPE"),
         String::from("JOHNDEERE"),
+        String::from("FENDT"),
         String::from("CASEIH"),
     ]);
     let expect_cat = HashSet::from([
@@ -85,13 +86,14 @@ fn good_store_items_overview() {
         String::from("trailers"),
         String::from("animalpens"),
         String::from("tractorsL"),
+        String::from("harvesters"),
     ]);
     /* cSpell: enable */
     assert_eq!(detail_record.item_brands, expect_brand);
     assert_eq!(detail_record.item_categories, expect_cat);
 
     let byte_length = mod_record_json.len() as i32;
-    let byte_expected: i32 = 30635;
+    let byte_expected: i32 = 31954;
     let byte_margin = 100;
     assert!(
         (byte_length - byte_expected).abs() < byte_margin,
@@ -117,12 +119,13 @@ fn good_store_items_overview_full() {
     assert_eq!(detail_record.brands.len(), 2);
     assert_eq!(detail_record.l10n.len(), 2);
     assert_eq!(detail_record.placeables.len(), 3);
-    assert_eq!(detail_record.vehicles.len(), 3);
+    assert_eq!(detail_record.vehicles.len(), 4);
 
     /* cSpell: disable */
     let expect_brand = HashSet::from([
         String::from("KRAMPE"),
         String::from("JOHNDEERE"),
+        String::from("FENDT"),
         String::from("CASEIH"),
     ]);
     let expect_cat = HashSet::from([
@@ -131,13 +134,14 @@ fn good_store_items_overview_full() {
         String::from("trailers"),
         String::from("animalpens"),
         String::from("tractorsL"),
+        String::from("harvesters"),
     ]);
     /* cSpell: enable */
     assert_eq!(detail_record.item_brands, expect_brand);
     assert_eq!(detail_record.item_categories, expect_cat);
 
     let byte_length = detail_record.to_json_pretty().len() as i32;
-    let byte_expected: i32 = 107134;
+    let byte_expected: i32 = 108433;
     let byte_margin = 500;
     assert!(
         (byte_length - byte_expected).abs() < byte_margin,
@@ -212,6 +216,7 @@ fn good_place_husbandry() {
             "iconFile": null,
             "iconOrig": null,
             "masterType": "placeable",
+            "parentItem": null,
             "productions": [],
             "sorting": {
                 "category": "animalpens",
@@ -574,4 +579,64 @@ fn bad_store_items_overview() {
         byte_margin,
         (byte_length - byte_expected).abs()
     );
+}
+
+
+#[test]
+fn good_vehicle_parent_item() {
+    /* cSpell: disable */
+    if let Some(comp_key) = setup_good_store_items()
+        .vehicles
+        .get("xml/vehicle-with-parent.xml")
+    {
+        let actual = json!(comp_key);
+        let expected = json!({
+            "fillSpray": {
+                "fillCat": [],
+                "fillLevel": 0,
+                "fillType": [],
+                "sprayTypes": []
+            },
+            "flags": {
+                "beacons": false,
+                "color": false,
+                "enterable": false,
+                "lights": false,
+                "motorized": false,
+                "wheels": false
+            },
+            "iconBase": null,
+            "iconFile": null,
+            "iconOrig": null,
+            "parentItem": "$data/vehicles/fendt/ideal/ideal.xml",
+            "masterType": "vehicle",
+            "motor": {
+                "fuelType": null,
+                "transmissionType": null,
+                "motors": []
+            },
+            "sorting": {
+                "brand": "FENDT",
+                "category": "harvesters",
+                "combos": [],
+                "name": "IDEAL ParaLevel",
+                "typeName": "combineDrivable",
+                "typeDescription": null,
+                "year": null
+            },
+            "specs": {
+                "functions": [],
+                "jointAccepts": [],
+                "jointRequires": [],
+                "name": "IDEAL ParaLevel",
+                "price": 0,
+                "specs": {},
+                "weight": 0
+            }
+        });
+        /* cSpell: enable */
+        assert_json_include!(actual : actual, expected : expected);
+    } else {
+        panic!("key not found");
+    };
 }

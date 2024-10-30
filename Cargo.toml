@@ -10,7 +10,7 @@ license = "ISC"
 name = "fs_mod_parser"
 readme = "README.md"
 repository = "https://github.com/jtsage/fs_mod_parser"
-version = "0.1.1"
+version = "0.1.2"
 
 [dependencies]
 base64 = "0.22.1"

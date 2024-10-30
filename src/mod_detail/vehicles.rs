@@ -351,6 +351,7 @@ fn vehicle_parse_fills(xml_tree: &roxmltree::Document, this_vehicle: &mut ModDet
 
 /// Parse vehicle sorting info
 fn vehicle_parse_sorting(xml_tree: &roxmltree::Document, this_vehicle: &mut ModDetailVehicle) {
+    this_vehicle.parent_item = xml_tree.descendants().find(|n|n.has_tag_name("parentFile")).and_then(|n|n.attribute("xmlFilename")).map(std::string::ToString::to_string);
     this_vehicle.sorting.name = xml_extract_text_as_opt_string(xml_tree, "name");
     this_vehicle.sorting.brand = xml_extract_text_as_opt_string(xml_tree, "brand");
     this_vehicle.sorting.category = xml_extract_text_as_opt_string(xml_tree, "category");

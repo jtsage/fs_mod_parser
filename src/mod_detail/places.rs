@@ -300,6 +300,7 @@ fn place_parse_animals(xml_tree: &roxmltree::Document, this_place: &mut ModDetai
 
 /// Parse placeable sorting data
 fn place_parse_sorting(xml_tree: &roxmltree::Document, this_place: &mut ModDetailPlace) {
+    this_place.parent_item = xml_tree.descendants().find(|n|n.has_tag_name("parentFile")).and_then(|n|n.attribute("xmlFilename")).map(std::string::ToString::to_string);
     this_place.sorting.category = xml_extract_text_as_opt_string(xml_tree, "category");
     this_place.sorting.income_per_hour =
         xml_extract_text_as_opt_u32(xml_tree, "incomePerHour").unwrap_or(0);
