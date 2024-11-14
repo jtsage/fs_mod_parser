@@ -311,6 +311,10 @@ fn place_parse_sorting(xml_tree: &roxmltree::Document, this_place: &mut ModDetai
         .attribute("type")
         .map(std::string::ToString::to_string);
 
+    if xml_extract_text_as_opt_string(xml_tree, "showInStore") == Some(String::from("false")) {
+        this_place.show_in_store = false;
+    }
+
     if xml_tree
         .descendants()
         .filter(|n| n.has_tag_name("color"))
@@ -571,6 +575,46 @@ mod test {
             "recipe": [
                 [ { "amount": 5.0, "fillType": "cotton" } ]
             ]
+        });
+        // assert_eq!(actual.to_string(), expected.to_string());
+        assert_json_include!(actual : actual, expected : expected);
+        /* cSpell: enable */
+    }
+
+    #[test]
+    fn placeable_store_hide() {
+        /* cSpell: disable */
+        let minimum_xml = r#"<placeable>
+            <showInStore>false</showInStore>
+            </placeable>"#;
+        let minimum_doc = roxmltree::Document::parse(&minimum_xml).unwrap();
+        let mut this_place = ModDetailPlace::default();
+
+        place_parse_sorting(&minimum_doc, &mut this_place);
+
+        let actual = json!(this_place);
+        let expected = json!({
+            "showInStore": false,
+        });
+        // assert_eq!(actual.to_string(), expected.to_string());
+        assert_json_include!(actual : actual, expected : expected);
+        /* cSpell: enable */
+    }
+
+    #[test]
+    fn placeable_store_show() {
+        /* cSpell: disable */
+        let minimum_xml = r#"<placeable>
+            <showInStore>true</showInStore>
+            </placeable>"#;
+        let minimum_doc = roxmltree::Document::parse(&minimum_xml).unwrap();
+        let mut this_place = ModDetailPlace::default();
+
+        place_parse_sorting(&minimum_doc, &mut this_place);
+
+        let actual = json!(this_place);
+        let expected = json!({
+            "showInStore": true,
         });
         // assert_eq!(actual.to_string(), expected.to_string());
         assert_json_include!(actual : actual, expected : expected);

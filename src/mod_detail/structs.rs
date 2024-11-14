@@ -152,7 +152,7 @@ pub struct ModDetailBrand {
     /// icon path, if it references the base game
     pub icon_base: Option<String>,
     /// icon original entry
-    pub icon_orig: Option<String>
+    pub icon_orig: Option<String>,
 }
 
 impl ModDetailBrand {
@@ -375,7 +375,7 @@ pub struct ModDetailVehicle {
     /// motor information
     pub motor: ModDetailVehicleEngine,
     /// File is a sub of a different item
-    pub parent_item : Option<String>,
+    pub parent_item: Option<String>,
     /// sorting information
     pub sorting: ModDetailVehicleSorting,
     /// vehicle specs
@@ -393,7 +393,7 @@ impl ModDetailVehicle {
             icon_file: None,
             icon_orig: None,
             master_type: String::from("vehicle"),
-            parent_item : None,
+            parent_item: None,
             motor: ModDetailVehicleEngine::new(),
             sorting: ModDetailVehicleSorting::new(),
             specs: ModDetailVehicleSpecs::new(),
@@ -660,9 +660,11 @@ pub struct ModDetailPlace {
     /// master type, is "placeable"
     pub master_type: String,
     /// File is a sub of a different item
-    pub parent_item : Option<String>,
+    pub parent_item: Option<String>,
     /// production list
     pub productions: Vec<ModDetailProduction>,
+    /// show in store
+    pub show_in_store: bool,
     /// placeable sorting information
     pub sorting: ModDetailPlaceSorting,
     /// silos and object storage
@@ -679,8 +681,9 @@ impl ModDetailPlace {
             icon_file: None,
             icon_orig: None,
             master_type: String::from("placeable"),
-            parent_item : None,
+            parent_item: None,
             productions: vec![],
+            show_in_store: true,
             sorting: ModDetailPlaceSorting::new(),
             storage: ModDetailPlaceStorage::new(),
         }
