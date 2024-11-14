@@ -93,7 +93,7 @@ fn good_store_items_overview() {
     assert_eq!(detail_record.item_categories, expect_cat);
 
     let byte_length = mod_record_json.len() as i32;
-    let byte_expected: i32 = 31954;
+    let byte_expected: i32 = 32075;
     let byte_margin = 100;
     assert!(
         (byte_length - byte_expected).abs() < byte_margin,
@@ -218,6 +218,7 @@ fn good_place_husbandry() {
             "masterType": "placeable",
             "parentItem": null,
             "productions": [],
+            "showInStore": true,
             "sorting": {
                 "category": "animalpens",
                 "functions": [
