@@ -766,6 +766,33 @@ mod test {
         assert_eq!(mod_record.l10n.description.get("en"), Some(&String::from("Flatbed Description")));
     }
 
+    // TODO: handle this better?
+    #[test]
+    #[should_panic = "MalformedEntityReference"]
+    fn multi_entry_title_invalid_desc() {
+        let minimum_xml = r#"<modDesc descVersion="66">
+            <title>
+                <en>Lizard L125 & L127 Flatbed</en>
+                <de>Something Else</de>
+            </title>
+            <description>
+                <en>Flatbed Description</en>
+                <de>German Description</de>
+            </description>
+        </modDesc>"#;
+    
+        let minimum_doc = roxmltree::Document::parse(&minimum_xml).unwrap();
+        let mut mod_record = ModRecord::new("Example.zip", false);
+        mod_desc_l10n(&mut mod_record, &minimum_doc);
+    
+        assert!(mod_record.l10n.title.contains_key("en"));
+        assert_eq!(mod_record.l10n.title.get("en"), Some(&String::from("Lizard L125 Flatbed")));
+        assert!(mod_record.l10n.description.contains_key("en"));
+        assert_eq!(mod_record.l10n.description.get("en"), Some(&String::from("Flatbed Description")));
+    }
+
+
+
 
     #[test]
     fn read_dependency() {
