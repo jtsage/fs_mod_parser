@@ -110,8 +110,34 @@ pub const BG_CROP_TYPES: [CropTypeState; 17] = [
     },
 ];
 
-/// Base game weather definitions, FS22
-pub const BG_CROP_WEATHER: [(&str, [CropSeason; 4]); 3] = [
+
+/// Base game weather definitions, FS22 & FS25
+pub const BG_CROP_WEATHER: [(&str, [CropSeason; 4]); 4] = [
+    (
+        "map25",
+        [
+            CropSeason {
+                name: "spring",
+                min: 6,
+                max: 18,
+            },
+            CropSeason {
+                name: "summer",
+                min: 6,
+                max: 34,
+            },
+            CropSeason {
+                name: "autumn",
+                min: 5,
+                max: 25,
+            },
+            CropSeason {
+                name: "winter",
+                min: -11,
+                max: 10,
+            },
+        ],
+    ),
     (
         "mapUS",
         [

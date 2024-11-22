@@ -480,7 +480,7 @@ fn get_real_index(index: u8, name: &str) -> u8 {
     ((test_index - 1) % 12) + 1
 }
 
-/// Populate crop growth from loaded XML file
+/// Populate crop growth from loaded XML file (FS22)
 ///
 /// This is only used when a map includes a growth file, the base game data is pre-calculated
 fn populate_crop_growth(
@@ -624,6 +624,7 @@ fn get_base_game_entry_key(xml_tree: &roxmltree::Document) -> Option<String> {
         if let Some(filename) = node.attribute("filename") {
             return match filename {
                 x if !x.starts_with("$data") => None,
+                x if x.contains("config") => Some(String::from("map25")),
                 x if x.contains("mapUS") => Some(String::from("mapUS")),
                 x if x.contains("mapFR") => Some(String::from("mapFR")),
                 x if x.contains("mapAlpine") => Some(String::from("mapAlpine")),
