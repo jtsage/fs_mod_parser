@@ -12,7 +12,12 @@ use chrono::{DateTime, SecondsFormat, Utc};
 use std::{path::Path, time::SystemTime};
 
 /// Known false positives for the malware check
-pub const NOT_MALWARE: [&str; 11] = [
+pub const NOT_MALWARE: [&str; 16] = [
+    "FS25_000_DevTools",
+    "FS25_AutoDrive",
+    "FS25_Courseplay",
+    "FS25_FSG_Companion",
+    "FS25_VehicleControlAddon",
     "FS22_001_NoDelete",
     "FS22_AutoDrive",
     "FS22_Courseplay",
