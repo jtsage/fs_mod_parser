@@ -158,3 +158,32 @@ fn server_warnings() {
         }
     );
 }
+
+#[test]
+fn dangerous_file_check() {
+    let test_file_path = Path::new("./tests/test_mods/FAIL_Contains_EXE.zip");
+    assert!(test_file_path.exists());
+
+    let mod_record = parser(test_file_path);
+    let _ = mod_record.to_json();
+
+    assert_eq!(mod_record.can_not_use, true);
+
+    let expected_errors: HashSet<ModError> =
+        HashSet::from([ModError::PerformanceQuantityExtra, ModError::InfoDangerousFile]);
+    assert_eq!(mod_record.issues, expected_errors);
+
+    assert_eq!(
+        mod_record.badge_array,
+        ModBadges {
+            broken: false,
+            folder: false,
+            malware: true,
+            no_mp: false,
+            notmod: false,
+            pconly: false,
+            problem: true,
+            savegame: false,
+        }
+    );
+}

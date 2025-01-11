@@ -24,6 +24,8 @@ pub enum ModError {
     InfoLikelyPiracy,
     /// Mod may contain malicious script code
     InfoMaliciousCode,
+    /// Mod may contain dangerous files
+    InfoDangerousFile,
     /// Mod is unzipped and can't be used in multiplayer
     InfoNoMultiplayerUnzipped,
     /// The modDesc.xml file is damaged
@@ -79,9 +81,10 @@ pub const BADGE_BROKEN: [&ModError; 10] = [
 ];
 
 /// `ModErrors` that should be fixed, but probably still work
-pub const BADGE_ISSUE: [&ModError; 17] = [
+pub const BADGE_ISSUE: [&ModError; 18] = [
     &ModError::InfoLikelyPiracy,
     &ModError::InfoMaliciousCode,
+    &ModError::InfoDangerousFile,
     &ModError::ModDescNoModIcon,
     &ModError::ModDescNoModVersion,
     &ModError::ModDescDamaged,
@@ -145,66 +148,69 @@ impl Serialize for ModError {
             ModError::InfoMaliciousCode => {
                 serializer.serialize_unit_variant("ModError", 9, "MALICIOUS_CODE")
             }
+            ModError::InfoDangerousFile => {
+                serializer.serialize_unit_variant("ModError", 10, "MALICIOUS_FILE")
+            }
             ModError::InfoNoMultiplayerUnzipped => {
-                serializer.serialize_unit_variant("ModError", 10, "INFO_NO_MULTIPLAYER_UNZIPPED")
+                serializer.serialize_unit_variant("ModError", 11, "INFO_NO_MULTIPLAYER_UNZIPPED")
             }
             ModError::ModDescDamaged => serializer.serialize_unit_variant(
                 "ModError",
-                11,
+                12,
                 "MOD_ERROR_MODDESC_DAMAGED_RECOVERABLE",
             ),
             ModError::ModDescMissing => {
-                serializer.serialize_unit_variant("ModError", 12, "NOT_MOD_MODDESC_MISSING")
+                serializer.serialize_unit_variant("ModError", 13, "NOT_MOD_MODDESC_MISSING")
             }
             ModError::ModDescNoModIcon => {
-                serializer.serialize_unit_variant("ModError", 13, "MOD_ERROR_NO_MOD_ICON")
+                serializer.serialize_unit_variant("ModError", 14, "MOD_ERROR_NO_MOD_ICON")
             }
             ModError::ModDescNoModVersion => {
-                serializer.serialize_unit_variant("ModError", 14, "MOD_ERROR_NO_MOD_VERSION")
+                serializer.serialize_unit_variant("ModError", 15, "MOD_ERROR_NO_MOD_VERSION")
             }
             ModError::ModDescParseError => {
-                serializer.serialize_unit_variant("ModError", 15, "NOT_MOD_MODDESC_PARSE_ERROR")
+                serializer.serialize_unit_variant("ModError", 16, "NOT_MOD_MODDESC_PARSE_ERROR")
             }
             ModError::ModDescVersionOldOrMissing => serializer.serialize_unit_variant(
                 "ModError",
-                16,
+                17,
                 "NOT_MOD_MODDESC_VERSION_OLD_OR_MISSING",
             ),
             ModError::PerformanceFileSpaces => {
-                serializer.serialize_unit_variant("ModError", 17, "PERF_SPACE_IN_FILE")
+                serializer.serialize_unit_variant("ModError", 18, "PERF_SPACE_IN_FILE")
             }
             ModError::PerformanceMissingL10N => {
-                serializer.serialize_unit_variant("ModError", 18, "PERF_L10N_NOT_SET")
+                serializer.serialize_unit_variant("ModError", 19, "PERF_L10N_NOT_SET")
             }
             ModError::PerformanceOversizeDDS => {
-                serializer.serialize_unit_variant("ModError", 19, "PERF_DDS_TOO_BIG")
+                serializer.serialize_unit_variant("ModError", 20, "PERF_DDS_TOO_BIG")
             }
             ModError::PerformanceOversizeGDM => {
-                serializer.serialize_unit_variant("ModError", 20, "PERF_GDM_TOO_BIG")
+                serializer.serialize_unit_variant("ModError", 21, "PERF_GDM_TOO_BIG")
             }
             ModError::PerformanceOversizeI3D => {
-                serializer.serialize_unit_variant("ModError", 21, "PERF_I3D_TOO_BIG")
+                serializer.serialize_unit_variant("ModError", 22, "PERF_I3D_TOO_BIG")
             }
             ModError::PerformanceOversizeSHAPES => {
-                serializer.serialize_unit_variant("ModError", 22, "PERF_SHAPES_TOO_BIG")
+                serializer.serialize_unit_variant("ModError", 23, "PERF_SHAPES_TOO_BIG")
             }
             ModError::PerformanceOversizeXML => {
-                serializer.serialize_unit_variant("ModError", 23, "PERF_XML_TOO_BIG")
+                serializer.serialize_unit_variant("ModError", 24, "PERF_XML_TOO_BIG")
             }
             ModError::PerformanceQuantityExtra => {
-                serializer.serialize_unit_variant("ModError", 24, "PERF_HAS_EXTRA")
+                serializer.serialize_unit_variant("ModError", 25, "PERF_HAS_EXTRA")
             }
             ModError::PerformanceQuantityGRLE => {
-                serializer.serialize_unit_variant("ModError", 25, "PERF_GRLE_TOO_MANY")
+                serializer.serialize_unit_variant("ModError", 26, "PERF_GRLE_TOO_MANY")
             }
             ModError::PerformanceQuantityPDF => {
-                serializer.serialize_unit_variant("ModError", 26, "PERF_PDF_TOO_MANY")
+                serializer.serialize_unit_variant("ModError", 27, "PERF_PDF_TOO_MANY")
             }
             ModError::PerformanceQuantityPNG => {
-                serializer.serialize_unit_variant("ModError", 27, "PERF_PNG_TOO_MANY")
+                serializer.serialize_unit_variant("ModError", 28, "PERF_PNG_TOO_MANY")
             }
             ModError::PerformanceQuantityTXT => {
-                serializer.serialize_unit_variant("ModError", 28, "PERF_TXT_TOO_MANY")
+                serializer.serialize_unit_variant("ModError", 29, "PERF_TXT_TOO_MANY")
             }
         }
     }

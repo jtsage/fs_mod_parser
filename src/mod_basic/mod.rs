@@ -502,6 +502,10 @@ fn do_file_counts(mod_record: &mut ModRecord, file_list: &Vec<FileDefinition>) {
             if file.extension == "dat" || file.extension == "l64" {
                 mod_record.add_issue(ModError::InfoLikelyPiracy);
             }
+            if file.extension == "exe" || file.extension == "bat" || file.extension == "ps1" {
+                mod_record.can_not_use = true;
+                mod_record.add_issue(ModError::InfoDangerousFile);
+            }
             mod_record.add_issue(ModError::PerformanceQuantityExtra);
             mod_record.file_detail.extra_files.push(file.name.clone());
         }
