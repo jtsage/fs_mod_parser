@@ -1,92 +1,99 @@
-﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
 <modDesc descVersion="69">
-	<author>FSModAssist Test</author>
+    <author>FSModAssist Test &amp; Bob</author>
 
-	<title> <en>Totally valid FS22 Mod</en></title>
+    <!-- <title>old title</title> -->
+    <title>
+        <en>Totally valid FS22 Mod</en>
+        <de>That, in german</de>
+    </title>
 
-	<description>
-		<en><![CDATA[Demonstrates how FSModAssist handles a good mod file.]]></en>
-	</description>
+    <description>
+        <en><![CDATA[
+Demonstrates how FSModAssist handles a good mod file.
 
-	<version>1.0.0.0</version>
+<!-- Some other, commented text (not valid to comment here, still shows) -->
+]]></en><de>This is wrong</de>
+    </description>
 
+    <version>1.0.0.0</version>
 
-	<iconFilename>modIcon.dds</iconFilename>
-	<multiplayer supported="true"/>
+    <extraSourceFiles>
+        <sourceFile filename="scripts/main.lua" />
+        <sourceFile filename="scripts/sub_1.lua" />
+        <sourceFile filename="scripts/sub_2.lua" />
+    </extraSourceFiles>
 
-	<storeItems>
-		<storeItem xmlFilename="Dolly.xml"/>
-	</storeItems>
+    <iconFilename>modIcon.dds</iconFilename>
+    <multiplayer supported="true" />
 
-	<l10n>
-		<text name="config_5WLocking"><en>5th Wheel Locking</en><fr>Verrouillage de la cinquième roue</fr><de>Sattelkupplung Verriegeln</de><it>Quinta ruota di bloccaggio</it><ru>Блокировка пятого колеса</ru><nl>Fifth Wheel vergrendeling</nl><pl>Blokada piątego koła</pl><cz>Uzamčení točnice</cz><es>Bloqueo de quinta rueda</es><pt>Travamento da quinta roda</pt></text>
-		<text name="config_5WNoLocking"><en>Locking disabled</en><fr>Verrouillage désactivé</fr><de>Sperre deaktiviert</de><it>Blocco disabilitato</it><ru>Блокировка отключена</ru><nl>Vergrendeling uitgeschakeld</nl><pl>Blokowanie wyłączone</pl><cz>Zamykání deaktivováno</cz><es>Bloqueo desactivado</es><pt>Bloqueio desativado</pt></text>
-		<text name="config_5WGentleLocking"><en>Gentle locking</en><fr>Verrouillage doux</fr><de>Schonendes Verriegeln</de><it>Chiusura delicata</it><ru>Бережная блокировка</ru><nl>Zachte vergrendeling</nl><pl>Delikatne blokowanie</pl><cz>Jemné zamykání</cz><es>Bloqueo suave</es><pt>Travamento suave</pt></text>
-		<text name="config_5WSemiLocking"><en>Partial locking</en><fr>Verrouillage partiel</fr><de>Teilverriegelung</de><it>Chiusura parziale</it><ru>Частичная блокировка</ru><nl>Gedeeltelijke vergrendeling</nl><pl>Częściowe ryglowanie</pl><cz>Částečné zajištění</cz><es>Bloqueo parcial</es><pt>Bloqueio parcial</pt></text>
-		<text name="config_5WHardLocking"><en>Hard Locking</en><fr>Verrouillage dur</fr><de>Harte Verriegelung</de><it>Blocco duro</it><ru>Жесткая блокировка</ru><nl>Harde vergrendeling</nl><pl>Twarde blokowanie</pl><cz>Pevné zamykání</cz><es>Bloqueo duro</es><pt>Travamento rígido</pt></text>
-	</l10n>
+    <dependencies>
+        <dependency>FS22_RedBarnPack</dependency>
+    </dependencies>
 
-	<brandColors> <!-- 2 is for metallic/chrome version to match version 1 better -->
-		<color name="MANTRID_RED1" value="0.2866 0.0025 0.0025 1" />
-		<color name="MANTRID_RED2" value="0.5732 0.0050 0.0050 1" />
-		<color name="MANTRID_GREEN1" value="0.0300 0.1569 0.0110 1" />
-		<color name="MANTRID_GREEN2" value="0.0600 0.2801 0.0254 1" />
-	</brandColors>
+    <storeItems>
+        <storeItem xmlFilename="Dolly.xml" />
+    </storeItems>
 
-	<vehicleSchemaOverlays filename="textures/vehicleSchemaMantrid.dds" imageSize="256 256">
-		<overlay name="DOLLY"				uvs="28px 0px 64px 64px"     size="60px 30px"/>
-		<overlay name="DOLLY_SELECTED"		uvs="28px 65px 64px 64px"     size="60px 30px"/>
-	</vehicleSchemaOverlays>
+    <l10n filenamePrefix="languages/l10n" />
 
-	<actions>
+    <l10n>
+        <text name="config_5WSemiLocking">
+            <en>Partial locking</en>
+            <de>Teilverriegelung</de>
+        </text>
+        <text name="config_5WHardLocking">
+            <fr>Verrouillage dur</fr>
+            <de>Harte Verriegelung</de>
+        </text>
+    </l10n>
+
+    <brandColors>
+        <color name="MANTRID_RED1" value="0.2866 0.0025 0.0025 1" />
+        <color name="MANTRID_RED2" value="0.5732 0.0050 0.0050 1" />
+        <color name="MANTRID_GREEN1" value="0.0300 0.1569 0.0110 1" />
+        <color name="MANTRID_GREEN2" value="0.0600 0.2801 0.0254 1" />
+    </brandColors>
+
+    <vehicleSchemaOverlays filename="textures/vehicleSchemaMantrid.dds" imageSize="256 256">
+        <overlay name="DOLLY" uvs="28px 0px 64px 64px" size="60px 30px" />
+        <overlay name="DOLLY_SELECTED" uvs="28px 65px 64px 64px" size="60px 30px" />
+    </vehicleSchemaOverlays>
+
+    <actions>
         <action name="aim_menu" category="SYSTEM" axisType="HALF" ignoreComboMask="false" />
         <action name="aim_hot1" category="SYSTEM" axisType="HALF" ignoreComboMask="false" />
-        <action name="aim_hot2" category="SYSTEM" axisType="HALF" ignoreComboMask="false" />
-        <action name="aim_hot3" category="SYSTEM" axisType="HALF" ignoreComboMask="false" />
-        <action name="aim_hot4" category="SYSTEM" axisType="HALF" ignoreComboMask="false" />
-        <action name="aim_hot5" category="SYSTEM" axisType="HALF" ignoreComboMask="false" />
-        <action name="aim_hot6" category="SYSTEM" axisType="HALF" ignoreComboMask="false" />
-        <action name="aim_hot7" category="SYSTEM" axisType="HALF" ignoreComboMask="false" />
-        <action name="aim_hot8" category="SYSTEM" axisType="HALF" ignoreComboMask="false" />
-        <action name="aim_hot9" category="SYSTEM" axisType="HALF" ignoreComboMask="false" />
         <action name="aim_togg" axisType="HALF" ignoreComboMask="false" />
     </actions>
     <inputBinding>
         <actionBinding action="aim_menu">
             <binding device="KB_MOUSE_DEFAULT" input="KEY_lshift KEY_slash" />
-            <binding device="KB_MOUSE_DEFAULT" input="MOUSE_BUTTON_X1" axisComponent="+" neutralInput="0" index="3"/>
+            <binding device="KB_MOUSE_DEFAULT" input="MOUSE_BUTTON_X1" axisComponent="+"
+                neutralInput="0" index="3" />
         </actionBinding>
         <actionBinding action="aim_hot1">
             <binding device="KB_MOUSE_DEFAULT" input="KEY_ralt KEY_KP_1" />
-        </actionBinding>
-        <actionBinding action="aim_hot2">
-            <binding device="KB_MOUSE_DEFAULT" input="KEY_ralt KEY_KP_2" />
-        </actionBinding>
-        <actionBinding action="aim_hot3">
-            <binding device="KB_MOUSE_DEFAULT" input="KEY_ralt KEY_KP_3" />
-        </actionBinding>
-        <actionBinding action="aim_hot4">
-            <binding device="KB_MOUSE_DEFAULT" input="KEY_ralt KEY_KP_4" />
-        </actionBinding>
-        <actionBinding action="aim_hot5">
-            <binding device="KB_MOUSE_DEFAULT" input="KEY_ralt KEY_KP_5" />
-        </actionBinding>
-        <actionBinding action="aim_hot6">
-            <binding device="KB_MOUSE_DEFAULT" input="KEY_ralt KEY_KP_6" />
-        </actionBinding>
-        <actionBinding action="aim_hot7">
-            <binding device="KB_MOUSE_DEFAULT" input="KEY_ralt KEY_KP_7" />
-        </actionBinding>
-        <actionBinding action="aim_hot8">
-            <binding device="KB_MOUSE_DEFAULT" input="KEY_ralt KEY_KP_8" />
-        </actionBinding>
-        <actionBinding action="aim_hot9">
-            <binding device="KB_MOUSE_DEFAULT" input="KEY_ralt KEY_KP_9" />
         </actionBinding>
         <actionBinding action="aim_togg">
             <binding device="KB_MOUSE_DEFAULT" input="KEY_ralt KEY_KP_0" />
         </actionBinding>
     </inputBinding>
 
+    <maps>
+        <map id="BackRoadsCounty" className="Mission00" filename="$dataS/scripts/missions/mission00.lua" configFilename="map/xml/map.xml"
+            defaultVehiclesXMLFilename="map/xml/vehicles.xml"
+            defaultPlaceablesXMLFilename="map/xml/placeables.xml"
+            defaultItemsXMLFilename="map/xml/items.xml">
+            <title>
+                <en>Back Roads County 4x</en>
+            </title>
+            <description>
+                <en>Welcome To Back Roads County 4x.</en>
+                <de>Willkommen in Back Roads County 4x.</de>
+            </description>
+
+            <iconFilename>preview.dds</iconFilename>
+        </map>
+    </maps>
 
 </modDesc>

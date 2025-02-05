@@ -21,6 +21,6 @@ fn main() {
     if let Ok(file) = path::absolute(&args[1]) {
         let output = parse_mod_with_options(file.as_path(), &QUICK_SCAN).to_json_pretty();
 
-        println!("{output}")
+        println!("{output}");
     }
 }

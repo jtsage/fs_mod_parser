@@ -62,17 +62,17 @@ impl AbstractFolder {
     ///
     /// Can possibly return [`ModError::FileErrorUnreadableZip`] - should be added direct
     /// to mod record issues.
-    pub fn new<P: AsRef<Path>>(file_path: P) -> Result<AbstractFolder, ModError> {
+    pub fn new<P: AsRef<Path>>(file_path: P) -> Result<Self, ModError> {
         let input_path = file_path.as_ref();
 
         if input_path.exists() {
             if input_path.is_absolute() {
-                Ok(AbstractFolder {
+                Ok(Self {
                     path: input_path.to_path_buf(),
                 })
             } else {
                 match path::absolute(input_path) {
-                    Ok(new_path) => Ok(AbstractFolder { path: new_path }),
+                    Ok(new_path) => Ok(Self { path: new_path }),
                     Err(..) => Err(ModError::FileErrorUnreadableZip),
                 }
                 // input_path.
