@@ -1,5 +1,5 @@
-use std::collections::HashMap;
-use crate::errors::AbstractFileError;
+use std::collections::{HashSet, HashMap};
+use crate::errors::{ModDescWarnings, AbstractFileError};
 
 use quick_xml::events::{BytesStart, Event};
 use quick_xml::reader::Reader;
@@ -8,6 +8,8 @@ use quick_xml::reader::Reader;
 const EN_KEY:&str = "en";
 /// Useful actionBinding device
 const KB_DEF:&str = "KB_MOUSE_DEFAULT";
+/// Known FS languages
+const LANG:[&str; 27] = ["br", "cs", "ct", "cz", "da", "de", "ea", "en", "es", "fc", "fi", "fr", "hu", "id", "it", "jp", "kr", "nl", "no", "pl", "pt", "ro", "ru", "sv", "tr", "uk", "vi"];
 
 /// L10n tags (title, desc)
 type ModDescL10n = HashMap<String, String>;
@@ -20,7 +22,9 @@ type ModL10NMap = HashMap<String, HashMap<String, String>>;
 
 /// modDesc.xml struct - XML error handling here, not mod checking
 #[derive(Debug, Default, Clone, PartialEq, Eq, serde::Serialize)]
-pub struct ModDescXML {
+pub struct DescXML {
+    /// Warnings from parsing the XML
+    pub warnings : HashSet<ModDescWarnings>,
     /// Title, in lang key -> value pairs
     pub title: ModDescL10n,
     /// Description, in lang key -> value pairs
@@ -53,7 +57,7 @@ pub struct ModDescXML {
     pub l10n_local: ModL10NMap,
 }
 
-impl ModDescXML {
+impl DescXML {
     /// Turn an attribute into a string option
     #[inline]
     fn get_attribute<'a>(e : &'a BytesStart, name : &'a str) -> Option<String> {
@@ -68,6 +72,12 @@ impl ModDescXML {
     #[inline]
     fn key_to_string(e : &BytesStart) -> Option<String> {
         String::from_utf8(e.name().as_ref().to_vec()).ok()
+    }
+
+    /// Turn a [`BytesStart`] name into a string
+    #[inline]
+    fn get_key(e : &BytesStart) -> String {
+        String::from_utf8(e.name().as_ref().to_vec()).unwrap_or_default()
     }
 
     /// Load the modDesc.xml from an [`super::AbstractFile`]
@@ -104,16 +114,24 @@ impl ModDescXML {
     #[inline]
     fn tag_action_binding(reader: &mut Reader<&[u8]>, mod_desc: &mut Self, e : &BytesStart) -> Result<(), AbstractFileError> {
         let mut buf_next = Vec::new();
-        let Some(key) = Self::get_attribute(e, "action") else { return Err(AbstractFileError::XMLParseError) };
+        let Some(key) = Self::get_attribute(e, "action") else {
+            mod_desc.warnings.insert(ModDescWarnings::ActionBindingMalformed());
+            return Ok(())
+        };
         loop {
             match reader.read_event_into(&mut buf_next) {
-                Ok(Event::Empty(e)) => {
+                Ok(Event::Empty(e)) if e.name().as_ref() == b"binding" => {
                     if let (Some(d), Some(i)) = (Self::get_attribute(&e, "device"), Self::get_attribute(&e, "input")) {
                         if d == KB_DEF {
                             let key_map = mod_desc.action_binding.entry(key.clone()).or_default();
                             key_map.push(i);
                         }
+                    } else {
+                        mod_desc.warnings.insert(ModDescWarnings::ActionBindingMalformed());
                     }
+                },
+                Ok(Event::Start(e) | Event::Empty(e)) => {
+                    mod_desc.warnings.insert(ModDescWarnings::ActionBindingInvalidTag(Self::get_key(&e)));
                 },
                 Ok(Event::End(f)) if f.name() == e.name() => break,
                 Ok(Event::Eof) => return Err(AbstractFileError::XMLParseError),
@@ -127,15 +145,21 @@ impl ModDescXML {
     #[inline]
     fn tag_l10n_text(reader: &mut Reader<&[u8]>, mod_desc: &mut Self, e : &BytesStart) -> Result<(), AbstractFileError> {
         let mut buf_next = Vec::new();
-        let Some(key) = Self::get_attribute(e, "name") else { return Err(AbstractFileError::XMLParseError) };
+        let Some(key) = Self::get_attribute(e, "name") else {
+            mod_desc.warnings.insert(ModDescWarnings::L10nMalformed());
+            return Ok(())
+        };
         loop {
             match reader.read_event_into(&mut buf_next) {
-                Ok(Event::Start(e)) => {
+                Ok(Event::Start(e)) if LANG.contains(&Self::get_key(&e).as_str()) => {
                     if let (Some(k), Ok(v)) = (Self::key_to_string(&e), reader.read_text(e.name())) {
                         let lang_map = mod_desc.l10n_local.entry(key.clone()).or_default();
                         lang_map.insert(k, v.to_string());
                     }
                 },
+                Ok(Event::Start(e) | Event::Empty(e)) => {
+                    mod_desc.warnings.insert(ModDescWarnings::L10nInvalidLanguage(Self::get_key(&e), key.clone()));
+                }
                 Ok(Event::End(f)) if f.name() == e.name() => break,
                 Ok(Event::Eof) => return Err(AbstractFileError::XMLParseError),
                 _ => (),
@@ -153,15 +177,18 @@ impl ModDescXML {
             match reader.read_event_into(&mut buf_next) {
                 Ok(Event::Start(e)) => {
                     current_lang = Self::key_to_string(&e).unwrap_or_else(|| EN_KEY.to_owned());
+                    if !LANG.contains(&current_lang.as_str()) {
+                        mod_desc.warnings.insert(ModDescWarnings::L10nInvalidLanguage(current_lang.clone(), String::from("description")));
+                    }
                 },
                 Ok(Event::Text(e)) => {
                     if let Ok(v) = e.unescape() {
-                        mod_desc.description.insert(current_lang.clone(), v.to_string());
+                        mod_desc.description.insert(current_lang.clone(), v.to_string().replace("\r\n", "\n"));
                     }
                 }
                 Ok(Event::CData(e)) => {
                     if let Ok(v) = String::from_utf8(e.to_vec()) {
-                        mod_desc.description.insert(current_lang.clone(), v);
+                        mod_desc.description.insert(current_lang.clone(), v.replace("\r\n", "\n"));
                     }
                 }
                 Ok(Event::End(f)) if f.name() == e.name() => break,
@@ -181,11 +208,16 @@ impl ModDescXML {
             match reader.read_event_into(&mut buf_next) {
                 Ok(Event::Start(e)) => {
                     if let (Some(k), Ok(v)) = (Self::key_to_string(&e), reader.read_text(e.name())) {
-                        mod_desc.title.insert(k, v.to_string());
+                        if LANG.contains(&k.as_str()) {
+                            mod_desc.title.insert(k, v.to_string());
+                        } else {
+                            mod_desc.warnings.insert(ModDescWarnings::L10nInvalidLanguage(k.clone(), String::from("title")));
+                        }
                     }
                 },
                 Ok(Event::Text(e)) => {
                     if let Ok(v) = e.unescape() {
+                        mod_desc.warnings.insert(ModDescWarnings::ShouldBeL10n(String::from("title")));
                         mod_desc.title.insert(EN_KEY.to_owned(), v.to_string());
                     }
                 }
@@ -202,12 +234,13 @@ impl ModDescXML {
     #[inline]
     fn tags_paired(reader: &mut Reader<&[u8]>, e: &BytesStart, mod_desc: &mut Self, depth : &mut i32) -> Result<(), AbstractFileError> {
         match e.name().as_ref() {
-            b"modDesc" => {
+            b"modDesc" if *depth == 0 => {
                 *depth += 1;
                 if let Some(v) = Self::get_attribute(e, "descVersion") {
                     mod_desc.desc_version = v.parse().unwrap_or_default();
                 }
             },
+            _ if *depth == 0 => return Err(AbstractFileError::XMLParseError),
             b"author" if *depth == 1 => {
                 if let Ok(v) = reader.read_text(e.name()) {
                     mod_desc.author = Some(v.to_string());
@@ -284,7 +317,7 @@ mod tests {
     fn valid_folder() {
         let mut file_handle = super::super::AbstractFile::new("tests/test_mods/PASS_Good_Simple_Mod");
 
-        let actual = ModDescXML::from_abstract_file(&mut file_handle).expect("process failed");
+        let actual = DescXML::from_abstract_file(&mut file_handle).expect("process failed");
 
         // cSpell: disable
         let expected = serde_json::json!({
@@ -336,7 +369,8 @@ mod tests {
                     "de": "Teilverriegelung",
                     "en": "Partial locking"
                 }
-            }
+            },
+            "warnings": [],
         });
 
         assert_json_eq!(serde_json::json!(actual), expected);
@@ -346,7 +380,7 @@ mod tests {
     fn broken_xml() {
         let mut file_handle = super::super::AbstractFile::new("tests/test_mods/FAILURE_Really_Malformed_ModDesc.zip");
 
-        let actual = ModDescXML::from_abstract_file(&mut file_handle);
+        let actual = DescXML::from_abstract_file(&mut file_handle);
 
         assert_eq!(actual, Err(AbstractFileError::XMLParseError));
     }
@@ -355,7 +389,7 @@ mod tests {
     fn broken_zip() {
         let mut file_handle = super::super::AbstractFile::new("tests/test_mods/FAILURE_Bad_ModDesc_CRC.zip");
 
-        let actual = ModDescXML::from_abstract_file(&mut file_handle);
+        let actual = DescXML::from_abstract_file(&mut file_handle);
 
         assert_eq!(actual, Err(AbstractFileError::FileIOError));
     }
@@ -364,7 +398,7 @@ mod tests {
     fn missing_file() {
         let mut file_handle = super::super::AbstractFile::new("tests/test_mods/FAILURE_Missing_ModDesc.zip");
 
-        let actual = ModDescXML::from_abstract_file(&mut file_handle);
+        let actual = DescXML::from_abstract_file(&mut file_handle);
 
         assert_eq!(actual, Err(AbstractFileError::FileNotFound));
     }
@@ -373,7 +407,7 @@ mod tests {
     fn invalid_but_parseable() {
         let mut file_handle = super::super::AbstractFile::new("tests/test_mods/WARNING_No_Version.zip");
 
-        let actual = ModDescXML::from_abstract_file(&mut file_handle).expect("bad file");
+        let actual = DescXML::from_abstract_file(&mut file_handle).expect("bad file");
 
         let expected = serde_json::json!({
             "title": {
@@ -437,9 +471,94 @@ mod tests {
                     "ru": "Запуск двигателя ...",
                     "fr": "Démarrage du moteur ..."
                 }
-            }
+            },
+            "warnings": [],
         });
         assert_json_eq!(serde_json::json!(actual), expected);
+    }
+
+    #[test]
+    fn bad_input_binding() {
+        let xml = r#"<?xml version="1.0" encoding="utf-8" standalone="no"?>
+            <modDesc descVersion="69">
+                <inputBinding>
+                    <actionBinding action="aim_menu">
+                        <title>Doesn't belown here</title>
+                        <winding device="KB_MOUSE_DEFAULT" input="KEY_wrong" />
+                        <binding device="KB_MOUSE_DEFAULT" input="KEY_lshift KEY_slash" />
+                        <binding input="KEY_lshift KEY_twenty_seven" />
+                        <binding device="KB_MOUSE_DEFAULT" />
+                    </actionBinding>
+                    <actionBinding baction="aim_menu">
+                        <binding device="KB_MOUSE_DEFAULT" input="KEY_lshift KEY_slash" />
+                    </actionBinding>
+                </inputBinding>
+            </modDesc>"#;
+
+        let actual = DescXML::from_string(xml).expect("no read");
+
+        let mut expected = HashMap::new();
+        expected.insert(String::from("aim_menu"), vec![String::from("KEY_lshift KEY_slash")]);
+
+        let mut errors = HashSet::new();
+        errors.insert(ModDescWarnings::ActionBindingInvalidTag(String::from("title")));
+        errors.insert(ModDescWarnings::ActionBindingInvalidTag(String::from("winding")));
+        errors.insert(ModDescWarnings::ActionBindingMalformed());
+
+        assert_eq!(actual.action_binding, expected);
+        assert_eq!(actual.warnings, errors);
+
+        let xml = r#"<?xml version="1.0" encoding="utf-8" standalone="no"?>
+            <modDesc descVersion="69">
+                <inputBinding>
+                    <actionBinding action="aim_menu">
+                        <binding device="KB_MOUSE_DEFAULT" input="KEY_lshift KEY_slash" />
+                </inputBinding>
+            </modDesc>"#;
+
+        let actual = DescXML::from_string(xml);
+        assert_eq!(actual.unwrap_err(), AbstractFileError::XMLParseError);
+    }
+
+    #[test]
+    fn l10n_text_tests() {
+        let xml = r#"<?xml version="1.0" encoding="utf-8" standalone="no"?>
+            <modDesc descVersion="69">
+                <l10n>
+                    <text name="config_5WSemiLocking">
+                        <en>Partial locking</en>
+                        <de>Teilverriegelung</de>
+                        <ru></ru>
+                        <xx>Unknown language</xx>
+                        Hi
+                    </text>
+                    <text lame="ignored_wrong">
+                        <en>Partial locking</en>
+                    </text>
+                </l10n>
+            </modDesc>"#;
+
+        let actual = DescXML::from_string(xml).expect("read failed");
+
+        let mut lang_map:ModL10NMap = HashMap::new();
+        lang_map.insert(String::from("config_5WSemiLocking"), [("en", "Partial locking"), ("de", "Teilverriegelung"), ("ru", "")].into_iter().map(|(a,b)|(a.to_string(), b.to_string())).collect());
+
+        let mut errors = HashSet::new();
+        errors.insert(ModDescWarnings::L10nInvalidLanguage(String::from("xx"), String::from("config_5WSemiLocking")));
+        errors.insert(ModDescWarnings::L10nMalformed());
+
+        assert_eq!(actual.l10n_local, lang_map);
+        assert_eq!(actual.warnings, errors);
+
+        let xml = r#"<?xml version="1.0" encoding="utf-8" standalone="no"?>
+            <modDesc descVersion="69">
+                <l10n>
+                    <text name="config_5WSemiLocking">
+                        <en>Partial locking</en>
+            </modDesc>"#;
+
+        let actual = DescXML::from_string(xml);
+        assert_eq!(actual.unwrap_err(), AbstractFileError::XMLParseError);
     }
 
     #[test]
@@ -449,10 +568,90 @@ mod tests {
                 <title>old title</title>
             </modDesc>"#;
 
-        let actual = ModDescXML::from_string(xml).expect("no read");
+        let actual = DescXML::from_string(xml).expect("no read");
         let mut expected = HashMap::new();
         expected.insert(String::from("en"), String::from("old title"));
 
+        let mut error = HashSet::new();
+        error.insert(ModDescWarnings::ShouldBeL10n(String::from("title")));
+
         assert_eq!(actual.title, expected);
+        assert_eq!(actual.warnings, error);
+    }
+
+    #[test]
+    fn bad_l10n_title() {
+        let xml = r#"<?xml version="1.0" encoding="utf-8" standalone="no"?>
+            <modDesc descVersion="69">
+                <title>
+                    <en>old title</en>
+                    <xx>invalid</xx>
+                </title>
+            </modDesc>"#;
+
+        let actual = DescXML::from_string(xml).expect("no read");
+        let mut expected = HashMap::new();
+        expected.insert(String::from("en"), String::from("old title"));
+
+        let mut error = HashSet::new();
+        error.insert(ModDescWarnings::L10nInvalidLanguage(String::from("xx"), String::from("title")));
+
+        assert_eq!(actual.title, expected);
+        assert_eq!(actual.warnings, error);
+
+        let xml = r#"<?xml version="1.0" encoding="utf-8" standalone="no"?>
+            <modDesc descVersion="69">
+                <title>
+                    <en>old title</en>
+                    <xx>invalid</xx>
+            </modDesc>"#;
+
+        let actual = DescXML::from_string(xml);
+        assert_eq!(actual.unwrap_err(), AbstractFileError::XMLParseError);
+    }
+
+    #[test]
+    fn bad_l10n_desc() {
+        let xml = r#"<?xml version="1.0" encoding="utf-8" standalone="no"?>
+            <modDesc descVersion="69">
+                <description>
+                    <en>old title</en>
+                    <xx>invalid</xx>
+                </description>
+            </modDesc>"#;
+
+        let actual = DescXML::from_string(xml).expect("no read");
+        let mut expected = HashMap::new();
+        expected.insert(String::from("en"), String::from("old title"));
+        expected.insert(String::from("xx"), String::from("invalid")); // !Special case!
+
+        let mut error = HashSet::new();
+        error.insert(ModDescWarnings::L10nInvalidLanguage(String::from("xx"), String::from("description")));
+
+        assert_eq!(actual.description, expected);
+        assert_eq!(actual.warnings, error);
+
+        let xml = r#"<?xml version="1.0" encoding="utf-8" standalone="no"?>
+            <modDesc descVersion="69">
+                <description>
+                    <en>old title</en>
+                    <xx>invalid</xx>
+            </modDesc>"#;
+
+        let actual = DescXML::from_string(xml);
+        assert_eq!(actual.unwrap_err(), AbstractFileError::XMLParseError);
+    }
+
+    #[test]
+    fn not_mod_desc() {
+        let xml = r#"<?xml version="1.0" encoding="utf-8" standalone="no"?>
+            <barf descVersion="69">
+                <description>
+                    <en>old title</en>
+                </description>
+            </barf>"#;
+
+        let actual = DescXML::from_string(xml);
+        assert_eq!(actual.unwrap_err(), AbstractFileError::XMLParseError);
     }
 }

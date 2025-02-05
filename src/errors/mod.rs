@@ -64,15 +64,48 @@ pub enum ModError {
     PerformanceQuantityTXT,
 }
 
+/// Odd, but valid occurrences in XML data
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize)]
+pub enum ModDescWarnings {
+    /// Invalid tag nested in actionBinding
+    ActionBindingInvalidTag(String),
+    /// binding missing input or device attribute
+    ActionBindingMalformed(),
+    /// L10n text entry malformed
+    L10nMalformed(),
+    /// Invalid language tag (lang, location)
+    L10nInvalidLanguage(String, String),
+    /// Bare text found in a tag that should be localized
+    ShouldBeL10n(String),
+}
+
+impl std::fmt::Display for ModDescWarnings {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::ActionBindingInvalidTag(v) => write!(f, "actionBinding contained invalid key: {v}"),
+            Self::ActionBindingMalformed() => write!(f, "actionBinding missing required attributes"),
+            Self::L10nMalformed() => write!(f, "malformed l10n text tag"),
+            Self::L10nInvalidLanguage(i,l) => write!(f, "unknown l10n language: {i} in {l}"),
+            Self::ShouldBeL10n(v) => write!(f, "found un-translated entry in: {v}"),
+        }
+    }
+}
 
 
+/// File-Level errors.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum AbstractFileError {
+    /// File could not be found
     FileNotFound,
+    /// File could not be read
     FileIOError,
+    /// ZIP archive is not a zip file
     FileNotZip,
+    /// ZIP could not be read
     ZipReadError,
+    /// Folder could not be found
     FolderError,
+    /// Unrecoverable XML parse error
     XMLParseError,
 }
 
@@ -88,6 +121,7 @@ impl std::fmt::Display for AbstractFileError {
         })
     }
 }
+
 impl std::error::Error for AbstractFileError { }
 impl From<zip::result::ZipError> for AbstractFileError {
     fn from(value: zip::result::ZipError) -> Self {

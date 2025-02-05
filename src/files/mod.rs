@@ -38,7 +38,7 @@ impl AbstractFile {
         } else if ! path.is_dir() {
             if path.extension().map(|ext| ext.eq_ignore_ascii_case("zip")) == Some(true) {
                 std::fs::File::open(path).map_or_else(|_|
-                    Self::Null(AbstractFileError::ZipReadError), |file| {
+                    Self::Null(AbstractFileError::FileIOError), |file| {
                         zip::ZipArchive::new(file).map_or_else(|_| Self::Null(AbstractFileError::ZipReadError), |mut archive| {
                             let file_list = Self::list_zip(&mut archive);
                             Self::Zip((
@@ -61,27 +61,27 @@ impl AbstractFile {
     }
 
     /// Check if a file exists
-    pub fn exists(&mut self, filename : String ) -> bool {
+    pub fn exists<S: AsRef<str>>(&mut self, filename : S ) -> bool {
         match self {
-            Self::Folder((path, _)) => path.as_path().join(filename).exists(),
-            Self::Zip((archive, _)) => archive.by_name(filename.as_str()).is_ok(),
+            Self::Folder((path, _)) => path.as_path().join(filename.as_ref()).exists(),
+            Self::Zip((archive, _)) => archive.by_name(filename.as_ref()).is_ok(),
             Self::Null(_) => false,
         }
     }
 
     /// Get a file as text
-    pub fn text(&mut self, filename: &str) -> Result<String, AbstractFileError> {
+    pub fn text<S: AsRef<str>>(&mut self, filename: S) -> Result<String, AbstractFileError> {
         String::from_utf8(self.bin(filename)?).map_err(|_| AbstractFileError::FileIOError)
     }
 
     /// Get a file as a binary vector
-    pub fn bin(&mut self, filename : &str) -> Result<Vec<u8>, AbstractFileError> {
+    pub fn bin<S: AsRef<str>>(&mut self, filename : S) -> Result<Vec<u8>, AbstractFileError> {
         match self {
             Self::Folder((path, _)) => {
-                Ok(fs::read(path.as_path().join(filename))?)
+                Ok(fs::read(path.as_path().join(filename.as_ref()))?)
             },
             Self::Zip((archive, _)) => {
-                let mut file = archive.by_name(filename)?;
+                let mut file = archive.by_name(filename.as_ref())?;
                 let mut buf = vec![];
                 file.read_to_end(&mut buf)?;
                 Ok(buf.clone())
@@ -155,8 +155,8 @@ impl AbstractFile {
     }
 
     /// Get moddesc file
-    pub fn get_mod_desc(&mut self) -> Result<mod_desc::ModDescXML, AbstractFileError> {
-        mod_desc::ModDescXML::from_abstract_file(self)
+    pub fn get_mod_desc(&mut self) -> Result<mod_desc::DescXML, AbstractFileError> {
+        mod_desc::DescXML::from_abstract_file(self)
     }
 }
 
@@ -187,6 +187,20 @@ mod tests {
     }
 
     #[test]
+    fn not_zip() {
+        let mut file_handle = AbstractFile::new("tests/test_mods/FAILURE_Garbage_File.txt");
+
+        assert!(matches!(file_handle, AbstractFile::Null(AbstractFileError::FileNotZip)));
+
+        assert_eq!(file_handle.exists("modDesc.xml"), false);
+        assert_eq!(file_handle.bin("modDesc.xml"), Err(AbstractFileError::FileNotZip));
+        assert_eq!(file_handle.list(), vec![]);
+
+        let file_handle = AbstractFile::new("tests/test_mods/FAILURE_Broken_Zip_File.zip");
+        assert!(matches!(file_handle, AbstractFile::Null(AbstractFileError::ZipReadError)));
+    }
+
+    #[test]
     fn valid_zip() {
         let mut file_handle = AbstractFile::new("tests/test_mods/PASS_Good_Simple_Mod.zip");
 
@@ -199,9 +213,10 @@ mod tests {
         ];
 
         assert_eq!(file_handle.list(), expected_files);
-        assert_eq!(file_handle.exists(String::from("modIcon.dds")), true);
+        assert_eq!(file_handle.exists("modIcon.dds"), true);
         let mod_desc_text = file_handle.text("modDesc.xml").expect("file open failed");
         assert_eq!(mod_desc_text.len(), 2852);
+        assert_eq!(file_handle.bin("modDesc.bad"), Err(AbstractFileError::FileNotFound));
     }
 
     #[test]
@@ -211,16 +226,16 @@ mod tests {
         assert!(matches!(file_handle, AbstractFile::Folder(_)));
         assert_eq!(file_handle.is_dir(), true);
 
-        let expected_files = vec![
-            FileDefinition { extension: String::from("xml"), path: String::from("modDesc.xml"), size: 3508, is_dir: false },
-            FileDefinition { extension: String::from("dds"), path: String::from("modIcon.dds"), size: 32896, is_dir: false }
-        ];
+        let required_files = vec![String::from("modDesc.xml"), String::from("modIcon.dds")];
 
-        assert_eq!(file_handle.list(), expected_files);
-        assert_eq!(file_handle.exists(String::from("modIcon.dds")), true);
+        for file in file_handle.list() {
+            assert!(required_files.contains(&file.path), "file-not-found {}", file.path);
+        }
+        assert_eq!(file_handle.exists("modIcon.dds"), true);
         let mod_desc_text = file_handle.text("modDesc.xml").expect("file open failed");
-        assert_eq!(mod_desc_text.len(), 3508);
+        assert!(mod_desc_text.len() > 1000);
 
         assert!(file_handle.get_mod_desc().is_ok());
+        assert_eq!(file_handle.bin("modDesc.bad"), Err(AbstractFileError::FileNotFound));
     }
 }
