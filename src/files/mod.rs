@@ -5,6 +5,7 @@
 use crate::errors::AbstractFileError;
 
 use glob::glob;
+use quick_xml::{events::BytesStart, Reader};
 use std::{
     fs::{self, File},
     io::Read,
@@ -13,6 +14,8 @@ use std::{
 
 /// modDesc.xml processing
 pub mod mod_desc;
+/// savegame processing
+// pub mod savegame;
 
 
 /// Abstract file implementation
@@ -38,7 +41,7 @@ impl AbstractFile {
         } else if ! path.is_dir() {
             if path.extension().map(|ext| ext.eq_ignore_ascii_case("zip")) == Some(true) {
                 std::fs::File::open(path).map_or_else(|_|
-                    Self::Null(AbstractFileError::FileIOError), |file| {
+                    Self::Null(AbstractFileError::FileIoError), |file| {
                         zip::ZipArchive::new(file).map_or_else(|_| Self::Null(AbstractFileError::ZipReadError), |mut archive| {
                             let file_list = Self::list_zip(&mut archive);
                             Self::Zip((
@@ -71,7 +74,7 @@ impl AbstractFile {
 
     /// Get a file as text
     pub fn text<S: AsRef<str>>(&mut self, filename: S) -> Result<String, AbstractFileError> {
-        String::from_utf8(self.bin(filename)?).map_err(|_| AbstractFileError::FileIOError)
+        String::from_utf8(self.bin(filename)?).map_err(|_| AbstractFileError::FileIoError)
     }
 
     /// Get a file as a binary vector
@@ -156,7 +159,7 @@ impl AbstractFile {
 
     /// Get moddesc file
     pub fn get_mod_desc(&mut self) -> Result<mod_desc::DescXML, AbstractFileError> {
-        mod_desc::DescXML::from_abstract_file(self)
+        mod_desc::DescXML::from_abstract_file(self, "modDesc.xml")
     }
 }
 
@@ -172,6 +175,71 @@ pub struct FileDefinition {
     pub size: u64,
     /// Folder flag (is this a folder?)
     pub is_dir: bool,
+}
+
+pub trait XMLReader<T> {
+    /// Get data from an [`AbstractFile`]
+    fn from_abstract_file<S: AsRef<str>>(mod_file : &mut AbstractFile, needle : S) -> Result<T, AbstractFileError> {
+        let xml_text = mod_file.text(needle)?;
+        Self::from_string(&xml_text)
+    }
+
+    /// Get data from a string
+    fn from_string(xml_text: &str) -> Result<T, AbstractFileError>;
+    //     let mut mod_desc = Self::default();
+
+    //     let mut reader = Reader::from_str(xml_text);
+    //     reader.config_mut().trim_text(true);
+
+    //     let mut buf = Vec::new();
+    //     let mut depth = 0;
+
+    //     loop {
+    //         match reader.read_event_into(&mut buf) {
+    //             Err(_) => return Err(AbstractFileError::XmlParseError),
+    //             Ok(Event::Eof)                    => break,
+    //             Ok(Event::End(_))                 => depth -= 1,
+    //             Ok(Event::Start(e)) => {
+    //                 depth += 1;
+    //                 Self::tags_paired(&mut reader, &e, &mut mod_desc, &mut depth)?
+    //             },
+    //             Ok(Event::Empty(e)) => Self::tags_self_closing(&e, &mut mod_desc, depth),
+    //             _ => ()
+    //         }
+    //     }
+
+    //     Ok(mod_desc)
+    // };
+
+    /// Process paired tags
+    #[expect(unused_variables)]
+    fn tags_paired(reader: &mut quick_xml::Reader<&[u8]>, e: &BytesStart, data: &mut Self, depth : &mut i32) -> Result<(), AbstractFileError> { Ok(()) }
+
+    /// Process unpaired tags (no need for reader)
+    #[expect(unused_variables)]
+    fn tags_self_closing(e: &BytesStart, data: &mut Self, depth : i32) {}
+
+    /// Get an xml attribute from [`BytesStart`] by name
+    #[inline]
+    fn xml_attribute<'a>(e : &'a BytesStart, name : &'a str) -> Option<String> {
+        if let Ok(Some(version)) = e.try_get_attribute(name) {
+            version.unescape_value().map_or(None, |text| Some(text.to_string()))
+        } else {
+            None
+        }
+    }
+
+    /// Turn a [`BytesStart`] name into a string
+    #[inline]
+    fn get_key_option(e : &BytesStart) -> Option<String> {
+        String::from_utf8(e.name().as_ref().to_vec()).ok()
+    }
+
+    /// Turn a [`BytesStart`] name into a string (forced)
+    #[inline]
+    fn get_key(e : &BytesStart) -> String {
+        String::from_utf8(e.name().as_ref().to_vec()).unwrap_or_default()
+    }
 }
 
 

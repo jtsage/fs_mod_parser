@@ -30,6 +30,8 @@ quick-xml = "0.37.2"
 
 [dev-dependencies]
 assert-json-diff = "2.0.2"
+strum = "0.26"
+strum_macros = "0.26"
 
 
 [lints.clippy]
