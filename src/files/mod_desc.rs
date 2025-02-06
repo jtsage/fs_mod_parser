@@ -1,6 +1,6 @@
 use std::collections::{HashSet, HashMap};
 use crate::errors::{ModDescWarnings, AbstractFileError};
-use super::{AbstractFile, XMLReader};
+use super::{AbstractFile, XMLReader, XMLReaderDepth};
 
 use quick_xml::events::{BytesStart, Event};
 use quick_xml::reader::Reader;
@@ -61,86 +61,71 @@ pub struct DescXML {
 impl XMLReader<Self> for DescXML {
     /// Load the modDesc.xml from an already decoded string
     fn from_string(xml_text: &str) -> Result<Self, AbstractFileError> {
-        let mut mod_desc = Self::default();
-
-        let mut reader = Reader::from_str(xml_text);
-        reader.config_mut().trim_text(true);
-
-        let mut buf = Vec::new();
-        let mut depth = 0;
-
-        loop {
-            match reader.read_event_into(&mut buf) {
-                Err(_) => return Err(AbstractFileError::XmlParseError),
-                Ok(Event::Eof)                    => break,
-                Ok(Event::End(_))                 => depth -= 1,
-                Ok(Event::Start(e)) => Self::tags_paired(&mut reader, &e, &mut mod_desc, &mut depth)?,
-                Ok(Event::Empty(e)) => Self::tags_self_closing(&e, &mut mod_desc, depth),
-                _ => ()
-            }
-        }
-
-        Ok(mod_desc)
+        Self::default().read_xml(xml_text).cloned()
     }
 
     /// Handle paired tags
     #[inline]
-    fn tags_paired(reader: &mut Reader<&[u8]>, e: &BytesStart, data: &mut Self, depth : &mut i32) -> Result<(), AbstractFileError> {
-        match e.name().as_ref() {
-            b"modDesc" if *depth == 0 => {
-                *depth += 1;
+    fn tags_paired(e: &BytesStart, depth : i32, data: &mut Self, reader: &mut quick_xml::Reader<&[u8]>) -> XMLReaderDepth {
+        match (e.name().as_ref(), depth) {
+            (b"modDesc", 0) => {
                 data.desc_version = Self::xml_attribute(e, "descVersion").and_then(|v| v.parse().ok()).unwrap_or_default();
+                Ok(1)
             },
-            _ if *depth == 0 => return Err(AbstractFileError::XmlParseError),
-            b"author" if *depth == 1 => {
+            (_, 0) => Err(AbstractFileError::XmlParseError),
+            (b"author", 1) => {
                 data.author = reader.read_text(e.name()).map(|v|v.to_string()).ok();
+                Ok(0)
             },
-            b"version" if *depth == 1 => {
+            (b"version", 1) => {
                 data.version = reader.read_text(e.name()).map(|v|v.to_string()).ok();
+                Ok(0)
             },
-            b"iconFilename" if *depth == 1 => {
+            (b"iconFilename", 1) => {
                 data.icon_filename = reader.read_text(e.name()).map(|v|v.to_string()).ok();
+                Ok(0)
             },
-            b"dependency" if *depth == 2 => {
+            (b"dependency", 2) => {
                 if let Ok(v) = reader.read_text(e.name()) {
                     data.dependencies.push(v.to_string());
                 }
+                Ok(0)
             },
-            b"map" if *depth == 2 && data.map_config_filename.is_none() => {
+            (b"map", 2) if data.map_config_filename.is_none() => {
                 data.map_config_filename = Self::xml_attribute(e, "configFilename");
+                Ok(0)
             },
-            b"text"          if *depth == 2 => Self::tag_l10n_text(reader, data, e)?,
-            b"title"         if *depth == 1 => Self::tag_title(reader, data, e)?,
-            b"description"   if *depth == 1 => Self::tag_description(reader, data, e)?,
-            b"actionBinding" if *depth == 2 => Self::tag_action_binding(reader, data, e)?,
-            _ => *depth += 1,
+            (b"text", 2)          => { Self::tag_l10n_text(reader, data, e)?; Ok(0) },
+            (b"title", 1)         => { Self::tag_title(reader, data, e)?; Ok(0) },
+            (b"description", 1)   => { Self::tag_description(reader, data, e)?; Ok(0) },
+            (b"actionBinding", 2) => { Self::tag_action_binding(reader, data, e)?; Ok(0) },
+            _ => Ok(1),
         }
-        Ok(())
     }
 
     /// Handle all self-closing tag
     #[inline]
-    fn tags_self_closing(e: &BytesStart, data: &mut Self, depth : i32) {
-        match e.name().as_ref() {
-            b"multiplayer" if depth == 1 => {
+    fn tags_self_closing(e: &BytesStart, depth : i32, data: &mut Self) {
+        match (e.name().as_ref(), depth) {
+            (b"multiplayer", 1) => {
                 if let Some(v) = Self::xml_attribute(e, "supported") {
                     data.multiplayer = v.eq_ignore_ascii_case("true");
                 }
             },
-            b"l10n" if depth == 1 => {
+            (b"l10n", 1) => {
                 if let Some(v) = Self::xml_attribute(e, "filenamePrefix") {
                     data.l10n_file_prefix = Some(v);
                 }
             },
-            b"sourceFile" if depth == 2 => {
+            (b"sourceFile", 2) => {
                 data.script_files = true;
             },
-            b"storeItem" if depth == 2 => {
+            (b"storeItem", 2) => {
                 if let Some(v) = Self::xml_attribute(e, "xmlFilename") {
                     data.store_items.push(v);
                 }
             },
-            b"action" if depth == 2 => {
+            (b"action", 2) => {
                 if let Some(name) = Self::xml_attribute(e, "name") {
                     let category = Self::xml_attribute(e, "category").unwrap_or_else(|| String::from("ALL"));
                     data.actions.insert(name, category);

@@ -1,13 +1,10 @@
 use crate::errors::AbstractFileError;
-use crate::files::{AbstractFile, XMLReader};
-use super::{Mod, Mods};
+use crate::files::{AbstractFile, XMLReader, XMLReaderDepth};
+use super::{Mod, items::Mods};
 
-
-use quick_xml::events::Event;
-use quick_xml::reader::Reader;
-
-/// Individual farm
+/// Save career
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, Default)]
+#[serde(rename_all="camelCase")]
 pub struct Career {
     /// Map mod name (shortname)
     pub map_mod: Option<String>,
@@ -35,96 +32,95 @@ impl Career {
 impl XMLReader<Self> for Career {
     /// Load the modDesc.xml from an already decoded string
     fn from_string(xml_text: &str) -> Result<Self, AbstractFileError> {
-        let mut career = Self::default();
-
-        let mut reader = Reader::from_str(xml_text);
-        reader.config_mut().trim_text(true);
-
-        let mut buf = Vec::new();
-        let mut depth = 0;
-
-        loop {
-            match reader.read_event_into(&mut buf) {
-                Err(_) => return Err(AbstractFileError::XmlParseError),
-                Ok(Event::Eof)                    => break,
-                Ok(Event::Start(e)) => Self::tags_paired(&mut reader, &e, &mut career, &mut depth)?,
-                _ => ()
-            }
-        }
-
-        Ok(career)
+        Self::default().read_xml(xml_text).cloned()
     }
 
-    fn tags_paired(reader: &mut quick_xml::Reader<&[u8]>, e: &quick_xml::events::BytesStart, data: &mut Self, depth : &mut i32) -> Result<(), AbstractFileError> {
-        match e.name().as_ref() {
-            b"careerSavegame" if *depth == 0 => *depth += 1,
-            _        if *depth == 0 => return Err(AbstractFileError::XmlWrongFileType),
-
-            b"mod" if *depth != 0 => {
-                if let Some(name) = Self::xml_attribute(e, "modName") {
-                    let  mut entry = Mod::default();
-                    if let Some(title) = Self::xml_attribute(e, "title") {
-                        entry.title = title;
-                    }
-                    if let Some(version) = Self::xml_attribute(e, "version") {
-                        entry.version = version;
-                    }
-                    data.mod_count += 1;
-                    data.mods.0.insert(name, entry);
+    fn tags_self_closing(e: &quick_xml::events::BytesStart, depth : i32, data: &mut Self) {
+        if e.name().as_ref() == b"mod" && depth == 1 {
+            if let Some(name) = Self::xml_attribute(e, "modName") {
+                let  mut entry = Mod::default();
+                if let Some(title) = Self::xml_attribute(e, "title") {
+                    entry.title = title;
                 }
-            },
-            b"mapTitle" => {
-                data.map_title = reader.read_text(e.name()).map(|v|v.to_string()).ok();
-            },
-            b"savegameName" => {
-                data.name = reader.read_text(e.name()).map(|v|v.to_string()).ok();
-            },
-            b"saveDate" => {
-                data.save_date = reader.read_text(e.name()).map(|v|v.to_string()).ok();
+                if let Some(version) = Self::xml_attribute(e, "version") {
+                    entry.version = version;
+                }
+                data.mod_count += 1;
+                data.mods.0.insert(name, entry);
             }
-            b"playTime" => {
+        }
+    }
+
+    fn tags_paired(e: &quick_xml::events::BytesStart, depth : i32, data: &mut Self, reader: &mut quick_xml::Reader<&[u8]>) -> XMLReaderDepth {
+        match (e.name().as_ref(), depth) {
+            (b"careerSavegame", 0) => Ok(1),
+            (_, 0) => Err(AbstractFileError::XmlWrongFileType),
+
+            (b"mapTitle", 2) => {
+                data.map_title = reader.read_text(e.name()).map(|v|v.to_string()).ok();
+                Ok(0)
+            },
+            (b"savegameName", 2) => {
+                data.name = reader.read_text(e.name()).map(|v|v.to_string()).ok();
+                Ok(0)
+            },
+            (b"saveDate", 2) => {
+                data.save_date = reader.read_text(e.name()).map(|v|v.to_string()).ok();
+                Ok(0)
+            }
+            (b"playTime", 2) => {
                 if let Some(time) = reader.read_text(e.name()).ok().and_then(|v| v.parse::<f64>().ok() ) {
                     let hours = (time / 60_f64).floor();
                     let minutes = ( time % 60_f64).floor();
                     data.play_time = Some(format!("{hours:.0}:{minutes:02.0}"));
                 }
+                Ok(0)
+            },
+            (b"mapId", 2) => {
+                if let Ok(id) = reader.read_text(e.name()) {
+                    data.map_mod = id.split('.').next().map(std::string::ToString::to_string);
+                }
+                Ok(0)
             }
-            _ => (),
+            _ => Ok(1),
         }
-        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use assert_json_diff::assert_json_eq;
+    use assert_json_diff::assert_json_include;
 
     #[test]
     fn good_file() {
         let mut file_handle = crate::files::AbstractFile::new("tests/test_mods/SAVEGAME_Good.zip");
 
-        let actual = Farms::from_abstract_file(&mut file_handle).expect("read fail");
+        let actual = Career::from_abstract_file(&mut file_handle).expect("read fail");
 
         // cSpell: disable
-        let expected = serde_json::json!([
-            { "name": "--unowned--", "cash": 0, "loan": 0, "color": 0 },
-            { "name": "HENNESSEY ACRES", "cash": 46198, "loan": 230000, "color": 7 },
-            { "name": "joinFSG.gg", "cash": 100000, "loan": 0, "color": 1 },
-            { "name": "PUBLIC", "cash": 878837, "loan": 0, "color": 8 },
-            { "name": "BELLWETHER RANCH", "cash": 110758,"loan": 0,"color": 2 },
-            { "name": "THE CROFT", "cash": 42937, "loan": 0, "color": 6 }
-        ]);
+        let expected = serde_json::json!({
+            "mapMod": "FS22_BackRoadsCounty",
+            "mapTitle": "Back Roads County",
+            "modCount": 38,
+            "mods": {
+                "FS22_2150_Series": { "farms": [], "title": "Case IH 2150 Early Riser Planters Series", "version": "1.0.0.0" },
+                "FS22_25DU_Trailers": { "farms": [], "title": "Lizard 25DU Trailer", "version": "1.0.0.0" }
+            },
+            "name": "BRC", 
+            "playTime": "306:40",
+            "saveDate": "2022-10-14"
+        });
         // cSpell: enable
 
-        assert_json_eq!(serde_json::json!(actual), expected);
+        assert_json_include!(actual : serde_json::json!(actual), expected : expected);
     }
 
     #[test]
     fn missing_xml() {
         let mut file_handle = crate::files::AbstractFile::new("tests/test_mods/WARNING_No_Version.zip");
 
-        let actual = Farms::from_abstract_file(&mut file_handle);
+        let actual = Career::from_abstract_file(&mut file_handle);
 
         assert_eq!(actual, Err(AbstractFileError::FileNotFound));
     }
@@ -139,7 +135,7 @@ mod tests {
                 </description>
             </barf>"#;
 
-        let actual = Farms::from_string(xml);
+        let actual = Career::from_string(xml);
         assert_eq!(actual.unwrap_err(), AbstractFileError::XmlWrongFileType);
     }
 }

@@ -1,41 +1,45 @@
 use std::collections::HashMap;
 
 use crate::errors::AbstractFileError;
-use crate::files::XMLReader;
-use super::Mods;
+use crate::files::{XMLReader, XMLReaderDepth};
+use crate::files::savegame::Mod;
 
-use quick_xml::events::Event;
-use quick_xml::reader::Reader;
+
+/// Data structure for savegame mods
+#[derive(serde::Serialize, Clone, PartialEq, Eq, Default, Debug)]
+pub struct Mods(pub HashMap<String, Mod>);
+
+impl Mods {
+    /// Deep merge another set of mods.
+    pub fn deep_merge(&mut self, other: Self) {
+        for (key, item) in other.0 {
+            let entry = self.0.entry(key).or_default();
+
+            if !item.title.is_empty()   { entry.title.clone_from(&item.title); }
+            if !item.version.is_empty() { entry.version.clone_from(&item.version); }
+            for farm in item.farms {
+                entry.farms.insert(farm);
+            }
+        }
+    }
+}
+
+
+use quick_xml::events::BytesStart;
 
 impl XMLReader<Self> for Mods {
     /// Load the vehicles or placables xml from an already decoded string
     fn from_string(xml_text: &str) -> Result<Self, AbstractFileError> {
-        let mut mods = Self::default();
-
-        let mut reader = Reader::from_str(xml_text);
-        reader.config_mut().trim_text(true);
-
-        let mut buf = Vec::new();
-        let mut depth = 0;
-
-        loop {
-            match reader.read_event_into(&mut buf) {
-                Err(_) => return Err(AbstractFileError::XmlParseError),
-                Ok(Event::Eof)                    => break,
-                Ok(Event::Start(e)) => Self::tags_paired(&mut reader, &e, &mut mods, &mut depth)?,
-                _ => ()
-            }
-        }
-
-        Ok(mods)
+        Self::default().read_xml(xml_text).cloned()
     }
 
-    fn tags_paired(reader: &mut quick_xml::Reader<&[u8]>, e: &quick_xml::events::BytesStart, data: &mut Self, depth : &mut i32) -> Result<(), AbstractFileError> {
-        match e.name().as_ref() {
-            b"vehicles" | b"placeables" if *depth == 0 => *depth += 1,
-            _           if *depth == 0 => return Err(AbstractFileError::XmlWrongFileType),
+    /// Redefine paired tags processor
+    fn tags_paired(e: &BytesStart, depth : i32, data: &mut Self, reader: &mut quick_xml::Reader<&[u8]>) -> XMLReaderDepth {
+        match (e.name().as_ref(), depth) {
+            (b"vehicles" | b"placeables", 0) => Ok(1),
+            (_, 0) => Err(AbstractFileError::XmlWrongFileType),
 
-            b"vehicle" | b"placeable" if *depth == 1 => {
+            (b"vehicle" | b"placeable", 1) => {
                 if let Some(name) = Self::xml_attribute(e, "modName") {
                     if let Some(farm) = Self::xml_attribute(e, "farmId").and_then(|v| v.parse::<usize>().ok()) {
                         let entry = data.0.entry(name).or_default();
@@ -44,10 +48,10 @@ impl XMLReader<Self> for Mods {
                 }
 
                 let _ = reader.read_to_end(e.to_end().name());
+                Ok(0)
             },
-            _ => (),
+            _ => Ok(1),
         }
-        Ok(())
     }
 }
 
@@ -60,7 +64,7 @@ mod tests {
     fn good_vehicles() {
         let mut file_handle = crate::files::AbstractFile::new("tests/test_mods/SAVEGAME_Good.zip");
 
-        let actual = ModsVP::from_abstract_file(&mut file_handle, "vehicles.xml").expect("read fail");
+        let actual = Mods::from_abstract_file(&mut file_handle, "vehicles.xml").expect("read fail");
 
         // cSpell: disable
         let expected = serde_json::json!({
@@ -82,7 +86,7 @@ mod tests {
     fn good_placables() {
         let mut file_handle = crate::files::AbstractFile::new("tests/test_mods/SAVEGAME_Good.zip");
 
-        let actual = ModsVP::from_abstract_file(&mut file_handle, "placeables.xml").expect("read fail");
+        let actual = Mods::from_abstract_file(&mut file_handle, "placeables.xml").expect("read fail");
 
         // cSpell: disable
         let expected = serde_json::json!({
@@ -105,7 +109,7 @@ mod tests {
     fn missing_vehicle_xml() {
         let mut file_handle = crate::files::AbstractFile::new("tests/test_mods/WARNING_No_Version.zip");
 
-        let actual = ModsVP::from_abstract_file(&mut file_handle, "vehicles.xml");
+        let actual = Mods::from_abstract_file(&mut file_handle, "vehicles.xml");
 
         assert_eq!(actual, Err(AbstractFileError::FileNotFound));
     }
@@ -114,7 +118,7 @@ mod tests {
     fn missing_placeables_xml() {
         let mut file_handle = crate::files::AbstractFile::new("tests/test_mods/WARNING_No_Version.zip");
 
-        let actual = ModsVP::from_abstract_file(&mut file_handle, "placables.xml");
+        let actual = Mods::from_abstract_file(&mut file_handle, "placables.xml");
 
         assert_eq!(actual, Err(AbstractFileError::FileNotFound));
     }
@@ -129,7 +133,7 @@ mod tests {
                 </description>
             </barf>"#;
 
-        let actual = ModsVP::from_string(xml);
+        let actual = Mods::from_string(xml);
         assert_eq!(actual.unwrap_err(), AbstractFileError::XmlWrongFileType);
     }
 }

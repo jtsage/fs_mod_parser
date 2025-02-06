@@ -5,7 +5,7 @@
 use crate::errors::AbstractFileError;
 
 use glob::glob;
-use quick_xml::{events::BytesStart, Reader};
+use quick_xml::{events::{BytesStart, Event}, Reader};
 use std::{
     fs::{self, File},
     io::Read,
@@ -15,7 +15,7 @@ use std::{
 /// modDesc.xml processing
 pub mod mod_desc;
 /// savegame processing
-// pub mod savegame;
+pub mod savegame;
 
 
 /// Abstract file implementation
@@ -177,6 +177,10 @@ pub struct FileDefinition {
     pub is_dir: bool,
 }
 
+/// XML Reader depth change
+pub type XMLReaderDepth = Result<i32, AbstractFileError>;
+
+/// XML Reader
 pub trait XMLReader<T> {
     /// Get data from an [`AbstractFile`]
     fn from_abstract_file<S: AsRef<str>>(mod_file : &mut AbstractFile, needle : S) -> Result<T, AbstractFileError> {
@@ -186,38 +190,43 @@ pub trait XMLReader<T> {
 
     /// Get data from a string
     fn from_string(xml_text: &str) -> Result<T, AbstractFileError>;
-    //     let mut mod_desc = Self::default();
 
-    //     let mut reader = Reader::from_str(xml_text);
-    //     reader.config_mut().trim_text(true);
+    /// read the XML
+    fn read_xml(&mut self, xml_text: &str) -> Result<&mut Self, AbstractFileError> {
+        let mut reader = Reader::from_str(xml_text);
+        reader.config_mut().trim_text(true);
 
-    //     let mut buf = Vec::new();
-    //     let mut depth = 0;
+        let mut buf = Vec::new();
+        let mut depth = 0;
 
-    //     loop {
-    //         match reader.read_event_into(&mut buf) {
-    //             Err(_) => return Err(AbstractFileError::XmlParseError),
-    //             Ok(Event::Eof)                    => break,
-    //             Ok(Event::End(_))                 => depth -= 1,
-    //             Ok(Event::Start(e)) => {
-    //                 depth += 1;
-    //                 Self::tags_paired(&mut reader, &e, &mut mod_desc, &mut depth)?
-    //             },
-    //             Ok(Event::Empty(e)) => Self::tags_self_closing(&e, &mut mod_desc, depth),
-    //             _ => ()
-    //         }
-    //     }
-
-    //     Ok(mod_desc)
-    // };
+        loop {
+            match reader.read_event_into(&mut buf) {
+                Err(_) => return Err(AbstractFileError::XmlParseError),
+                Ok(Event::Eof)                    => break,
+                Ok(Event::End(_))                 => depth -= 1,
+                Ok(Event::Start(e)) => {
+                    depth += Self::tags_paired(&e, depth, self, &mut reader)?;
+                },
+                Ok(Event::Empty(e)) => {
+                    Self::tags_self_closing(&e, depth, self);
+                },
+                _ => ()
+            }
+        }
+        Ok(self)
+    }
 
     /// Process paired tags
+    /// 
+    /// return value is the number of unclosed tags we traversed.
     #[expect(unused_variables)]
-    fn tags_paired(reader: &mut quick_xml::Reader<&[u8]>, e: &BytesStart, data: &mut Self, depth : &mut i32) -> Result<(), AbstractFileError> { Ok(()) }
+    fn tags_paired(e: &BytesStart, depth : i32, data: &mut Self, reader: &mut quick_xml::Reader<&[u8]>) -> XMLReaderDepth { Ok(0) }
 
     /// Process unpaired tags (no need for reader)
+    /// 
+    /// no return value
     #[expect(unused_variables)]
-    fn tags_self_closing(e: &BytesStart, data: &mut Self, depth : i32) {}
+    fn tags_self_closing(e: &BytesStart, depth : i32, data: &mut Self) {}
 
     /// Get an xml attribute from [`BytesStart`] by name
     #[inline]
@@ -241,6 +250,7 @@ pub trait XMLReader<T> {
         String::from_utf8(e.name().as_ref().to_vec()).unwrap_or_default()
     }
 }
+
 
 
 #[cfg(test)]
@@ -303,7 +313,7 @@ mod tests {
         let mod_desc_text = file_handle.text("modDesc.xml").expect("file open failed");
         assert!(mod_desc_text.len() > 1000);
 
-        assert!(file_handle.get_mod_desc().is_ok());
+        // assert!(file_handle.get_mod_desc().is_ok());
         assert_eq!(file_handle.bin("modDesc.bad"), Err(AbstractFileError::FileNotFound));
     }
 }

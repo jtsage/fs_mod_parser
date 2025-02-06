@@ -1,12 +1,12 @@
 use crate::errors::AbstractFileError;
-use crate::files::{AbstractFile, XMLReader};
+use crate::files::{AbstractFile, XMLReader, XMLReaderDepth};
 
-use quick_xml::events::Event;
-use quick_xml::reader::Reader;
+use quick_xml::events::BytesStart;
 
 /// List of farms
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, Default)]
 pub struct Farms(Vec<Farm>);
+
 
 /// Individual farm
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, Default)]
@@ -24,10 +24,7 @@ pub struct Farm {
 impl Farm {
     /// New with a name
     pub fn new<S: AsRef<str>>(name: S) -> Self {
-        Self {
-            name : name.as_ref().to_owned(),
-            ..Default::default()
-        }
+        Self { name : name.as_ref().to_owned(), ..Default::default() }
     }
 }
 
@@ -42,33 +39,16 @@ impl XMLReader<Self> for Farms {
     /// Load the modDesc.xml from an already decoded string
     fn from_string(xml_text: &str) -> Result<Self, AbstractFileError> {
         let mut farms = Self::default();
-
         farms.0.push(Farm::new("--unowned--"));
-
-        let mut reader = Reader::from_str(xml_text);
-        reader.config_mut().trim_text(true);
-
-        let mut buf = Vec::new();
-        let mut depth = 0;
-
-        loop {
-            match reader.read_event_into(&mut buf) {
-                Err(_) => return Err(AbstractFileError::XmlParseError),
-                Ok(Event::Eof)                    => break,
-                Ok(Event::Start(e)) => Self::tags_paired(&mut reader, &e, &mut farms, &mut depth)?,
-                _ => ()
-            }
-        }
-
-        Ok(farms)
+        farms.read_xml(xml_text).cloned()
     }
 
-    fn tags_paired(reader: &mut quick_xml::Reader<&[u8]>, e: &quick_xml::events::BytesStart, data: &mut Self, depth : &mut i32) -> Result<(), AbstractFileError> {
-        match e.name().as_ref() {
-            b"farms" if *depth == 0 => *depth += 1,
-            _        if *depth == 0 => return Err(AbstractFileError::XmlWrongFileType),
+    fn tags_paired(e: &BytesStart, depth : i32, data: &mut Self, reader: &mut quick_xml::Reader<&[u8]>) -> XMLReaderDepth {
+        match (e.name().as_ref(), depth) {
+            (b"farms", 0) => Ok(1),
+            (_, 0)        => Err(AbstractFileError::XmlWrongFileType),
 
-            b"farm" if *depth == 1 => {
+            (b"farm", 1) => {
                 let mut farm = Farm::default();
 
                 if let Some(v) = Self::xml_attribute(e, "name") {
@@ -90,10 +70,10 @@ impl XMLReader<Self> for Farms {
 
                 let _ = reader.read_to_end(e.to_end().name());
                 data.0.push(farm);
+                Ok(0)
             },
-            _ => (),
+            _ => Ok(1),
         }
-        Ok(())
     }
 }
 
