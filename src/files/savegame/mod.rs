@@ -20,7 +20,6 @@ pub struct Mod {
     pub farms: HashSet<usize>,
 }
 
-
 /// Order the farm set
 fn ordered_set<S: Serializer, K: Ord + Serialize>(value: &HashSet<K>, serializer: S) -> Result<S::Ok, S::Error> {
     let mut ordered: Vec<_> = value.iter().collect();
@@ -29,6 +28,7 @@ fn ordered_set<S: Serializer, K: Ord + Serialize>(value: &HashSet<K>, serializer
 }
 
 
+// MARK: TESTING
 #[cfg(test)]
 mod tests {
     use super::super::XMLReader;

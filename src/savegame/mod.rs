@@ -132,7 +132,7 @@ impl SaveGame {
         save_record.mods.deep_merge(vehicles);
         save_record.mod_count   = save_record.mods.0.len();
 
-        save_record.single_farm = farms.0.len() > 2;
+        save_record.single_farm = farms.0.len() <= 2;
         save_record.farms       = farms;
 
         save_record.map_mod   = career.map_mod;
@@ -155,8 +155,7 @@ mod tests {
 
     #[test]
     fn good_file() {
-        let mut file_handle = crate::files::AbstractFile::new("tests/test_mods/SAVEGAME_Good.zip");
-        let actual = SaveGame::from_abstract(&mut file_handle);
+        let actual = parser("tests/test_mods/SAVEGAME_Good.zip");
 
         // cSpell: disable
         let expected = serde_json::json!({
@@ -183,49 +182,62 @@ mod tests {
             "name": "BRC",
             "playTime": "306:40",
             "saveDate": "2022-10-14",
-            "singleFarm": true
+            "singleFarm": false
         });
         // cSpell:enable
-
-        println!("{}", serde_json::to_string_pretty(&actual).unwrap());
 
         assert_json_include!(actual: serde_json::json!(actual), expected: expected);
     }
 
     #[test]
     fn bad_career_file() {
-        let mut file_handle = crate::files::AbstractFile::new("tests/test_mods/SAVEGAME_No_Career.zip");
-        let actual = SaveGame::from_abstract(&mut file_handle);
-
+        let actual = parser("tests/test_mods/SAVEGAME_No_Career.zip");
         assert_eq!(actual.error_list.len(), 1);
         assert!(actual.error_list.contains(&SaveError::CareerMissing));
+
+        let actual = parser("tests/test_mods/SAVEGAME_Broken_Career.zip");
+        assert_eq!(actual.error_list.len(), 1);
+        assert!(actual.error_list.contains(&SaveError::CareerParseError));
     }
 
     #[test]
     fn bad_farms_file() {
-        let mut file_handle = crate::files::AbstractFile::new("tests/test_mods/SAVEGAME_No_Farms.zip");
-        let actual = SaveGame::from_abstract(&mut file_handle);
-
+        let actual = parser("tests/test_mods/SAVEGAME_No_Farms.zip");
         assert_eq!(actual.error_list.len(), 1);
         assert!(actual.error_list.contains(&SaveError::FarmsMissing));
+
+        let actual = parser("tests/test_mods/SAVEGAME_Broken_Farms.zip");
+        assert_eq!(actual.error_list.len(), 1);
+        assert!(actual.error_list.contains(&SaveError::FarmsParseError));
     }
 
     #[test]
     fn bad_placeable_file() {
-        let mut file_handle = crate::files::AbstractFile::new("tests/test_mods/SAVEGAME_No_Placeable.zip");
-        let actual = SaveGame::from_abstract(&mut file_handle);
-
+        let actual = parser("tests/test_mods/SAVEGAME_No_Placeable.zip");
         assert_eq!(actual.error_list.len(), 1);
         assert!(actual.error_list.contains(&SaveError::PlaceableMissing));
+
+        let actual = parser("tests/test_mods/SAVEGAME_Broken_Placeable.zip");
+        assert_eq!(actual.error_list.len(), 1);
+        assert!(actual.error_list.contains(&SaveError::PlaceableParseError));
     }
 
     #[test]
     fn bad_vehicle_file() {
-        let mut file_handle = crate::files::AbstractFile::new("tests/test_mods/SAVEGAME_No_Vehicles.zip");
-        let actual = SaveGame::from_abstract(&mut file_handle);
-
+        let actual = parser("tests/test_mods/SAVEGAME_No_Vehicles.zip");
         assert_eq!(actual.error_list.len(), 1);
         assert!(actual.error_list.contains(&SaveError::VehicleMissing));
+
+        let actual = parser("tests/test_mods/SAVEGAME_Broken_Vehicles.zip");
+        assert_eq!(actual.error_list.len(), 1);
+        assert!(actual.error_list.contains(&SaveError::VehicleParseError));
+    }
+
+    #[test]
+    fn single_farm() {
+        let actual = parser("tests/test_mods/SAVEGAME_Single_Farm.zip");
+        assert_eq!(actual.error_list.len(), 0);
+        assert_eq!(actual.single_farm, true);
     }
 
 }

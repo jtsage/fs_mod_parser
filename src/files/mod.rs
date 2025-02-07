@@ -42,10 +42,7 @@ impl AbstractFile {
                     Self::Null(AbstractFileError::FileIoError), |file| {
                         zip::ZipArchive::new(file).map_or_else(|_| Self::Null(AbstractFileError::ZipReadError), |mut archive| {
                             let file_list = Self::list_zip(&mut archive);
-                            Self::Zip(
-                                archive,
-                                file_list
-                            )
+                            Self::Zip(archive, file_list)
                         })
                     })
             } else {
@@ -53,10 +50,7 @@ impl AbstractFile {
             }
         } else {
             path::absolute(path).map_or_else(|_| Self::Null(AbstractFileError::FolderError), |f| {
-                Self::Folder(
-                    f.clone(),
-                    Self::list_folder(&f)
-                )
+                Self::Folder(f.clone(), Self::list_folder(&f))
             })
         }
     }
@@ -237,10 +231,12 @@ pub trait XMLReader<T> {
 
         let mut buf = Vec::new();
         let mut depth = 0;
+        let mut found_xml = false;
 
         loop {
             match reader.read_event_into(&mut buf) {
                 Err(_) => return Err(AbstractFileError::XmlParseError),
+                Ok(Event::Decl(_))                => found_xml = true,
                 Ok(Event::Eof)                    => break,
                 Ok(Event::End(_))                 => depth -= 1,
                 Ok(Event::Start(e)) => {
@@ -252,7 +248,7 @@ pub trait XMLReader<T> {
                 _ => ()
             }
         }
-        Ok(self)
+        if found_xml { Ok(self) } else { Err(AbstractFileError::XmlParseError) }
     }
 
     /// Process paired tags
