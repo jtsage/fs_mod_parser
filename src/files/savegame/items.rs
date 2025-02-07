@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crate::errors::AbstractFileError;
 use crate::files::{XMLReader, XMLReaderDepth};
 use crate::files::savegame::Mod;
+use quick_xml::events::BytesStart;
 
 
 /// Data structure for savegame mods
@@ -23,9 +24,6 @@ impl Mods {
         }
     }
 }
-
-
-use quick_xml::events::BytesStart;
 
 impl XMLReader<Self> for Mods {
     /// Load the vehicles or placables xml from an already decoded string
@@ -68,14 +66,14 @@ mod tests {
 
         // cSpell: disable
         let expected = serde_json::json!({
-            "FS22_36ftLowLoader": { "farms": [ 1 ], "title": "--", "version": "0" },
-            "FS22_BackRoadsCounty": { "farms": [ 0 ], "title": "--", "version": "0" },
-            "FS22_CaseEcoloTil2500": { "farms": [ 2, 4 ], "title": "--", "version": "0" },
-            "FS22_JDBalers": { "farms": [ 4, 5 ], "title": "--", "version": "0" },
-            "FS22_JD_HX20": { "farms": [ 1, 5 ], "title": "--", "version": "0" },
-            "FS22_KroneBigPack120_80": { "farms": [ 1 ], "title": "--", "version": "0" },
-            "FS22_MX_Pack": { "farms": [ 1 ], "title": "--", "version": "0" },
-            "FS22_Tanker_Trailer_IMT_525": { "farms": [ 1, 5 ], "title": "--", "version": "0" }
+            "FS22_36ftLowLoader": { "farms": [ 1 ], "title": "", "version": "" },
+            "FS22_BackRoadsCounty": { "farms": [ 0 ], "title": "", "version": "" },
+            "FS22_CaseEcoloTil2500": { "farms": [ 2, 4 ], "title": "", "version": "" },
+            "FS22_JDBalers": { "farms": [ 4, 5 ], "title": "", "version": "" },
+            "FS22_JD_HX20": { "farms": [ 1, 5 ], "title": "", "version": "" },
+            "FS22_KroneBigPack120_80": { "farms": [ 1 ], "title": "", "version": "" },
+            "FS22_MX_Pack": { "farms": [ 1 ], "title": "", "version": "" },
+            "FS22_Tanker_Trailer_IMT_525": { "farms": [ 1, 5 ], "title": "", "version": "" }
         });
         // cSpell: enable
 
@@ -90,15 +88,15 @@ mod tests {
 
         // cSpell: disable
         let expected = serde_json::json!({
-            "FS22_BackRoadsCounty": { "version": "0", "title": "--", "farms": [0,1,4,5,15]},
-            "FS22_ObjectStorage": { "version": "0", "title": "--", "farms": [1,4]},
-            "FS22_Machinehall_grainstorage": { "version": "0", "title": "--", "farms": [2]},
-            "FS22_openCowPasture": { "version": "0", "title": "--", "farms": [1]},
-            "FS22_DutchShedPack": { "version": "0", "title": "--", "farms": [1]},
-            "FS22_ExtraLargeSheepBarn": { "version": "0","title": "--", "farms": [4]},
-            "FS22_Large_Metal_Pavilion": { "version": "0", "title": "--", "farms": [5]},
-            "FS22_Large_Pole_Barn": { "version": "0", "title": "--", "farms": [5]},
-            "FS22_hydroGreenhouse": { "version": "0", "title": "--", "farms": [1,5]}
+            "FS22_BackRoadsCounty": { "version": "", "title": "", "farms": [0,1,4,5,15]},
+            "FS22_ObjectStorage": { "version": "", "title": "", "farms": [1,4]},
+            "FS22_Machinehall_grainstorage": { "version": "", "title": "", "farms": [2]},
+            "FS22_openCowPasture": { "version": "", "title": "", "farms": [1]},
+            "FS22_DutchShedPack": { "version": "", "title": "", "farms": [1]},
+            "FS22_ExtraLargeSheepBarn": { "version": "","title": "", "farms": [4]},
+            "FS22_Large_Metal_Pavilion": { "version": "", "title": "", "farms": [5]},
+            "FS22_Large_Pole_Barn": { "version": "", "title": "", "farms": [5]},
+            "FS22_hydroGreenhouse": { "version": "", "title": "", "farms": [1,5]}
         });
         // cSpell: enable
 

@@ -9,25 +9,19 @@ use std::time::Instant;
 fn scan_real_saves() {
     let start_time = Instant::now();
 
-    let pattern_1 = "C:\\Users\\jtsag\\Documents\\My Games\\FarmingSimulator2022\\savegame[0-9]";
-    let pattern_2 =
-        "C:\\Users\\jtsag\\Documents\\My Games\\FarmingSimulator2022\\savegame[0-9][0-9]";
-    let pattern_3 =
-        "C:\\Users\\jtsag\\Documents\\My Games\\FarmingSimulator2022\\savegameBackup\\*";
+    let patterns:[&str; 6] = [
+        "C:\\Users\\jtsag\\Documents\\My Games\\FarmingSimulator2022\\savegame[0-9]",
+        "C:\\Users\\jtsag\\Documents\\My Games\\FarmingSimulator2022\\savegame[0-9][0-9]",
+        "C:\\Users\\jtsag\\Documents\\My Games\\FarmingSimulator2022\\savegameBackup\\*",
+        "C:\\Users\\jtsag\\Documents\\My Games\\FarmingSimulator2025\\savegame[0-9]",
+        "C:\\Users\\jtsag\\Documents\\My Games\\FarmingSimulator2025\\savegame[0-9][0-9]",
+        "C:\\Users\\jtsag\\Documents\\My Games\\FarmingSimulator2025\\savegameBackup\\*",
+    ];
 
-    let mut file_list: Vec<PathBuf> = glob(pattern_1).unwrap().filter_map(Result::ok).collect();
-    file_list.extend(
-        glob(pattern_2)
-            .unwrap()
-            .filter_map(Result::ok)
-            .collect::<Vec<PathBuf>>(),
-    );
-    file_list.extend(
-        glob(pattern_3)
-            .unwrap()
-            .filter_map(Result::ok)
-            .collect::<Vec<PathBuf>>(),
-    );
+    let mut file_list:Vec<PathBuf> = vec![];
+    for pattern in patterns {
+        file_list.extend(glob(pattern).unwrap().filter_map(Result::ok).collect::<Vec<PathBuf>>());
+    }
 
     let counter = file_list.len();
 
@@ -36,7 +30,7 @@ fn scan_real_saves() {
 
         match path::absolute(entry.clone()) {
             Ok(abs_path) => {
-                let _output = parse_savegame(abs_path.as_path()).to_json_pretty();
+                let _output = parse_savegame(abs_path.as_path());
 
                 println!(
                     "{} in {:.2?}",

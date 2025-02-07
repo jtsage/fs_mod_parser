@@ -64,6 +64,11 @@ impl XMLReader<Self> for DescXML {
         Self::default().read_xml(xml_text).cloned()
     }
 
+    /// Read modDesc from mod file
+    fn from_abstract(mod_file : &mut AbstractFile) -> Result<Self, AbstractFileError> {
+        Self::from_abstract_file(mod_file, "modDesc.xml")
+    }
+
     /// Handle paired tags
     #[inline]
     fn tags_paired(e: &BytesStart, depth : i32, data: &mut Self, reader: &mut quick_xml::Reader<&[u8]>) -> XMLReaderDepth {
@@ -137,11 +142,6 @@ impl XMLReader<Self> for DescXML {
 }
 
 impl DescXML {
-    /// Read modDesc from mod file
-    fn from_abstract_file(mod_file : &mut AbstractFile) -> Result<Self, AbstractFileError> {
-        <Self as XMLReader<Self>>::from_abstract_file(mod_file, "modDesc.xml")
-    }
-
     /// Process key bindings
     #[inline]
     fn tag_action_binding(reader: &mut Reader<&[u8]>, mod_desc: &mut Self, e : &BytesStart) -> Result<(), AbstractFileError> {
@@ -271,7 +271,7 @@ mod tests {
     fn valid_folder() {
         let mut file_handle = super::super::AbstractFile::new("tests/test_mods/PASS_Good_Simple_Mod");
 
-        let actual = DescXML::from_abstract_file(&mut file_handle).expect("process failed");
+        let actual = DescXML::from_abstract(&mut file_handle).expect("process failed");
 
         // cSpell: disable
         let expected = serde_json::json!({
@@ -334,7 +334,7 @@ mod tests {
     fn broken_xml() {
         let mut file_handle = super::super::AbstractFile::new("tests/test_mods/FAILURE_Really_Malformed_ModDesc.zip");
 
-        let actual = DescXML::from_abstract_file(&mut file_handle);
+        let actual = DescXML::from_abstract(&mut file_handle);
 
         assert_eq!(actual, Err(AbstractFileError::XmlParseError));
     }
@@ -343,7 +343,7 @@ mod tests {
     fn broken_zip() {
         let mut file_handle = super::super::AbstractFile::new("tests/test_mods/FAILURE_Bad_ModDesc_CRC.zip");
 
-        let actual = DescXML::from_abstract_file(&mut file_handle);
+        let actual = DescXML::from_abstract(&mut file_handle);
 
         assert_eq!(actual, Err(AbstractFileError::FileIoError));
     }
@@ -352,7 +352,7 @@ mod tests {
     fn missing_file() {
         let mut file_handle = super::super::AbstractFile::new("tests/test_mods/FAILURE_Missing_ModDesc.zip");
 
-        let actual = DescXML::from_abstract_file(&mut file_handle);
+        let actual = DescXML::from_abstract(&mut file_handle);
 
         assert_eq!(actual, Err(AbstractFileError::FileNotFound));
     }
@@ -361,7 +361,7 @@ mod tests {
     fn invalid_but_parseable() {
         let mut file_handle = super::super::AbstractFile::new("tests/test_mods/WARNING_No_Version.zip");
 
-        let actual = DescXML::from_abstract_file(&mut file_handle).expect("bad file");
+        let actual = DescXML::from_abstract(&mut file_handle).expect("bad file");
 
         let expected = serde_json::json!({
             "title": {

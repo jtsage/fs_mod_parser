@@ -6,7 +6,7 @@ use std::{
 
 use crate::maps::structs::{CropList, CropWeatherType};
 use crate::mod_detail::structs::ModDetail;
-use crate::savegame::SaveGameRecord;
+// use crate::savegame::SaveGameRecord;
 use crate::shared::errors::{ModError, BADGE_BROKEN, BADGE_ISSUE, BADGE_NOT_MOD};
 use serde::ser::{Serialize, Serializer};
 
@@ -39,7 +39,7 @@ pub struct ModRecord {
     /// storeItems found (if processed)
     pub include_detail: Option<ModDetail>,
     /// save game record (if processed)
-    pub include_save_game: Option<SaveGameRecord>,
+    pub include_save_game: Option<bool>, //FIXME:
     /// L10N title and description
     pub l10n: ModDescL10N,
     /// MD5 Sum (not yet implemented)

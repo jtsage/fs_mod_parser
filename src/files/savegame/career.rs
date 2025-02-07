@@ -22,17 +22,15 @@ pub struct Career {
     pub save_date: Option<String>,
 }
 
-impl Career {
-    /// Read modDesc from mod file
-    fn from_abstract_file(mod_file : &mut AbstractFile) -> Result<Self, AbstractFileError> {
-        <Self as XMLReader<Self>>::from_abstract_file(mod_file, "careerSavegame.xml")
-    }
-}
-
 impl XMLReader<Self> for Career {
     /// Load the modDesc.xml from an already decoded string
     fn from_string(xml_text: &str) -> Result<Self, AbstractFileError> {
         Self::default().read_xml(xml_text).cloned()
+    }
+
+    /// Read modDesc from mod file
+    fn from_abstract(mod_file : &mut AbstractFile) -> Result<Self, AbstractFileError> {
+        Self::from_abstract_file(mod_file, "careerSavegame.xml")
     }
 
     fn tags_self_closing(e: &quick_xml::events::BytesStart, depth : i32, data: &mut Self) {
@@ -96,7 +94,7 @@ mod tests {
     fn good_file() {
         let mut file_handle = crate::files::AbstractFile::new("tests/test_mods/SAVEGAME_Good.zip");
 
-        let actual = Career::from_abstract_file(&mut file_handle).expect("read fail");
+        let actual = Career::from_abstract(&mut file_handle).expect("read fail");
 
         // cSpell: disable
         let expected = serde_json::json!({
@@ -120,7 +118,7 @@ mod tests {
     fn missing_xml() {
         let mut file_handle = crate::files::AbstractFile::new("tests/test_mods/WARNING_No_Version.zip");
 
-        let actual = Career::from_abstract_file(&mut file_handle);
+        let actual = Career::from_abstract(&mut file_handle);
 
         assert_eq!(actual, Err(AbstractFileError::FileNotFound));
     }

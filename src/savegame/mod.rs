@@ -1,241 +1,13 @@
 //! Parse save game files.
-use crate::shared::files::{AbstractFileHandle, AbstractFolder, AbstractZipFile};
-use serde::ser::{Serialize, Serializer};
-use std::{
-    collections::{HashMap, HashSet},
-    path::Path,
-};
 
-/// Possible parse problems with a savegame
-#[derive(PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
-pub enum SaveError {
-    /// File is unreadable
-    FileUnreadable,
-    /// farms.xml is missing
-    FarmsMissing,
-    /// farms.xml could not be parsed
-    FarmsParseError,
-    /// placables.xml missing
-    PlaceableMissing,
-    /// placables.xml could not be parsed
-    PlaceableParseError,
-    /// vehicles.xml missing
-    VehicleMissing,
-    /// vehicles.xml could not be parsed
-    VehicleParseError,
-    /// careerSavegame.xml missing
-    CareerMissing,
-    /// careerSavegame.xml could not be parsed
-    CareerParseError,
-}
+use std::{ collections::HashSet, path::Path };
+use crate::errors::{AbstractFileError, SaveError};
+use crate::files::{AbstractFile, XMLReader};
+use crate::files::savegame::career::Career as SaveCareer;
+use crate::files::savegame::farms::Farms as SaveFarms;
+use crate::files::savegame::items::Mods as SaveMods;
 
-impl Serialize for SaveError {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match *self {
-            SaveError::FileUnreadable => {
-                serializer.serialize_unit_variant("SaveError", 0, "SAVE_ERROR_UNREADABLE")
-            }
-            SaveError::FarmsMissing => {
-                serializer.serialize_unit_variant("SaveError", 1, "SAVE_ERROR_MISSING_FARMS")
-            }
-            SaveError::FarmsParseError => {
-                serializer.serialize_unit_variant("SaveError", 2, "SAVE_ERROR_PARSE_FARMS")
-            }
-            SaveError::PlaceableMissing => {
-                serializer.serialize_unit_variant("SaveError", 3, "SAVE_ERROR_MISSING_PLACABLE")
-            }
-            SaveError::PlaceableParseError => {
-                serializer.serialize_unit_variant("SaveError", 4, "SAVE_ERROR_PARSE_PLACABLE")
-            }
-            SaveError::VehicleMissing => {
-                serializer.serialize_unit_variant("SaveError", 5, "SAVE_ERROR_MISSING_VEHICLE")
-            }
-            SaveError::VehicleParseError => {
-                serializer.serialize_unit_variant("SaveError", 6, "SAVE_ERROR_PARSE_VEHICLE")
-            }
-            SaveError::CareerMissing => {
-                serializer.serialize_unit_variant("SaveError", 7, "SAVE_ERROR_MISSING_CAREER")
-            }
-            SaveError::CareerParseError => {
-                serializer.serialize_unit_variant("SaveError", 8, "SAVE_ERROR_PARSE_CAREER")
-            }
-        }
-    }
-}
-
-/// Data structure for a savegame mod
-#[derive(serde::Serialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct SaveGameMod {
-    /// Mod version from careerSavegame
-    pub version: String,
-    /// Mod title from careerSavegame
-    pub title: String,
-    /// List of farms mod is purchased on
-    #[serde(serialize_with = "ordered_set")]
-    pub farms: HashSet<usize>,
-}
-
-impl SaveGameMod {
-    /// Create new mod in the save game
-    fn new() -> Self {
-        SaveGameMod {
-            version: String::from("0"),
-            title: String::from("--"),
-            farms: HashSet::new(),
-        }
-    }
-}
-/// Sort and collect a `HashSet` to a javascript array
-fn ordered_set<S, K: Ord + Serialize>(value: &HashSet<K>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    let mut ordered: Vec<_> = value.iter().collect();
-    ordered.sort();
-    ordered.serialize(serializer)
-}
-
-/// Data structure for a savegame farm
-#[derive(serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SaveGameFarm {
-    /// Name of farm
-    pub name: String,
-    /// Cash on hand for farm
-    pub cash: i64,
-    /// Loan amount for farm
-    pub loan: i64,
-    /// Color index for farm (1-16)
-    pub color: usize,
-}
-
-impl SaveGameFarm {
-    /// Add a new farm definition
-    fn new(name: String) -> Self {
-        SaveGameFarm {
-            name,
-            cash: 0_i64,
-            loan: 0_i64,
-            color: 1_usize,
-        }
-    }
-}
-
-/// Data structure for a savegame
-#[derive(serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SaveGameRecord {
-    /// List of found errors
-    pub error_list: HashSet<SaveError>,
-    /// List of farms
-    pub farms: HashMap<usize, SaveGameFarm>,
-    /// Save passed all checks
-    pub is_valid: bool,
-    /// Map mod name (shortname)
-    pub map_mod: Option<String>,
-    /// Map title
-    pub map_title: Option<String>,
-    /// Number of mods loaded
-    pub mod_count: usize,
-    /// List of mods
-    pub mods: HashMap<String, SaveGameMod>,
-    /// Name of the save
-    pub name: Option<String>,
-    /// Playtime in hours:minutes, hours is unbound
-    pub play_time: String,
-    /// Save date, in rfc3339
-    pub save_date: String,
-    /// Single player save
-    pub single_farm: bool,
-}
-
-impl SaveGameRecord {
-    /// raise an error on the savegame
-    fn add_issue(&mut self, issue: SaveError) {
-        self.is_valid = false;
-        self.error_list.insert(issue);
-    }
-
-    /// Add (or update) a mod with the owning farm already known
-    fn add_mod_with_farm(&mut self, mod_key: &str, farm_id: usize) -> &mut Self {
-        let this_mod = self
-            .mods
-            .entry(mod_key.to_owned())
-            .or_insert_with(SaveGameMod::new);
-        this_mod.farms.insert(farm_id);
-        self
-    }
-
-    /// Add (or update) a mod with the details already known
-    fn add_mod_with_detail(
-        &mut self,
-        mod_key: &str,
-        title: Option<&str>,
-        version: Option<&str>,
-    ) -> &mut Self {
-        let this_mod = self
-            .mods
-            .entry(mod_key.to_owned())
-            .or_insert_with(SaveGameMod::new);
-
-        if let Some(title) = title {
-            title.clone_into(&mut this_mod.title);
-        }
-        if let Some(version) = version {
-            version.clone_into(&mut this_mod.version);
-        }
-
-        self
-    }
-
-    /// Create a new save game record
-    fn new() -> Self {
-        SaveGameRecord {
-            error_list: HashSet::new(),
-            farms: HashMap::from([(0_usize, SaveGameFarm::new(String::from("--unowned--")))]),
-            is_valid: true,
-            map_mod: None,
-            map_title: None,
-            mod_count: 0,
-            mods: HashMap::new(),
-            name: None,
-            play_time: String::from("0:00"),
-            save_date: String::from("1970-01-01"),
-            single_farm: true,
-        }
-    }
-
-    /// Create a new save game record with a single error
-    fn fast_fail(e: SaveError) -> Self {
-        let mut record = SaveGameRecord::new();
-        record.add_issue(e);
-        record
-    }
-
-    /// Get output as pretty-print JSON
-    #[must_use]
-    pub fn to_json_pretty(&self) -> String {
-        serde_json::to_string_pretty(&self).unwrap_or(String::from("{}"))
-    }
-
-    /// Get output as JSON
-    #[must_use]
-    pub fn to_json(&self) -> String {
-        self.to_string()
-    }
-}
-
-impl std::fmt::Display for SaveGameRecord {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&serde_json::to_string(&self).unwrap_or(String::from("{}")))
-    }
-}
-
-/// Parse a savegame
+/// Parse a savegame from a filename
 ///
 /// Returned information includes:
 /// - Mods loaded and used in the save with total count
@@ -244,7 +16,8 @@ impl std::fmt::Display for SaveGameRecord {
 /// - Errors, if any, and boolean valid flag
 /// - Farm list, boolean if it's a multiplayer save or not
 ///
-/// /// # Sample Output
+/// # Sample Output
+/// 
 /// ```json
 /// {
 ///   "errorList": [],
@@ -258,9 +31,7 @@ impl std::fmt::Display for SaveGameRecord {
 ///   "modCount": 38,
 ///   "mods": {
 ///     "FS22_BackRoadsCounty": {
-///       "version": "1.0.0.2",
-///       "title": "Back Roads County",
-///       "farms": [ 0, 1, 4, 5, 15 ]
+///       "version": "1.0.0.2", "title": "Back Roads County", "farms": [ 0, 1, 4, 5, 15 ]
 ///     }
 ///   },
 ///   "name": "BRC",
@@ -269,209 +40,192 @@ impl std::fmt::Display for SaveGameRecord {
 ///   "singleFarm": false
 /// }
 /// ```
-pub fn parser<P: AsRef<Path>>(full_path: P) -> SaveGameRecord {
-    let is_folder = full_path.as_ref().is_dir();
-
-    let abstract_file: Box<dyn AbstractFileHandle> = if is_folder {
-        if let Ok(archive) = AbstractFolder::new(full_path) {
-            Box::new(archive)
-        } else {
-            return SaveGameRecord::fast_fail(SaveError::FileUnreadable);
-        }
-    } else if let Ok(archive) = AbstractZipFile::new(full_path) {
-        Box::new(archive)
-    } else {
-        return SaveGameRecord::fast_fail(SaveError::FileUnreadable);
-    };
-
-    parse_open_file(abstract_file)
+/// 
+/// # Open file handle:
+/// 
+/// If you already have an open file handle, see [`SaveGame::from_abstract`]
+/// 
+pub fn parser<P: AsRef<Path>>(filename : P) -> SaveGame {
+    let mut file_handle = AbstractFile::new(filename);
+    SaveGame::from_abstract(&mut file_handle)
 }
 
-/// Parse a savegame from an already open [`AbstractFileHandle`]
-#[must_use]
-pub fn parse_open_file(mut abstract_file: Box<dyn AbstractFileHandle>) -> SaveGameRecord {
-    let mut save_record = SaveGameRecord::new();
-
-    do_farms(&mut save_record, &mut abstract_file);
-    do_placeables(&mut save_record, &mut abstract_file);
-    do_vehicles(&mut save_record, &mut abstract_file);
-    do_career(&mut save_record, &mut abstract_file);
-
-    save_record.mod_count = save_record.mods.len();
-
-    save_record
+/// Data structure for a savegame
+#[derive(serde::Serialize, Debug, PartialEq, Eq, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveGame {
+    /// List of found errors
+    pub error_list: HashSet<SaveError>,
+    /// List of farms
+    pub farms: SaveFarms,
+    /// Save passed all checks
+    pub is_valid: bool,
+    /// Map mod name (shortname)
+    pub map_mod: Option<String>,
+    /// Map title
+    pub map_title: Option<String>,
+    /// Number of mods loaded
+    pub mod_count: usize,
+    /// List of mods
+    pub mods: SaveMods,
+    /// Name of the save
+    pub name: Option<String>,
+    /// Playtime in hours:minutes, hours is unbound
+    pub play_time: Option<String>,
+    /// Save date, in rfc3339
+    pub save_date: Option<String>,
+    /// Single player save
+    pub single_farm: bool,
 }
 
-/// Process farms.xml
-fn do_farms(save_record: &mut SaveGameRecord, abstract_file: &mut Box<dyn AbstractFileHandle>) {
-    let Ok(farms_content) = abstract_file.as_text("farms.xml") else {
-        save_record.add_issue(SaveError::FarmsMissing);
-        return;
-    };
-
-    let Ok(farms_document) = roxmltree::Document::parse(&farms_content) else {
-        save_record.add_issue(SaveError::FarmsParseError);
-        return;
-    };
-
-    let mut ran_more_than_once = false;
-
-    #[expect(clippy::cast_possible_truncation)]
-    for farm_entry in farms_document
-        .descendants()
-        .filter(|n| n.has_tag_name("farm"))
-    {
-        let Some(farm_id) = farm_entry
-            .attribute("farmId")
-            .and_then(|n| n.parse::<usize>().ok())
-        else {
-            continue;
-        };
-        let Some(farm_name) = farm_entry.attribute("name") else {
-            continue;
-        };
-
-        if ran_more_than_once {
-            save_record.single_farm = false;
-        } else {
-            ran_more_than_once = true;
-        }
-
-        let mut farm_record = SaveGameFarm::new(farm_name.to_owned());
-
-        farm_record.loan = farm_entry
-            .attribute("loan")
-            .map_or(0.0, |n| n.parse::<f64>().unwrap_or(0.0)) as i64;
-        farm_record.cash = farm_entry
-            .attribute("money")
-            .map_or(0.0, |n| n.parse::<f64>().unwrap_or(0.0)) as i64;
-        farm_record.color = farm_entry
-            .attribute("color")
-            .map_or(0, |n| n.parse::<usize>().unwrap_or(0));
-
-        save_record.farms.insert(farm_id, farm_record);
+impl SaveGame {
+    #[inline]
+    /// Raise and issue with the save
+    fn raise_issue(&mut self, v : SaveError) -> &mut Self {
+        self.error_list.insert(v);
+        self
     }
-}
 
-/// Process placables.xml
-fn do_placeables(
-    save_record: &mut SaveGameRecord,
-    abstract_file: &mut Box<dyn AbstractFileHandle>,
-) {
-    let Ok(placeable_content) = abstract_file.as_text("placeables.xml") else {
-        save_record.add_issue(SaveError::PlaceableMissing);
-        return;
-    };
+    /// Load from an [`AbstractFile`]
+    fn from_abstract(mod_file : &mut AbstractFile) -> Self {
+        let mut save_record = Self::default();
 
-    let Ok(placeable_document) = roxmltree::Document::parse(&placeable_content) else {
-        save_record.add_issue(SaveError::PlaceableParseError);
-        return;
-    };
+        let Ok(career) = SaveCareer::from_abstract(mod_file).map_err(|e| {
+            match e {
+                AbstractFileError::XmlParseError => {
+                    save_record.raise_issue(SaveError::CareerParseError)
+                },
+                _ => { save_record.raise_issue(SaveError::CareerMissing) },
+            };
+        }) else { return save_record };
 
-    for item in placeable_document.descendants().filter(|n| {
-        n.has_tag_name("placeable") && n.has_attribute("farmId") && n.has_attribute("modName")
-    }) {
-        let farm_id = item
-            .attribute("farmId")
-            .map_or(0, |n| n.parse::<usize>().unwrap_or(0));
+        let Ok(farms) = SaveFarms::from_abstract(mod_file).map_err(|e| {
+            match e {
+                AbstractFileError::XmlParseError => {
+                    save_record.raise_issue(SaveError::FarmsParseError)
+                },
+                _ => { save_record.raise_issue(SaveError::FarmsMissing) },
+            };
+        }) else { return save_record };
+        
+        let Ok(vehicles) = SaveMods::from_abstract_file(mod_file, "vehicles.xml").map_err(|e| {
+            match e {
+                AbstractFileError::XmlParseError => {
+                    save_record.raise_issue(SaveError::VehicleParseError)
+                },
+                _ => { save_record.raise_issue(SaveError::VehicleMissing) },
+            };
+        }) else { return save_record };
 
-        item.attribute("modName")
-            .map(|key| save_record.add_mod_with_farm(key, farm_id));
+        let Ok(placeables) = SaveMods::from_abstract_file(mod_file, "placeables.xml").map_err(|e| {
+            match e {
+                AbstractFileError::XmlParseError => {
+                    save_record.raise_issue(SaveError::PlaceableParseError)
+                },
+                _ => { save_record.raise_issue(SaveError::PlaceableMissing) },
+            };
+        }) else { return save_record };
+        
+
+        save_record.mods        = career.mods;
+        save_record.mods.deep_merge(placeables);
+        save_record.mods.deep_merge(vehicles);
+        save_record.mod_count   = save_record.mods.0.len();
+
+        save_record.single_farm = farms.0.len() > 2;
+        save_record.farms       = farms;
+
+        save_record.map_mod   = career.map_mod;
+        save_record.map_title = career.map_title;
+        save_record.name      = career.name;
+        save_record.play_time = career.play_time;
+        save_record.save_date = career.save_date;
+        save_record.is_valid  = true;
+
+        save_record
     }
 }
 
-/// Process vehicles.xml
-fn do_vehicles(save_record: &mut SaveGameRecord, abstract_file: &mut Box<dyn AbstractFileHandle>) {
-    let Ok(vehicles_content) = abstract_file.as_text("vehicles.xml") else {
-        save_record.add_issue(SaveError::VehicleMissing);
-        return;
-    };
 
-    let Ok(vehicles_document) = roxmltree::Document::parse(&vehicles_content) else {
-        save_record.add_issue(SaveError::VehicleParseError);
-        return;
-    };
+// MARK: TESTING
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use assert_json_diff::assert_json_include;
 
-    for item in vehicles_document.descendants().filter(|n| {
-        n.has_tag_name("vehicle") && n.has_attribute("farmId") && n.has_attribute("modName")
-    }) {
-        let farm_id = item
-            .attribute("farmId")
-            .map_or(0, |n| n.parse::<usize>().unwrap_or(0));
+    #[test]
+    fn good_file() {
+        let mut file_handle = crate::files::AbstractFile::new("tests/test_mods/SAVEGAME_Good.zip");
+        let actual = SaveGame::from_abstract(&mut file_handle);
 
-        item.attribute("modName")
-            .map(|key| save_record.add_mod_with_farm(key, farm_id));
-    }
-}
+        // cSpell: disable
+        let expected = serde_json::json!({
+            "errorList": [],
+            "farms": [
+                { "name": "--unowned--", "cash": 0, "loan": 0, "color": 0 },
+                { "name": "HENNESSEY ACRES", "cash": 46198, "loan": 230000, "color": 7 },
+                { "name": "joinFSG.gg", "cash": 100000, "loan": 0, "color": 1 },
+                { "name": "PUBLIC", "cash": 878837, "loan": 0, "color": 8 },
+                { "name": "BELLWETHER RANCH", "cash": 110758,"loan": 0,"color": 2 },
+                { "name": "THE CROFT", "cash": 42937, "loan": 0, "color": 6 }
+            ],
+            "isValid": true,
+            "mapMod": "FS22_BackRoadsCounty",
+            "mapTitle": "Back Roads County",
+            "modCount": 38,
+            "mods": {
+                "FS22_BackRoadsCounty": {
+                    "version": "1.0.0.2",
+                    "title": "Back Roads County",
+                    "farms": [ 0, 1, 4, 5, 15]
+                }
+            },
+            "name": "BRC",
+            "playTime": "306:40",
+            "saveDate": "2022-10-14",
+            "singleFarm": true
+        });
+        // cSpell:enable
 
-/// Process careerSavegame.xml
-fn do_career(save_record: &mut SaveGameRecord, abstract_file: &mut Box<dyn AbstractFileHandle>) {
-    let Ok(career_content) = abstract_file.as_text("careerSavegame.xml") else {
-        save_record.add_issue(SaveError::CareerMissing);
-        return;
-    };
+        println!("{}", serde_json::to_string_pretty(&actual).unwrap());
 
-    let Ok(career_document) = roxmltree::Document::parse(&career_content) else {
-        save_record.add_issue(SaveError::CareerParseError);
-        return;
-    };
-
-    if let Some(value) = career_document
-        .descendants()
-        .find(|n| n.has_tag_name("mapTitle"))
-        .and_then(|n| n.text())
-    {
-        save_record.map_title = Some(value.to_owned());
-    }
-
-    if let Some(value) = career_document
-        .descendants()
-        .find(|n| n.has_tag_name("savegameName"))
-        .and_then(|n| n.text())
-    {
-        save_record.name = Some(value.to_owned());
+        assert_json_include!(actual: serde_json::json!(actual), expected: expected);
     }
 
-    if let Some(value) = career_document
-        .descendants()
-        .find(|n| n.has_tag_name("saveDate"))
-        .and_then(|n| n.text())
-    {
-        value.clone_into(&mut save_record.save_date);
+    #[test]
+    fn bad_career_file() {
+        let mut file_handle = crate::files::AbstractFile::new("tests/test_mods/SAVEGAME_No_Career.zip");
+        let actual = SaveGame::from_abstract(&mut file_handle);
+
+        assert_eq!(actual.error_list.len(), 1);
+        assert!(actual.error_list.contains(&SaveError::CareerMissing));
     }
 
-    if let Some(value_f) = career_document
-        .descendants()
-        .find(|n| n.has_tag_name("playTime"))
-        .and_then(|n| n.text())
-        .and_then(|n| n.parse::<f64>().ok())
-    {
-        let hours = (value_f / 60_f64).floor();
-        let minutes = (value_f % 60_f64).floor();
-        save_record.play_time = format!("{hours:.0}:{minutes:02.0}");
+    #[test]
+    fn bad_farms_file() {
+        let mut file_handle = crate::files::AbstractFile::new("tests/test_mods/SAVEGAME_No_Farms.zip");
+        let actual = SaveGame::from_abstract(&mut file_handle);
+
+        assert_eq!(actual.error_list.len(), 1);
+        assert!(actual.error_list.contains(&SaveError::FarmsMissing));
     }
 
-    if let Some(map_pattern) = career_document
-        .descendants()
-        .find(|n| n.has_tag_name("mapId"))
-        .and_then(|n| n.text())
-    {
-        save_record.map_mod = map_pattern
-            .split('.')
-            .next()
-            .map(std::string::ToString::to_string);
+    #[test]
+    fn bad_placeable_file() {
+        let mut file_handle = crate::files::AbstractFile::new("tests/test_mods/SAVEGAME_No_Placeable.zip");
+        let actual = SaveGame::from_abstract(&mut file_handle);
+
+        assert_eq!(actual.error_list.len(), 1);
+        assert!(actual.error_list.contains(&SaveError::PlaceableMissing));
     }
 
-    for item in career_document
-        .descendants()
-        .filter(|n| n.has_tag_name("mod") && n.has_attribute("modName"))
-    {
-        if let Some(mod_key) = item.attribute("modName") {
-            save_record.add_mod_with_detail(
-                mod_key,
-                item.attribute("title"),
-                item.attribute("version"),
-            );
-        }
+    #[test]
+    fn bad_vehicle_file() {
+        let mut file_handle = crate::files::AbstractFile::new("tests/test_mods/SAVEGAME_No_Vehicles.zip");
+        let actual = SaveGame::from_abstract(&mut file_handle);
+
+        assert_eq!(actual.error_list.len(), 1);
+        assert!(actual.error_list.contains(&SaveError::VehicleMissing));
     }
+
 }

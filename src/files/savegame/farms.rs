@@ -5,7 +5,7 @@ use quick_xml::events::BytesStart;
 
 /// List of farms
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, Default)]
-pub struct Farms(Vec<Farm>);
+pub struct Farms(pub Vec<Farm>);
 
 
 /// Individual farm
@@ -28,19 +28,17 @@ impl Farm {
     }
 }
 
-impl Farms {
-    /// Read modDesc from mod file
-    fn from_abstract_file(mod_file : &mut AbstractFile) -> Result<Self, AbstractFileError> {
-        <Self as XMLReader<Self>>::from_abstract_file(mod_file, "farms.xml")
-    }
-}
-
 impl XMLReader<Self> for Farms {
     /// Load the modDesc.xml from an already decoded string
     fn from_string(xml_text: &str) -> Result<Self, AbstractFileError> {
         let mut farms = Self::default();
         farms.0.push(Farm::new("--unowned--"));
         farms.read_xml(xml_text).cloned()
+    }
+
+    /// Read modDesc from mod file
+    fn from_abstract(mod_file : &mut AbstractFile) -> Result<Self, AbstractFileError> {
+        Self::from_abstract_file(mod_file, "farms.xml")
     }
 
     fn tags_paired(e: &BytesStart, depth : i32, data: &mut Self, reader: &mut quick_xml::Reader<&[u8]>) -> XMLReaderDepth {
@@ -86,7 +84,7 @@ mod tests {
     fn good_file() {
         let mut file_handle = crate::files::AbstractFile::new("tests/test_mods/SAVEGAME_Good.zip");
 
-        let actual = Farms::from_abstract_file(&mut file_handle).expect("read fail");
+        let actual = Farms::from_abstract(&mut file_handle).expect("read fail");
 
         // cSpell: disable
         let expected = serde_json::json!([
@@ -106,7 +104,7 @@ mod tests {
     fn missing_xml() {
         let mut file_handle = crate::files::AbstractFile::new("tests/test_mods/WARNING_No_Version.zip");
 
-        let actual = Farms::from_abstract_file(&mut file_handle);
+        let actual = Farms::from_abstract(&mut file_handle);
 
         assert_eq!(actual, Err(AbstractFileError::FileNotFound));
     }

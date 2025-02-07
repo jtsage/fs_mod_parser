@@ -1,7 +1,7 @@
 //! Parser functions for basic mod reading
 use crate::maps::read_map_basics;
 use crate::mod_detail::parse_open_file as detail_parse;
-use crate::savegame::parse_open_file as savegame_parse;
+// use crate::savegame::parse_open_file as savegame_parse;
 use crate::shared::errors::ModError;
 use crate::shared::files::{AbstractFileHandle, AbstractFolder, AbstractZipFile, FileDefinition};
 use crate::shared::structs::{ModRecord, ZipPackFile};
@@ -231,7 +231,7 @@ pub fn parser_with_options<P: AsRef<Path>>(full_path: P, options: &ModParserOpti
             .add_fatal(ModError::FileErrorLikelySaveGame)
             .update_badges();
         if options.include_save_game {
-            mod_record.include_save_game = Some(savegame_parse(abstract_file));
+            // mod_record.include_save_game = Some(savegame_parse(abstract_file));
         }
         return mod_record;
     }

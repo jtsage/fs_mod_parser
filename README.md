@@ -32,7 +32,7 @@ Returned information includes:
 Valid input is a file or folder, any type that coerces into a `&Path`.
 
 ```rust
-let json_representation = fs_mod_parser::parse_savegame("savegame1.zip").to_json_pretty();
+let json_representation = fs_mod_parser::parse_savegame("savegame1.zip");
 ```
 
 ### Store Item Details

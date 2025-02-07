@@ -1,4 +1,5 @@
-// use serde::{Serialize, Deserialize};
+//! All error types.
+//! 
 
 /// Possible Detectable Mod Errors
 #[derive(PartialEq, PartialOrd, Eq, Ord, Clone, Copy, Debug)]
@@ -65,20 +66,25 @@ pub enum ModError {
     PerformanceQuantityTXT,
 }
 
+// MARK: ModDescWarnings
 /// Odd, but valid occurrences in XML data
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize)]
 #[cfg_attr(test, derive(strum_macros::EnumCount))]
-#[serde(rename_all="SCREAMING_SNAKE_CASE")]
 pub enum ModDescWarnings {
     /// Invalid tag nested in actionBinding
+    #[serde(rename="MODDESC__ACTION_BIND_INVALID_TAG")]
     ActionBindingInvalidTag(String),
     /// binding missing input or device attribute
+    #[serde(rename="MODDESC__ACTION_BIND_MALFORMED")]
     ActionBindingMalformed(),
     /// L10n text entry malformed
+    #[serde(rename="MODDESC__L10N_MALFORMED")]
     L10nMalformed(),
     /// Invalid language tag (lang, location)
+    #[serde(rename="MODDESC__L10N_INVALID_LANGUAGE")]
     L10nInvalidLanguage(String, String),
     /// Bare text found in a tag that should be localized
+    #[serde(rename="MODDESC__SHOULD_BE_L10N")]
     ShouldBeL10n(String),
 }
 
@@ -94,25 +100,31 @@ impl std::fmt::Display for ModDescWarnings {
     }
 }
 
-
+//MARK: AbstractFileError
 /// File-Level errors.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize)]
 #[cfg_attr(test, derive(strum_macros::EnumCount))]
-#[serde(rename_all="SCREAMING_SNAKE_CASE")]
 pub enum AbstractFileError {
     /// File could not be found
+    #[serde(rename="ERR_FILE__FILE_NOT_FOUND")]
     FileNotFound,
     /// File could not be read
+    #[serde(rename="ERR_FILE__FILE_IO_ERROR")]
     FileIoError,
     /// ZIP archive is not a zip file
+    #[serde(rename="ERR_FILE__FILE_NOT_ZIP")]
     FileNotZip,
     /// ZIP could not be read
+    #[serde(rename="ERR_FILE__ZIP_READ_ERROR")]
     ZipReadError,
     /// Folder could not be found
+    #[serde(rename="ERR_FILE__FOLDER_ERROR")]
     FolderError,
     /// Unrecoverable XML parse error
+    #[serde(rename="ERR_FILE__XML_PARSE_ERROR")]
     XmlParseError,
     /// Configured reader could process this xml type
+    #[serde(rename="ERR_FILE__XML_WRONG_FILE_TYPE")]
     XmlWrongFileType,
 }
 
@@ -149,6 +161,55 @@ impl From<std::io::Error> for AbstractFileError {
     }
 }
 
+
+// MARK: SaveError
+/// Possible parse problems with a savegame
+#[derive(PartialEq, PartialOrd, Eq, Ord, Hash, Debug, serde::Serialize)]
+#[cfg_attr(test, derive(strum_macros::EnumCount))]
+pub enum SaveError {
+    /// farms.xml is missing
+    #[serde(rename="ERR_SAVE__MISSING_FARMS")]
+    FarmsMissing,
+    /// farms.xml could not be parsed
+    #[serde(rename="ERR_SAVE__PARSE_FARMS")]
+    FarmsParseError,
+    /// placables.xml missing
+    #[serde(rename="ERR_SAVE__MISSING_PLACEABLE")]
+    PlaceableMissing,
+    /// placables.xml could not be parsed
+    #[serde(rename="ERR_SAVE__PARSE_PLACABLE")]
+    PlaceableParseError,
+    /// vehicles.xml missing
+    #[serde(rename="ERR_SAVE__PARSE_VEHICLE")]
+    VehicleMissing,
+    /// vehicles.xml could not be parsed
+    #[serde(rename="ERR_SAVE__PARSE_VEHICLE")]
+    VehicleParseError,
+    /// careerSavegame.xml missing
+    #[serde(rename="ERR_SAVE__MISSING_CAREER")]
+    CareerMissing,
+    /// careerSavegame.xml could not be parsed
+    #[serde(rename="ERR_SAVE__PARSE_CAREER")]
+    CareerParseError,
+}
+
+impl std::fmt::Display for SaveError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", match self {
+            Self::FarmsMissing => "missing farms.xml",
+            Self::FarmsParseError => "farms.xml failed to parse",
+            Self::PlaceableMissing => "missing placables.xml",
+            Self::PlaceableParseError => "placeables.xml failed to parse",
+            Self::VehicleMissing => "missing vehicles.xml",
+            Self::VehicleParseError => "vehicles.xml failed to parse",
+            Self::CareerMissing => "missing careerSavegame.xml",
+            Self::CareerParseError => "careerSavegame.xml failed to parse",
+        })
+    }
+}
+
+
+// MARK: TESTS
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -170,7 +231,7 @@ mod tests {
         assert_eq!(AbstractFileError::COUNT, errors.len());
         assert_eq!(
             serde_json::to_string(&errors).unwrap(),
-            r#"["FILE_IO_ERROR","FILE_NOT_FOUND","FILE_NOT_ZIP","FOLDER_ERROR","XML_PARSE_ERROR","ZIP_READ_ERROR","XML_WRONG_FILE_TYPE"]"#
+            r#"["ERR_FILE__FILE_IO_ERROR","ERR_FILE__FILE_NOT_FOUND","ERR_FILE__FILE_NOT_ZIP","ERR_FILE__FOLDER_ERROR","ERR_FILE__XML_PARSE_ERROR","ERR_FILE__ZIP_READ_ERROR","ERR_FILE__XML_WRONG_FILE_TYPE"]"#
         );
     }
 
@@ -188,7 +249,28 @@ mod tests {
         assert_eq!(ModDescWarnings::COUNT, errors.len());
         assert_eq!(
             serde_json::to_string(&errors).unwrap(),
-            r#"[{"ACTION_BINDING_INVALID_TAG":"xx"},{"ACTION_BINDING_MALFORMED":[]},{"L10N_INVALID_LANGUAGE":["xx","yy"]},{"L10N_MALFORMED":[]},{"SHOULD_BE_L10N":"xx"}]"#
+            r#"[{"MODDESC__ACTION_BIND_INVALID_TAG":"xx"},{"MODDESC__ACTION_BIND_MALFORMED":[]},{"MODDESC__L10N_INVALID_LANGUAGE":["xx","yy"]},{"MODDESC__L10N_MALFORMED":[]},{"MODDESC__SHOULD_BE_L10N":"xx"}]"#
+        );
+    }
+
+    #[test]
+    fn save_game_errors() {
+        let errors:[SaveError; 8] = [
+            SaveError::CareerMissing,
+            SaveError::CareerParseError,
+            SaveError::FarmsMissing,
+            SaveError::FarmsParseError,
+            SaveError::PlaceableMissing,
+            SaveError::PlaceableParseError,
+            SaveError::VehicleMissing,
+            SaveError::VehicleParseError
+        ];
+
+        for e in &errors { assert!(e.to_string().len() > 0); }
+        assert_eq!(SaveError::COUNT, errors.len());
+        assert_eq!(
+            serde_json::to_string(&errors).unwrap(),
+            r#"["ERR_SAVE__MISSING_CAREER","ERR_SAVE__PARSE_CAREER","ERR_SAVE__MISSING_FARMS","ERR_SAVE__PARSE_FARMS","ERR_SAVE__MISSING_PLACEABLE","ERR_SAVE__PARSE_PLACABLE","ERR_SAVE__PARSE_VEHICLE","ERR_SAVE__PARSE_VEHICLE"]"#
         );
     }
 }
