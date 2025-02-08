@@ -68,7 +68,7 @@ pub enum ModError {
 
 // MARK: ModDescWarnings
 /// Odd, but valid occurrences in XML data
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(test, derive(strum_macros::EnumCount))]
 pub enum ModDescWarnings {
     /// Invalid tag nested in actionBinding

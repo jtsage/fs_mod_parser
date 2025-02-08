@@ -1,6 +1,6 @@
 use std::collections::{HashSet, HashMap};
 use crate::errors::{ModDescWarnings, AbstractFileError};
-use super::{AbstractFile, XMLReader, XMLReaderDepth};
+use crate::files::{AbstractFile, XMLReader, XMLReaderDepth, PathType};
 
 use quick_xml::events::{BytesStart, Event};
 use quick_xml::reader::Reader;
@@ -22,7 +22,7 @@ type ModDescKey = HashMap<String, Vec<String>>;
 type ModL10NMap = HashMap<String, HashMap<String, String>>;
 
 /// modDesc.xml struct - XML error handling here, not mod checking
-#[derive(Debug, Default, Clone, PartialEq, Eq, serde::Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct DescXML {
     /// Warnings from parsing the XML
     pub warnings : HashSet<ModDescWarnings>,
@@ -56,6 +56,21 @@ pub struct DescXML {
     pub l10n_file_prefix: Option<String>,
     /// l10n entries included here
     pub l10n_local: ModL10NMap,
+    /// brand entries
+    pub brands : Vec<DescBrand>,
+}
+
+/// modDesc.xml struct - XML error handling here, not mod checking
+#[derive(Debug, Default, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct DescBrand {
+    /// name
+    pub name : String,
+    /// title
+    pub title : String,
+    /// icon filename
+    pub icon_file : Option<String>,
+    /// base game icon
+    pub icon_base : Option<String>
 }
 
 impl XMLReader<Self> for DescXML {
@@ -135,6 +150,24 @@ impl XMLReader<Self> for DescXML {
                     let category = Self::xml_attribute(e, "category").unwrap_or_else(|| String::from("ALL"));
                     data.actions.insert(name, category);
                 }
+            },
+            (b"brand", 2) => {
+                let mut brand = DescBrand {
+                    name : Self::xml_attribute(e, "name").unwrap_or_default(),
+                    title : Self::xml_attribute(e, "title").unwrap_or_default(),
+                    ..Default::default()
+                };
+                if let Some(image) = Self::xml_attribute(e, "image") {
+                    match Self::unwrap_base_path(image) {
+                        PathType::Base(v) => {
+                            if let Some(path) = v.strip_prefix("store/brands") {
+                                brand.icon_base = std::path::Path::new(path).file_stem().map(|v| v.to_string_lossy().to_string());
+                            }
+                        },
+                        PathType::Local(v) => brand.icon_file = Some(v),
+                    }
+                }
+                data.brands.push(brand);
             },
             _ => (),
         }
@@ -270,7 +303,6 @@ mod tests {
     #[test]
     fn valid_folder() {
         let mut file_handle = super::super::AbstractFile::new("tests/test_mods/PASS_Good_Simple_Mod");
-
         let actual = DescXML::from_abstract(&mut file_handle).expect("process failed");
 
         // cSpell: disable
@@ -325,9 +357,13 @@ mod tests {
                 }
             },
             "warnings": [],
+            "brands" : []
         });
 
         assert_json_eq!(serde_json::json!(actual), expected);
+
+        let re_read:DescXML = serde_json::from_value(expected).expect("deserialize failed");
+        assert_eq!(re_read, actual);
     }
 
     #[test]
@@ -390,28 +426,13 @@ mod tests {
             "l10n_file_prefix": null,
             "l10n_local": {
                 "input_ENGINESTARTER_SHOW_MENU": {
-                    "de": "TODO",
-                    "cz": "TODO",
-                    "pl": "TODO",
-                    "fr": "TODO",
-                    "it": "TODO",
-                    "ru": "TODO",
-                    "es": "TODO",
-                    "en": "Show Engine Starter Menu",
-                    "nl": "TODO",
-                    "pt": "TODO"
+                    "de": "TODO", "cz": "TODO", "pl": "TODO",
+                    "fr": "TODO", "it": "TODO", "ru": "TODO", "es": "TODO",
+                    "en": "Show Engine Starter Menu", "nl": "TODO", "pt": "TODO"
                 },
                 "guiTest": {
-                    "fr": "TODO",
-                    "nl": "TODO",
-                    "es": "TODO",
-                    "en": "Testing GuI",
-                    "de": "TODO",
-                    "cz": "TODO",
-                    "it": "TODO",
-                    "ru": "TODO",
-                    "pl": "TODO",
-                    "pt": "TODO"
+                    "fr": "TODO", "nl": "TODO", "es": "TODO", "en": "Testing GuI", "de": "TODO",
+                    "cz": "TODO", "it": "TODO", "ru": "TODO", "pl": "TODO", "pt": "TODO"
                 },
                 "engineStartNotification": {
                     "cz": "Startování motoru ...",
@@ -427,8 +448,11 @@ mod tests {
                 }
             },
             "warnings": [],
+            "brands": []
         });
         assert_json_eq!(serde_json::json!(actual), expected);
+        let re_read:DescXML = serde_json::from_value(expected).expect("deserialize failed");
+        assert_eq!(re_read, actual);
     }
 
     #[test]
@@ -607,5 +631,21 @@ mod tests {
 
         let actual = DescXML::from_string(xml);
         assert_eq!(actual.unwrap_err(), AbstractFileError::XmlParseError);
+    }
+
+    #[test]
+    fn valid_brand() {
+        let mut file_handle = super::super::AbstractFile::new("tests/test_mods/DETAIL_Samples.zip");
+        let actual = DescXML::from_abstract(&mut file_handle).expect("process failed");
+
+        let expected = serde_json::json!([
+            { "name" : "HONEYBEE", "title" : "Honey Bee", "icon_base" : null, "icon_file" : "brand_honeybee.dds" },
+            { "name" : "LIZARDLOGISTICS", "title" : "Lizard Logistics", "icon_base" : "brand_lizardLogistics", "icon_file" : null },
+        ]);
+
+        assert_eq!(serde_json::json!(actual.brands), expected);
+
+        let re_read:Vec<DescBrand> = serde_json::from_value(expected).expect("deserialize failed");
+        assert_eq!(re_read, actual.brands);
     }
 }

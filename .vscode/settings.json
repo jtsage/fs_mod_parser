@@ -10,6 +10,7 @@
 		"ddsfile",
 		"DESCVERSION",
 		"drygrass",
+		"fillunit",
 		"fruittypes",
 		"GRLE",
 		"Happylooser",
@@ -59,6 +60,22 @@
 	"workbench.editor.customLabels.enabled": true,
 	"workbench.editor.customLabels.patterns": {
 		"*/src/errors/**": "ERR ${filename}",
-		"*/src/files/**": "FILE ${filename}"
+		"*/src/files/**": "F: ${filename}",
+		"*/src/files/savegame/**": "F:SAVE ${filename}",
+		"*/src/files/store_item/**": "F:STORE ${filename}",
+		"*/src/savegame/**": "SAVE ${filename}",
+		"*/src/mod_basic/**": "BASIC ${filename}",
+		"*/src/mod_detail/**": "DETAIL ${filename}"
 	},
+	"cSpell.ignorePaths": [
+		"package-lock.json",
+		"node_modules",
+		"vscode-extension",
+		".git/{info,lfs,logs,refs,objects}/**",
+		".git/{index,*refs,*HEAD}",
+		".vscode",
+		".vscode-insiders",
+		"tests/test_mods/**"
+	],
+	"cSpell.spellCheckOnlyWorkspaceFiles": true,
 }

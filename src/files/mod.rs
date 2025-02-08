@@ -14,6 +14,8 @@ use std::{
 pub mod mod_desc;
 /// savegame processing
 pub mod savegame;
+/// store item processing
+pub mod store_item;
 
 
 /// Abstract file implementation
@@ -206,6 +208,12 @@ pub struct FileDefinition {
     pub is_dir: bool,
 }
 
+#[derive(Debug)]
+pub enum PathType {
+    Base(String),
+    Local(String)
+}
+
 /// XML Reader depth change
 pub type XMLReaderDepth = Result<i32, AbstractFileError>;
 
@@ -271,6 +279,31 @@ pub trait XMLReader<T> {
         } else {
             None
         }
+    }
+
+    /// Get an xml text node
+    #[inline]
+    fn xml_text(e: &BytesStart, reader: &mut quick_xml::Reader<&[u8]>) -> Option<String> {
+        reader.read_text(e.name()).map(|v|v.to_string()).ok()
+    }
+
+    /// Get an xml text node as a number
+    #[inline]
+    fn xml_number<U>(e: &BytesStart, reader: &mut quick_xml::Reader<&[u8]>) -> Option<U> where 
+    U: std::str::FromStr + std::default::Default
+    {
+        reader.read_text(e.name()).map(|v|v.parse::<U>().unwrap_or_default()).ok()
+    }
+
+    /// Slurp and dump children
+    #[inline]
+    fn slurp(e: &BytesStart, reader: &mut quick_xml::Reader<&[u8]>) -> Result<i32, AbstractFileError> {
+        reader.read_to_end(e.to_end().name()).map(|_| 0).map_err(|_| AbstractFileError::XmlParseError)
+    }
+
+    /// Return a tuple of (base path, local path)
+    fn unwrap_base_path<S: AsRef<str>>(path : S) -> PathType {
+        path.as_ref().strip_prefix("$data/").map_or_else(|| PathType::Local(path.as_ref().to_owned()), |v| PathType::Base(v.to_owned()))
     }
 
     /// Turn a [`BytesStart`] name into a string

@@ -7,9 +7,11 @@ use std::time::Instant;
 #[test]
 #[ignore]
 fn scan_test_items() {
+    // rayon::ThreadPoolBuilder::new().num_threads(1).build_global().unwrap();
+
     let options = ModParserOptions {
         skip_detail_icons: true,
-        skip_mod_icons: false,
+        skip_mod_icons: true,
         include_mod_detail: true,
         include_save_game: true,
         ..Default::default()
