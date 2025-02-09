@@ -208,10 +208,23 @@ pub struct FileDefinition {
     pub is_dir: bool,
 }
 
-#[derive(Debug)]
+/// Path type from XML
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum PathType {
+    /// Base game
     Base(String),
+    /// Local to the mod
     Local(String)
+}
+
+impl PathType {
+    /// Get file with dds extension
+    #[inline]
+    fn to_dds(&self) -> String {
+        match self {
+            Self::Base(v) | Self::Local(v) => Path::new(v).with_extension("dds").to_string_lossy().to_string()
+        }
+    }
 }
 
 /// XML Reader depth change
@@ -256,19 +269,21 @@ pub trait XMLReader<T> {
                 _ => ()
             }
         }
-        if found_xml { Ok(self) } else { Err(AbstractFileError::XmlParseError) }
+        if found_xml { Ok(self) } else { Err(AbstractFileError::XmlUndeclared) }
     }
 
     /// Process paired tags
     /// 
     /// return value is the number of unclosed tags we traversed.
     #[expect(unused_variables)]
+    #[inline]
     fn tags_paired(e: &BytesStart, depth : i32, data: &mut Self, reader: &mut quick_xml::Reader<&[u8]>) -> XMLReaderDepth { Ok(0) }
 
     /// Process unpaired tags (no need for reader)
     /// 
     /// no return value
     #[expect(unused_variables)]
+    #[inline]
     fn tags_self_closing(e: &BytesStart, depth : i32, data: &mut Self) {}
 
     /// Get an xml attribute from [`BytesStart`] by name
@@ -295,6 +310,14 @@ pub trait XMLReader<T> {
         reader.read_text(e.name()).map(|v|v.parse::<U>().unwrap_or_default()).ok()
     }
 
+    /// Get an xml text node as a number
+    #[inline]
+    fn xml_attribute_number<U>(e: &BytesStart, name : &str) -> Option<U> where 
+    U: std::str::FromStr + std::default::Default
+    {
+        Self::xml_attribute(e, name).map(|v| v.parse::<U>().unwrap_or_default())
+    }
+
     /// Slurp and dump children
     #[inline]
     fn slurp(e: &BytesStart, reader: &mut quick_xml::Reader<&[u8]>) -> Result<i32, AbstractFileError> {
@@ -302,6 +325,7 @@ pub trait XMLReader<T> {
     }
 
     /// Return a tuple of (base path, local path)
+    #[inline]
     fn unwrap_base_path<S: AsRef<str>>(path : S) -> PathType {
         path.as_ref().strip_prefix("$data/").map_or_else(|| PathType::Local(path.as_ref().to_owned()), |v| PathType::Base(v.to_owned()))
     }

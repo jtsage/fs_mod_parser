@@ -45,7 +45,6 @@ impl XMLReader<Self> for StoreItem {
         match item.item_type {
             StoreItemType::Unknown => Err(AbstractFileError::XmlWrongFileType),
             StoreItemType::Vehicle => {
-                println!("VEHICLE");
                 item.vehicle = Some(Vehicle::from_string(xml_text)?);
                 Ok(item)
             },
@@ -62,15 +61,13 @@ impl XMLReader<Self> for StoreItem {
         match (e.name().as_ref(), depth) {
             (b"vehicle", 0) => {
                 data.item_type = StoreItemType::Vehicle;
-                let _ = reader.read_to_end(e.to_end().name());
-                Ok(1)
+                Self::slurp(e, reader)
             },
             (b"placeable", 0) => {
                 data.item_type = StoreItemType::Placeable;
-                let _ = reader.read_to_end(e.to_end().name());
-                Ok(1)
+                Self::slurp(e, reader)
             },
-            (_, 0) => Err(AbstractFileError::XmlWrongFileType),
+            (_, 0) => Self::slurp(e, reader),
             _ => Ok(1),
         }
     }
@@ -83,7 +80,7 @@ mod tests {
 
     #[test]
     fn neither_type() {
-        let xml = r#"<poop type="trailer"></poop>"#;
+        let xml = r#"<?xml version=\"1.0\" ?><poop type="trailer"></poop>"#;
         let actual = StoreItem::from_string(xml);
 
         assert_eq!(actual, Err(AbstractFileError::XmlWrongFileType));

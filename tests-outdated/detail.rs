@@ -532,7 +532,7 @@ fn good_vehicle_multiple_motors() {
     /* cSpell: disable */
     if let Some(comp_key) = setup_good_store_items()
         .vehicles
-        .get("xml/example-multimotor.xml")
+        .get("xml/example-multi-motor.xml")
     {
         assert_eq!(
             comp_key.motor.fuel_type,

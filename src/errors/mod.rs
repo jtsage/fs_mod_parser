@@ -126,6 +126,9 @@ pub enum AbstractFileError {
     /// Configured reader could process this xml type
     #[serde(rename="ERR_FILE__XML_WRONG_FILE_TYPE")]
     XmlWrongFileType,
+    /// XML document undeclared
+    #[serde(rename="ERR_FILE__XML_UNDECLARED")]
+    XmlUndeclared,
 }
 
 impl std::fmt::Display for AbstractFileError {
@@ -138,6 +141,7 @@ impl std::fmt::Display for AbstractFileError {
             Self::FolderError => "folder not accessible",
             Self::XmlParseError => "xml parsing failed",
             Self::XmlWrongFileType => "tried to parse wrong type of xml",
+            Self::XmlUndeclared => "xml document not well formed"
         })
     }
 }
@@ -217,21 +221,22 @@ mod tests {
 
     #[test]
     fn abstract_file_error_ser() {
-        let errors:[AbstractFileError; 7] = [
+        let errors:[AbstractFileError; 8] = [
             AbstractFileError::FileIoError,
             AbstractFileError::FileNotFound,
             AbstractFileError::FileNotZip,
             AbstractFileError::FolderError,
             AbstractFileError::XmlParseError,
             AbstractFileError::ZipReadError,
-            AbstractFileError::XmlWrongFileType
+            AbstractFileError::XmlWrongFileType,
+            AbstractFileError::XmlUndeclared
         ];
 
         for e in &errors { assert!(e.to_string().len() > 0); }
         assert_eq!(AbstractFileError::COUNT, errors.len());
         assert_eq!(
             serde_json::to_string(&errors).unwrap(),
-            r#"["ERR_FILE__FILE_IO_ERROR","ERR_FILE__FILE_NOT_FOUND","ERR_FILE__FILE_NOT_ZIP","ERR_FILE__FOLDER_ERROR","ERR_FILE__XML_PARSE_ERROR","ERR_FILE__ZIP_READ_ERROR","ERR_FILE__XML_WRONG_FILE_TYPE"]"#
+            r#"["ERR_FILE__FILE_IO_ERROR","ERR_FILE__FILE_NOT_FOUND","ERR_FILE__FILE_NOT_ZIP","ERR_FILE__FOLDER_ERROR","ERR_FILE__XML_PARSE_ERROR","ERR_FILE__ZIP_READ_ERROR","ERR_FILE__XML_WRONG_FILE_TYPE","ERR_FILE__XML_UNDECLARED"]"#
         );
     }
 

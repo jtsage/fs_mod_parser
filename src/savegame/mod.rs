@@ -92,7 +92,7 @@ impl SaveGame {
 
         let Ok(career) = SaveCareer::from_abstract(mod_file).map_err(|e| {
             match e {
-                AbstractFileError::XmlParseError => {
+                AbstractFileError::XmlParseError | AbstractFileError::XmlUndeclared => {
                     save_record.raise_issue(SaveError::CareerParseError)
                 },
                 _ => { save_record.raise_issue(SaveError::CareerMissing) },
@@ -101,7 +101,7 @@ impl SaveGame {
 
         let Ok(farms) = SaveFarms::from_abstract(mod_file).map_err(|e| {
             match e {
-                AbstractFileError::XmlParseError => {
+                AbstractFileError::XmlParseError | AbstractFileError::XmlUndeclared => {
                     save_record.raise_issue(SaveError::FarmsParseError)
                 },
                 _ => { save_record.raise_issue(SaveError::FarmsMissing) },
@@ -110,7 +110,7 @@ impl SaveGame {
         
         let Ok(vehicles) = SaveMods::from_abstract_file(mod_file, "vehicles.xml").map_err(|e| {
             match e {
-                AbstractFileError::XmlParseError => {
+                AbstractFileError::XmlParseError | AbstractFileError::XmlUndeclared => {
                     save_record.raise_issue(SaveError::VehicleParseError)
                 },
                 _ => { save_record.raise_issue(SaveError::VehicleMissing) },
@@ -119,7 +119,7 @@ impl SaveGame {
 
         let Ok(placeables) = SaveMods::from_abstract_file(mod_file, "placeables.xml").map_err(|e| {
             match e {
-                AbstractFileError::XmlParseError => {
+                AbstractFileError::XmlParseError | AbstractFileError::XmlUndeclared => {
                     save_record.raise_issue(SaveError::PlaceableParseError)
                 },
                 _ => { save_record.raise_issue(SaveError::PlaceableMissing) },
