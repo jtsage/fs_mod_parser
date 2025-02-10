@@ -181,17 +181,7 @@ pub struct Motor {
     pub speed_mph: Vec<MotorValue>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize, Default)]
-pub struct MotorValue(u32, u32);
-
-impl MotorValue {
-    /// Create new rounded value
-    fn new(rpm : f32, value : f32) -> Self {
-        #[expect(clippy::cast_possible_truncation)]
-        #[expect(clippy::cast_sign_loss)]
-        Self( rpm.round() as u32, value.round() as u32 )
-    }
-}
+pub type MotorValue = (u32, u32);
 
 // MARK: XMLReader
 impl XMLReader<Self> for Vehicle {
@@ -245,7 +235,7 @@ impl XMLReader<Self> for Vehicle {
             },
             (b"price", 2) => { data.sorting.price = Self::xml_number(e, reader); Ok(0) },
             (b"speedLimit", 2) => { data.sorting.price = Self::xml_attribute(e, "value").map(|v| v.parse().unwrap_or_default()); Ok(0) },
-            (b"specs", 2) => Self::tag_specs(reader, data, e),
+            (b"specs", 2) => { Self::tag_specs(reader, data, e); Ok(0) },
 
             // MARK: ~flags
 
@@ -267,7 +257,7 @@ impl XMLReader<Self> for Vehicle {
             (v, 1) if v.starts_with(b"designColorConfigurations") => {
                 data.flags.color = Capability::Yes; Self::slurp(e, reader)
             },
-            (b"wheels", 1) => Self::tag_wheels(reader, data, e),
+            (b"wheels", 1) => { Self::tag_wheels(reader, data, e); Ok(0) },
             (b"attacherJoint", _) => {
                 if let Some(joint) = Self::xml_attribute(e, "jointType") {
                     data.sorting.joint_accepts.push(joint);
@@ -282,9 +272,9 @@ impl XMLReader<Self> for Vehicle {
             }
 
             // MARK: ~fill/spray/motor
-            (b"sprayType", 3) => Self::tag_spray_type(reader, data, e),
-            (b"fillUnitConfiguration", 3) => Self::tag_fill_config(reader, data, e),
-            (b"motorConfigurations", 2) => Self::tag_motors(reader, data, e),
+            (b"sprayType", 3) => { Self::tag_spray_type(reader, data, e); Ok(0) },
+            (b"fillUnitConfiguration", 3) => { Self::tag_fill_config(reader, data, e); Ok(0) },
+            (b"motorConfigurations", 2) => { Self::tag_motors(reader, data, e); Ok(0) },
 
             _ => Ok(1),
         }
@@ -314,7 +304,7 @@ impl Vehicle {
     // MARK: _wheels
     /// Do wheels
     #[inline]
-    fn tag_wheels(reader: &mut Reader<&[u8]>, data: &mut Self, e : &BytesStart) -> Result<i32, AbstractFileError> {
+    fn tag_wheels(reader: &mut Reader<&[u8]>, data: &mut Self, e : &BytesStart) {
         let mut buf_next = Vec::new();
         let mut wheel_configs = 0_usize;
         loop {
@@ -325,17 +315,15 @@ impl Vehicle {
                     let _ = reader.read_to_end(e.to_end().name());
                 },
                 Ok(Event::End(f)) if f.name() == e.name() => break,
-                Ok(Event::Eof) => return Err(AbstractFileError::XmlParseError),
                 _ => (),
             }
         }
-        Ok(0)
     }
 
     // MARK: _sprayTypes
     /// Read spray types
     #[inline]
-    fn tag_spray_type(reader: &mut Reader<&[u8]>, data: &mut Self, e : &BytesStart) -> Result<i32, AbstractFileError> {
+    fn tag_spray_type(reader: &mut Reader<&[u8]>, data: &mut Self, e : &BytesStart) {
         let mut buf_next = Vec::new();
         let mut spray = SprayType::default();
 
@@ -348,18 +336,16 @@ impl Vehicle {
                     spray.width = Self::xml_attribute(&e, "workingWidth").map(|v| v.parse().unwrap_or_default());
                 },
                 Ok(Event::End(f)) if f.name() == e.name() => break,
-                Ok(Event::Eof) => return Err(AbstractFileError::XmlParseError),
                 _ => (),
             }
         }
         data.sprays.push(spray);
-        Ok(0)
     }
 
     // MARK: _fillUnit
     /// Read fill unit config
     #[inline]
-    fn tag_fill_config(reader: &mut Reader<&[u8]>, data: &mut Self, e : &BytesStart) -> Result<i32, AbstractFileError> {
+    fn tag_fill_config(reader: &mut Reader<&[u8]>, data: &mut Self, e : &BytesStart) {
         let mut buf_next = Vec::new();
         let mut fill_config = FillConfig::default();
 
@@ -383,18 +369,16 @@ impl Vehicle {
                     
                 },
                 Ok(Event::End(f)) if f.name() == e.name() => break,
-                Ok(Event::Eof) => return Err(AbstractFileError::XmlParseError),
                 _ => (),
             }
         }
         if !fill_config.is_empty() { data.fills.push(fill_config); }
-        Ok(0)
     }
 
     // MARK: _specs
     /// Do specs
     #[inline]
-    fn tag_specs(reader: &mut Reader<&[u8]>, data: &mut Self, e : &BytesStart) -> Result<i32, AbstractFileError> {
+    fn tag_specs(reader: &mut Reader<&[u8]>, data: &mut Self, e : &BytesStart) {
         let mut buf_next = Vec::new();
         loop {
             match reader.read_event_into(&mut buf_next) {
@@ -418,18 +402,16 @@ impl Vehicle {
                     }
                 }
                 Ok(Event::End(f)) if f.name() == e.name() => break,
-                Ok(Event::Eof) => return Err(AbstractFileError::XmlParseError),
                 _ => (),
             }
         };
-        Ok(0)
     }
 
    
     // MARK: _motors
     /// Do motors
     #[inline]
-    fn tag_motors(reader: &mut Reader<&[u8]>, data: &mut Self, e : &BytesStart) -> Result<i32, AbstractFileError> {
+    fn tag_motors(reader: &mut Reader<&[u8]>, data: &mut Self, e : &BytesStart) {
         let mut buf_next = Vec::new();
         let mut motor = MotorBuild::new();
         let mut next_motor = true;
@@ -513,12 +495,9 @@ impl Vehicle {
                     motor.reset();
                 }
                 Ok(Event::End(f)) if f.name() == e.name() => break,
-                Ok(Event::Eof) => return Err(AbstractFileError::XmlParseError),
                 _ => (),
             }
         }
-
-        Ok(0)
     }
 }
 
@@ -567,19 +546,22 @@ impl MotorBuild {
     }
     /// Build a [`Motor`] from the builder
     fn build(&self) -> Motor {
-        let horse_power:Vec<MotorValue> = self.torque.clone().into_iter().map(|v| MotorValue::new(
-            v.0,
-            self.torque_scale * (1.359_621_6 * PI * v.0 * v.1) / 30.0
+        #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let horse_power:Vec<MotorValue> = self.torque.clone().into_iter().map(|v| (
+            v.0.round() as u32,
+            (self.torque_scale * (1.359_621_6 * PI * v.0 * v.1) / 30.0).round() as u32
         )).collect();
 
-        let kph:Vec<MotorValue> = self.torque.clone().into_iter().map(|v| MotorValue::new(
-            v.0,
-            3.6 * ((v.0 * PI) / (30.0 * self.min_fwd_gear_and_axle_ratio))
+        #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let kph:Vec<MotorValue> = self.torque.clone().into_iter().map(|v| (
+            v.0.round() as u32,
+            (3.6 * ((v.0 * PI) / (30.0 * self.min_fwd_gear_and_axle_ratio))).round() as u32
         )).collect();
 
-        let mph:Vec<MotorValue> = self.torque.clone().into_iter().map(|v| MotorValue::new(
-            v.0,
-            3.6 * ((v.0 * PI) / (30.0 * self.min_fwd_gear_and_axle_ratio) * 0.621_371)
+        #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let mph:Vec<MotorValue> = self.torque.clone().into_iter().map(|v| (
+            v.0.round() as u32,
+            (3.6 * ((v.0 * PI) / (30.0 * self.min_fwd_gear_and_axle_ratio) * 0.621_371)).round() as u32
         )).collect();
 
         Motor {
@@ -658,6 +640,18 @@ mod tests {
         ];
 
         assert_eq!(vehicle.sprays, expected);
+    }
+
+    #[test]
+    fn spray_types_failures() {
+        let xml = xml_test(r#"
+        <vehicle><sprayer><sprayTypes>
+            <garbageTag></garbageTag>
+            <sprayType foldingConfigurationIndex="1" fillTypes="lime">
+                <usageScales workingWidth="20" />"#);
+        let actual = StoreItem::from_string(xml.as_ref());
+        
+        assert_eq!(actual, Err(AbstractFileError::XmlParseError));
     }
 
     #[test]
@@ -746,17 +740,17 @@ mod tests {
                     name:String::from("8RX 310 Electric 357hp"),
                     transmission: Some(String::from("$l10n_info_transmission_cvt")),
                     horse_power: vec![
-                        MotorValue(990, 191), MotorValue(1100, 229), MotorValue(1298, 279),
-                        MotorValue(1584, 340), MotorValue(1892, 357), MotorValue(2200, 340),
+                        (990, 191), (1100, 229), (1298, 279),
+                        (1584, 340), (1892, 357), (2200, 340),
                     ],
                     max_speed: 42,
                     speed_kph: vec![
-                        MotorValue(990, 22), MotorValue(1100, 24), MotorValue(1298, 29),
-                        MotorValue(1584, 35), MotorValue(1892, 42), MotorValue(2200, 49),
+                        (990, 22), (1100, 24), (1298, 29),
+                        (1584, 35), (1892, 42), (2200, 49),
                     ],
                     speed_mph: vec![
-                        MotorValue(990, 14), MotorValue(1100, 15), MotorValue(1298, 18),
-                        MotorValue(1584, 22), MotorValue(1892, 26), MotorValue(2200, 30),
+                        (990, 14), (1100, 15), (1298, 18),
+                        (1584, 22), (1892, 26), (2200, 30),
                     ]
                 }
             ]
@@ -806,17 +800,17 @@ mod tests {
                     name:String::from("Pickup 2017 300hp"),
                     transmission: Some(String::from("$l10n_info_transmission_manual")),
                     horse_power: vec![
-                        MotorValue(1000, 77), MotorValue(2400, 205), MotorValue(3480, 297),
-                        MotorValue(4560, 292), MotorValue(5280, 284), MotorValue(6000, 103),
+                        (1000, 77), (2400, 205), (3480, 297),
+                        (4560, 292), (5280, 284), (6000, 103),
                     ],
                     max_speed: 120,
                     speed_kph: vec![
-                        MotorValue(1000, 23), MotorValue(2400, 56), MotorValue(3480, 82),
-                        MotorValue(4560, 107), MotorValue(5280, 124), MotorValue(6000, 141),
+                        (1000, 23), (2400, 56), (3480, 82),
+                        (4560, 107), (5280, 124), (6000, 141),
                     ],
                     speed_mph: vec![
-                        MotorValue(1000, 15), MotorValue(2400, 35), MotorValue(3480, 51),
-                        MotorValue(4560, 66), MotorValue(5280, 77), MotorValue(6000, 87),
+                        (1000, 15), (2400, 35), (3480, 51),
+                        (4560, 66), (5280, 77), (6000, 87),
                     ]
                 }
             ]
