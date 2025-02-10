@@ -1,7 +1,9 @@
+//! Simple command line mod file parser
 use fs_mod_parser::{parse_mod_with_options, ModParserOptions};
 use std::env;
 use std::path;
 
+/// Flags for CLI tool
 static QUICK_SCAN: ModParserOptions = ModParserOptions {
     include_mod_detail: false,
     include_save_game: false,

@@ -2,6 +2,7 @@ use std::f32::consts::PI;
 
 use crate::errors::AbstractFileError;
 use crate::files::{XMLReader, XMLReaderDepth, PathType};
+use crate::files::store_item::Capability;
 
 use quick_xml::events::{BytesStart, Event};
 use quick_xml::Reader;
@@ -23,7 +24,7 @@ pub struct Vehicle {
     pub icon_file: Option<String>,
     /// icon data
     pub icon_data: Option<String>,
-    // motor information
+    /// motor information
     pub motor: DriveTrain,
     /// File is a sub of a different item
     pub parent_item: Option<String>,
@@ -88,23 +89,6 @@ pub enum Combo {
 
 
 // MARK: Flags
-///Capability
-#[derive(serde::Serialize, serde::Deserialize, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
-#[serde(from="bool", into="bool")]
-pub enum Capability {
-    /// Has option
-    Yes,
-    /// Does not have option
-    #[default]
-    No,
-}
-
-impl From<Capability> for bool {
-    fn from(value: Capability) -> Self { matches!(value, Capability::Yes) }
-}
-impl From<bool> for Capability {
-    fn from(value: bool) -> Self { if value { Self::Yes } else { Self::No } }
-}
 
 /// Vehicle flags
 #[derive(serde::Serialize, serde::Deserialize, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
@@ -197,10 +181,10 @@ impl XMLReader<Self> for Vehicle {
     }
 
     #[inline]
-    fn tags_paired(e: &BytesStart, depth : i32, data: &mut Self, reader: &mut quick_xml::Reader<&[u8]>) -> XMLReaderDepth {
+    fn tags_paired(&mut self, e: &BytesStart, depth : i32, reader: &mut quick_xml::Reader<&[u8]>) -> XMLReaderDepth {
         match (e.name().as_ref(), depth) {
             (b"vehicle", 0) => {
-                data.sorting.type_name = Self::xml_attribute(e, "type");
+                self.sorting.type_name = Self::xml_attribute(e, "type");
                 Ok(1)
             },
             (_, 0) => Err(AbstractFileError::XmlWrongFileType),
@@ -209,91 +193,88 @@ impl XMLReader<Self> for Vehicle {
                 if let Some(filename) = Self::xml_text(e, reader) {
                     let filename = Self::unwrap_base_path(filename);
                     match &filename {
-                        PathType::Base(_) => data.icon_base = Some(filename.clone().to_dds()),
-                        PathType::Local(_) => data.icon_file = Some(filename.clone().to_dds()),
+                        PathType::Base(_) => self.icon_base = Some(filename.clone().to_dds()),
+                        PathType::Local(_) => self.icon_file = Some(filename.clone().to_dds()),
                     }
                 }
                 Ok(0)
             },
             (b"parentFile", 1) => {
-                data.parent_item = Self::xml_attribute(e, "xmlFilename");
+                self.parent_item = Self::xml_attribute(e, "xmlFilename");
                 Self::slurp(e, reader)
             },
 
             // MARK: ~sorting
-            (b"brand", 2) => { data.sorting.brand = Self::xml_text(e, reader); Ok(0) },
-            (b"category", 2) => { data.sorting.category = Self::xml_text(e, reader); Ok(0) },
-            (b"name", 2) => { data.sorting.name = Self::xml_text(e, reader); Ok(0) },
-            (b"typeDesc", 2) => { data.sorting.type_description = Self::xml_text(e, reader); Ok(0) },
-            (b"year", 2) => {
-                data.sorting.year = Self::xml_number(e, reader);
-                Ok(0)
-            },
+            (b"brand", 2) => { self.sorting.brand = Self::xml_text(e, reader); Ok(0) },
+            (b"category", 2) => { self.sorting.category = Self::xml_text(e, reader); Ok(0) },
+            (b"name", 2) => { self.sorting.name = Self::xml_text(e, reader); Ok(0) },
+            (b"typeDesc", 2) => { self.sorting.type_description = Self::xml_text(e, reader); Ok(0) },
+            (b"year", 2) => { self.sorting.year = Self::xml_number(e, reader); Ok(0) },
             (b"function", 3) => { 
-                if let Some(v) = Self::xml_text(e, reader) { data.sorting.functions.push(v) }
+                if let Some(v) = Self::xml_text(e, reader) { self.sorting.functions.push(v) }
                 Ok(0)
             },
-            (b"price", 2) => { data.sorting.price = Self::xml_number(e, reader); Ok(0) },
-            (b"speedLimit", 2) => { data.sorting.price = Self::xml_attribute(e, "value").map(|v| v.parse().unwrap_or_default()); Ok(0) },
-            (b"specs", 2) => { Self::tag_specs(reader, data, e); Ok(0) },
+            (b"price", 2) => { self.sorting.price = Self::xml_number(e, reader); Ok(0) },
+            (b"speedLimit", 2) => { self.sorting.price = Self::xml_attribute(e, "value").map(|v| v.parse().unwrap_or_default()); Ok(0) },
+            (b"specs", 2) => { self.tag_specs(reader, e); Ok(0) },
 
             // MARK: ~flags
 
             (b"motorized", 1) => {
-                data.flags.motorized = Capability::Yes; Ok(1)
+                self.flags.motorized = Capability::Yes; Ok(1)
             },
             (b"enterable", 1) => {
-                data.flags.enterable = Capability::Yes; Self::slurp(e, reader)
+                self.flags.enterable = Capability::Yes; Self::slurp(e, reader)
             },
             (b"realLights", 2) => {
-                data.flags.lights = Capability::Yes; Self::slurp(e, reader)
+                self.flags.lights = Capability::Yes; Self::slurp(e, reader)
             },
             (b"beaconLights", 2) => {
-                data.flags.beacons = Capability::Yes; Self::slurp(e, reader)
+                self.flags.beacons = Capability::Yes; Self::slurp(e, reader)
             },
             (b"baseMaterialConfigurations" | b"baseColorConfigurations" | b"designMaterialConfigurations" | b"designMaterial2Configurations" | b"designMaterial3Configurations", 1) => {
-                data.flags.color = Capability::Yes; Self::slurp(e, reader)
+                self.flags.color = Capability::Yes; Self::slurp(e, reader)
             },
             (v, 1) if v.starts_with(b"designColorConfigurations") => {
-                data.flags.color = Capability::Yes; Self::slurp(e, reader)
+                self.flags.color = Capability::Yes; Self::slurp(e, reader)
             },
-            (b"wheels", 1) => { Self::tag_wheels(reader, data, e); Ok(0) },
+            (b"wheels", 1) => { self.tag_wheels(reader, e); Ok(0) },
             (b"attacherJoint", _) => {
                 if let Some(joint) = Self::xml_attribute(e, "jointType") {
-                    data.sorting.joint_accepts.push(joint);
+                    self.sorting.joint_accepts.push(joint);
                 }
                 Self::slurp(e, reader)
             }
             (b"inputAttacherJoint", _) => {
                 if let Some(joint) = Self::xml_attribute(e, "jointType") {
-                    data.sorting.joint_requires.push(joint);
+                    self.sorting.joint_requires.push(joint);
                 }
                 Self::slurp(e, reader)
             }
 
             // MARK: ~fill/spray/motor
-            (b"sprayType", 3) => { Self::tag_spray_type(reader, data, e); Ok(0) },
-            (b"fillUnitConfiguration", 3) => { Self::tag_fill_config(reader, data, e); Ok(0) },
-            (b"motorConfigurations", 2) => { Self::tag_motors(reader, data, e); Ok(0) },
+            (b"sprayType", 3) => { self.tag_spray_type(reader, e); Ok(0) },
+            (b"fillUnitConfiguration", 3) => { self.tag_fill_config(reader, e); Ok(0) },
+            (b"motorConfigurations", 2) => { self.tag_motors(reader, e); Ok(0) },
 
             _ => Ok(1),
         }
     }
 
-    fn tags_self_closing(e: &BytesStart, depth : i32, data: &mut Self) {
+    fn tags_self_closing(&mut self, e: &BytesStart, depth : i32) {
         match (e.name().as_ref(), depth) {
             (b"component", 3) => {
-                if let Some(mass) = Self::xml_attribute(e, "mass").map(|v| v.parse::<u32>().unwrap_or_default()) {
-                    data.sorting.weight += mass;
+                if let Some(mass) = Self::xml_attribute_number::<u32>(e, "mass") {
+                    self.sorting.weight += mass;
                 }
             },
             (b"inputAttacherJoint", _) => {
                 if let Some(joint) = Self::xml_attribute(e, "jointType") {
-                    data.sorting.joint_requires.push(joint);
+                    self.sorting.joint_requires.push(joint);
                 }
             }
-            (b"consumer", _) if data.motor.fuel_type.is_none() => {
-                data.motor.fuel_type = Self::xml_attribute(e, "fillType");
+            (b"consumer", _) if self.motor.fuel_type.is_none() => {
+                self.motor.fuel_type = Self::xml_attribute(e, "fillType");
             }
             _ => (),
         }
@@ -304,15 +285,15 @@ impl Vehicle {
     // MARK: _wheels
     /// Do wheels
     #[inline]
-    fn tag_wheels(reader: &mut Reader<&[u8]>, data: &mut Self, e : &BytesStart) {
+    fn tag_wheels(&mut self, reader: &mut Reader<&[u8]>, e : &BytesStart) {
         let mut buf_next = Vec::new();
         let mut wheel_configs = 0_usize;
         loop {
             match reader.read_event_into(&mut buf_next) {
                 Ok(Event::Start(e)) if e.name().as_ref() == b"wheelConfiguration" => {
                     wheel_configs += 1;
-                    if wheel_configs >= 2 { data.flags.wheels = Capability::Yes }
-                    let _ = reader.read_to_end(e.to_end().name());
+                    if wheel_configs >= 2 { self.flags.wheels = Capability::Yes }
+                    let _ = Self::slurp(&e, reader);
                 },
                 Ok(Event::End(f)) if f.name() == e.name() => break,
                 _ => (),
@@ -323,7 +304,7 @@ impl Vehicle {
     // MARK: _sprayTypes
     /// Read spray types
     #[inline]
-    fn tag_spray_type(reader: &mut Reader<&[u8]>, data: &mut Self, e : &BytesStart) {
+    fn tag_spray_type(&mut self, reader: &mut Reader<&[u8]>, e : &BytesStart) {
         let mut buf_next = Vec::new();
         let mut spray = SprayType::default();
 
@@ -339,13 +320,13 @@ impl Vehicle {
                 _ => (),
             }
         }
-        data.sprays.push(spray);
+        self.sprays.push(spray);
     }
 
     // MARK: _fillUnit
     /// Read fill unit config
     #[inline]
-    fn tag_fill_config(reader: &mut Reader<&[u8]>, data: &mut Self, e : &BytesStart) {
+    fn tag_fill_config(&mut self, reader: &mut Reader<&[u8]>, e : &BytesStart) {
         let mut buf_next = Vec::new();
         let mut fill_config = FillConfig::default();
 
@@ -355,7 +336,7 @@ impl Vehicle {
                     if Self::xml_attribute(&e, "showInShop") != Some(String::from("false")) {
                         let mut fill_unit = FillUnit::default();
                     
-                        if let Some(v) = Self::xml_attribute(&e, "capacity").map(|v|v.parse::<u32>().unwrap_or_default()) {
+                        if let Some(v) = Self::xml_attribute_number::<u32>(&e, "capacity") {
                             fill_unit.capacity += v;
                         }
                         if let Some(v) = Self::xml_attribute(&e, "fillTypes") {
@@ -372,33 +353,33 @@ impl Vehicle {
                 _ => (),
             }
         }
-        if !fill_config.is_empty() { data.fills.push(fill_config); }
+        if !fill_config.is_empty() { self.fills.push(fill_config); }
     }
 
     // MARK: _specs
     /// Do specs
     #[inline]
-    fn tag_specs(reader: &mut Reader<&[u8]>, data: &mut Self, e : &BytesStart) {
+    fn tag_specs(&mut self, reader: &mut Reader<&[u8]>, e : &BytesStart) {
         let mut buf_next = Vec::new();
         loop {
             match reader.read_event_into(&mut buf_next) {
                 Ok(Event::Start(e)) => {
                     match e.name().as_ref() {
-                        b"workingWidth" => data.sorting.working_width = Self::xml_number(&e, reader),
-                        b"power"        => data.sorting.power = Self::xml_number(&e, reader),
-                        b"neededPower"  => data.sorting.needed_power = Self::xml_number(&e, reader),
-                        b"maxSpeed"     => data.sorting.speed_limit = Self::xml_number(&e, reader),
+                        b"workingWidth" => self.sorting.working_width = Self::xml_number(&e, reader),
+                        b"power"        => self.sorting.power = Self::xml_number(&e, reader),
+                        b"neededPower"  => self.sorting.needed_power = Self::xml_number(&e, reader),
+                        b"maxSpeed"     => self.sorting.speed_limit = Self::xml_number(&e, reader),
                         _ => (),
                     }
                 },
                 Ok(Event::Empty(e)) if e.name().as_ref() == b"combination" => {
                     if let Some(filename) = Self::xml_attribute(&e, "xmlFilename") {
                         match Self::unwrap_base_path(filename) {
-                            PathType::Base(v)  => data.sorting.combos.push(Combo::Base(v)),
-                            PathType::Local(v) => data.sorting.combos.push(Combo::Local(v)),
+                            PathType::Base(v)  => self.sorting.combos.push(Combo::Base(v)),
+                            PathType::Local(v) => self.sorting.combos.push(Combo::Local(v)),
                         }
                     } else if let Some(cat) = Self::xml_attribute(&e, "filterCategory") {
-                        data.sorting.combos.push(Combo::Category(cat));
+                        self.sorting.combos.push(Combo::Category(cat));
                     }
                 }
                 Ok(Event::End(f)) if f.name() == e.name() => break,
@@ -411,7 +392,7 @@ impl Vehicle {
     // MARK: _motors
     /// Do motors
     #[inline]
-    fn tag_motors(reader: &mut Reader<&[u8]>, data: &mut Self, e : &BytesStart) {
+    fn tag_motors(&mut self, reader: &mut Reader<&[u8]>, e : &BytesStart) {
         let mut buf_next = Vec::new();
         let mut motor = MotorBuild::new();
         let mut next_motor = true;
@@ -451,8 +432,8 @@ impl Vehicle {
                         },
                         b"transmission" => {
                             if let Some(name) = Self::xml_attribute(&e, "name") {
-                                if data.motor.transmission_type.is_none() {
-                                    data.motor.transmission_type = Some(name.clone());
+                                if self.motor.transmission_type.is_none() {
+                                    self.motor.transmission_type = Some(name.clone());
                                 }
                                 motor.trans = name;
                             }
@@ -491,7 +472,7 @@ impl Vehicle {
                 },
                 Ok(Event::End(e)) if e.name().as_ref() == b"motorConfiguration" => {
                     next_motor = true;
-                    data.motor.motors.push(motor.build());
+                    self.motor.motors.push(motor.build());
                     motor.reset();
                 }
                 Ok(Event::End(f)) if f.name() == e.name() => break,
@@ -878,7 +859,7 @@ mod tests {
         let filename = "tests/test_mods/DETAIL_Samples.zip";
         let item = "xml/vehicle-with-parent.xml";
         let json = "json/vehicle-with-parent.json";
-        let dump = true;
+        let dump = false;
 
         let mut file_handle = AbstractFile::new(filename);
         let actual = StoreItem::from_abstract_file(&mut file_handle, item).unwrap();

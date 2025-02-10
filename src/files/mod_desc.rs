@@ -86,69 +86,60 @@ impl XMLReader<Self> for DescXML {
 
     /// Handle paired tags
     #[inline]
-    fn tags_paired(e: &BytesStart, depth : i32, data: &mut Self, reader: &mut quick_xml::Reader<&[u8]>) -> XMLReaderDepth {
+    fn tags_paired(&mut self, e: &BytesStart, depth : i32, reader: &mut quick_xml::Reader<&[u8]>) -> XMLReaderDepth {
         match (e.name().as_ref(), depth) {
             (b"modDesc", 0) => {
-                data.desc_version = Self::xml_attribute(e, "descVersion").and_then(|v| v.parse().ok()).unwrap_or_default();
+                self.desc_version = Self::xml_attribute(e, "descVersion").and_then(|v| v.parse().ok()).unwrap_or_default();
                 Ok(1)
             },
             (_, 0) => Err(AbstractFileError::XmlParseError),
-            (b"author", 1) => {
-                data.author = reader.read_text(e.name()).map(|v|v.to_string()).ok();
-                Ok(0)
-            },
-            (b"version", 1) => {
-                data.version = reader.read_text(e.name()).map(|v|v.to_string()).ok();
-                Ok(0)
-            },
-            (b"iconFilename", 1) => {
-                data.icon_filename = reader.read_text(e.name()).map(|v|v.to_string()).ok();
-                Ok(0)
-            },
+            (b"author", 1) => { self.author = Self::xml_text(e, reader); Ok(0) },
+            (b"version", 1) => { self.version = Self::xml_text(e, reader); Ok(0) },
+            (b"iconFilename", 1) => { self.icon_filename = Self::xml_text(e, reader); Ok(0) },
             (b"dependency", 2) => {
-                if let Ok(v) = reader.read_text(e.name()) {
-                    data.dependencies.push(v.to_string());
+                if let Some(v) = Self::xml_text(e, reader) {
+                    self.dependencies.push(v);
                 }
                 Ok(0)
             },
-            (b"map", 2) if data.map_config_filename.is_none() => {
-                data.map_config_filename = Self::xml_attribute(e, "configFilename");
+            (b"map", 2) if self.map_config_filename.is_none() => {
+                self.map_config_filename = Self::xml_attribute(e, "configFilename");
                 Ok(0)
             },
-            (b"text", 2)          => { Self::tag_l10n_text(reader, data, e)?; Ok(0) },
-            (b"title", 1)         => { Self::tag_title(reader, data, e)?; Ok(0) },
-            (b"description", 1)   => { Self::tag_description(reader, data, e)?; Ok(0) },
-            (b"actionBinding", 2) => { Self::tag_action_binding(reader, data, e)?; Ok(0) },
+            (b"text", 2)          => { self.tag_l10n_text(reader, e)?; Ok(0) },
+            (b"title", 1)         => { self.tag_title(reader, e)?; Ok(0) },
+            (b"description", 1)   => { self.tag_description(reader, e)?; Ok(0) },
+            (b"actionBinding", 2) => { self.tag_action_binding(reader, e)?; Ok(0) },
             _ => Ok(1),
         }
     }
 
     /// Handle all self-closing tag
     #[inline]
-    fn tags_self_closing(e: &BytesStart, depth : i32, data: &mut Self) {
+    fn tags_self_closing(&mut self, e: &BytesStart, depth : i32) {
         match (e.name().as_ref(), depth) {
             (b"multiplayer", 1) => {
                 if let Some(v) = Self::xml_attribute(e, "supported") {
-                    data.multiplayer = v.eq_ignore_ascii_case("true");
+                    self.multiplayer = v.eq_ignore_ascii_case("true");
                 }
             },
             (b"l10n", 1) => {
                 if let Some(v) = Self::xml_attribute(e, "filenamePrefix") {
-                    data.l10n_file_prefix = Some(v);
+                    self.l10n_file_prefix = Some(v);
                 }
             },
             (b"sourceFile", 2) => {
-                data.script_files = true;
+                self.script_files = true;
             },
             (b"storeItem", 2) => {
                 if let Some(v) = Self::xml_attribute(e, "xmlFilename") {
-                    data.store_items.push(v);
+                    self.store_items.push(v);
                 }
             },
             (b"action", 2) => {
                 if let Some(name) = Self::xml_attribute(e, "name") {
                     let category = Self::xml_attribute(e, "category").unwrap_or_else(|| String::from("ALL"));
-                    data.actions.insert(name, category);
+                    self.actions.insert(name, category);
                 }
             },
             (b"brand", 2) => {
@@ -167,7 +158,7 @@ impl XMLReader<Self> for DescXML {
                         PathType::Local(v) => brand.icon_file = Some(v),
                     }
                 }
-                data.brands.push(brand);
+                self.brands.push(brand);
             },
             _ => (),
         }
@@ -177,10 +168,10 @@ impl XMLReader<Self> for DescXML {
 impl DescXML {
     /// Process key bindings
     #[inline]
-    fn tag_action_binding(reader: &mut Reader<&[u8]>, mod_desc: &mut Self, e : &BytesStart) -> Result<(), AbstractFileError> {
+    fn tag_action_binding(&mut self, reader: &mut Reader<&[u8]>, e : &BytesStart) -> Result<(), AbstractFileError> {
         let mut buf_next = Vec::new();
         let Some(key) = Self::xml_attribute(e, "action") else {
-            mod_desc.warnings.insert(ModDescWarnings::ActionBindingMalformed());
+            self.warnings.insert(ModDescWarnings::ActionBindingMalformed());
             return Ok(())
         };
         loop {
@@ -188,15 +179,15 @@ impl DescXML {
                 Ok(Event::Empty(e)) if e.name().as_ref() == b"binding" => {
                     if let (Some(d), Some(i)) = (Self::xml_attribute(&e, "device"), Self::xml_attribute(&e, "input")) {
                         if d == KB_DEF {
-                            let key_map = mod_desc.action_binding.entry(key.clone()).or_default();
+                            let key_map = self.action_binding.entry(key.clone()).or_default();
                             key_map.push(i);
                         }
                     } else {
-                        mod_desc.warnings.insert(ModDescWarnings::ActionBindingMalformed());
+                        self.warnings.insert(ModDescWarnings::ActionBindingMalformed());
                     }
                 },
                 Ok(Event::Start(e) | Event::Empty(e)) => {
-                    mod_desc.warnings.insert(ModDescWarnings::ActionBindingInvalidTag(Self::get_key(&e)));
+                    self.warnings.insert(ModDescWarnings::ActionBindingInvalidTag(Self::get_key(&e)));
                 },
                 Ok(Event::End(f)) if f.name() == e.name() => break,
                 Ok(Event::Eof) => return Err(AbstractFileError::XmlParseError),
@@ -208,22 +199,22 @@ impl DescXML {
 
     /// Process included l10n
     #[inline]
-    fn tag_l10n_text(reader: &mut Reader<&[u8]>, mod_desc: &mut Self, e : &BytesStart) -> Result<(), AbstractFileError> {
+    fn tag_l10n_text(&mut self, reader: &mut Reader<&[u8]>, e : &BytesStart) -> Result<(), AbstractFileError> {
         let mut buf_next = Vec::new();
         let Some(key) = Self::xml_attribute(e, "name") else {
-            mod_desc.warnings.insert(ModDescWarnings::L10nMalformed());
+            self.warnings.insert(ModDescWarnings::L10nMalformed());
             return Ok(())
         };
         loop {
             match reader.read_event_into(&mut buf_next) {
                 Ok(Event::Start(e)) if LANG.contains(&Self::get_key(&e).as_str()) => {
                     if let (Some(k), Ok(v)) = (Self::get_key_option(&e), reader.read_text(e.name())) {
-                        let lang_map = mod_desc.l10n_local.entry(key.clone()).or_default();
+                        let lang_map = self.l10n_local.entry(key.clone()).or_default();
                         lang_map.insert(k, v.to_string());
                     }
                 },
                 Ok(Event::Start(e) | Event::Empty(e)) => {
-                    mod_desc.warnings.insert(ModDescWarnings::L10nInvalidLanguage(Self::get_key(&e), key.clone()));
+                    self.warnings.insert(ModDescWarnings::L10nInvalidLanguage(Self::get_key(&e), key.clone()));
                 }
                 Ok(Event::End(f)) if f.name() == e.name() => break,
                 Ok(Event::Eof) => return Err(AbstractFileError::XmlParseError),
@@ -235,7 +226,7 @@ impl DescXML {
 
     /// Process description
     #[inline]
-    fn tag_description(reader: &mut Reader<&[u8]>, mod_desc: &mut Self, e : &BytesStart) -> Result<(), AbstractFileError> {
+    fn tag_description(&mut self, reader: &mut Reader<&[u8]>, e : &BytesStart) -> Result<(), AbstractFileError> {
         let mut buf_next = Vec::new();
         let mut current_lang = EN_KEY.to_owned();
         loop {
@@ -243,17 +234,17 @@ impl DescXML {
                 Ok(Event::Start(e)) => {
                     current_lang = Self::get_key_option(&e).unwrap_or_else(|| EN_KEY.to_owned());
                     if !LANG.contains(&current_lang.as_str()) {
-                        mod_desc.warnings.insert(ModDescWarnings::L10nInvalidLanguage(current_lang.clone(), String::from("description")));
+                        self.warnings.insert(ModDescWarnings::L10nInvalidLanguage(current_lang.clone(), String::from("description")));
                     }
                 },
                 Ok(Event::Text(e)) => {
                     if let Ok(v) = e.unescape() {
-                        mod_desc.description.insert(current_lang.clone(), v.to_string().replace("\r\n", "\n"));
+                        self.description.insert(current_lang.clone(), v.to_string().replace("\r\n", "\n"));
                     }
                 }
                 Ok(Event::CData(e)) => {
                     if let Ok(v) = String::from_utf8(e.to_vec()) {
-                        mod_desc.description.insert(current_lang.clone(), v.replace("\r\n", "\n"));
+                        self.description.insert(current_lang.clone(), v.replace("\r\n", "\n"));
                     }
                 }
                 Ok(Event::End(f)) if f.name() == e.name() => break,
@@ -266,7 +257,7 @@ impl DescXML {
 
     /// Process Title
     #[inline]
-    fn tag_title(reader: &mut Reader<&[u8]>, mod_desc: &mut Self, e : &BytesStart) -> Result<(), AbstractFileError> {
+    fn tag_title(&mut self, reader: &mut Reader<&[u8]>, e : &BytesStart) -> Result<(), AbstractFileError> {
         let mut buf_next = Vec::new();
 
         loop {
@@ -274,16 +265,16 @@ impl DescXML {
                 Ok(Event::Start(e)) => {
                     if let (Some(k), Ok(v)) = (Self::get_key_option(&e), reader.read_text(e.name())) {
                         if LANG.contains(&k.as_str()) {
-                            mod_desc.title.insert(k, v.to_string());
+                            self.title.insert(k, v.to_string());
                         } else {
-                            mod_desc.warnings.insert(ModDescWarnings::L10nInvalidLanguage(k.clone(), String::from("title")));
+                            self.warnings.insert(ModDescWarnings::L10nInvalidLanguage(k.clone(), String::from("title")));
                         }
                     }
                 },
                 Ok(Event::Text(e)) => {
                     if let Ok(v) = e.unescape() {
-                        mod_desc.warnings.insert(ModDescWarnings::ShouldBeL10n(String::from("title")));
-                        mod_desc.title.insert(EN_KEY.to_owned(), v.to_string());
+                        self.warnings.insert(ModDescWarnings::ShouldBeL10n(String::from("title")));
+                        self.title.insert(EN_KEY.to_owned(), v.to_string());
                     }
                 }
                 Ok(Event::End(f)) if f.name() == e.name() => break,

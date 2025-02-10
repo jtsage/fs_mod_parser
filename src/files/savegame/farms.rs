@@ -41,7 +41,7 @@ impl XMLReader<Self> for Farms {
         Self::from_abstract_file(mod_file, "farms.xml")
     }
 
-    fn tags_paired(e: &BytesStart, depth : i32, data: &mut Self, reader: &mut quick_xml::Reader<&[u8]>) -> XMLReaderDepth {
+    fn tags_paired(&mut self, e: &BytesStart, depth : i32, reader: &mut quick_xml::Reader<&[u8]>) -> XMLReaderDepth {
         match (e.name().as_ref(), depth) {
             (b"farms", 0) => Ok(1),
             (_, 0)        => Err(AbstractFileError::XmlWrongFileType),
@@ -52,23 +52,22 @@ impl XMLReader<Self> for Farms {
                 if let Some(v) = Self::xml_attribute(e, "name") {
                     farm.name = v;
                 }
-                if let Some(v) = Self::xml_attribute(e, "color") {
-                    farm.color = v.parse::<usize>().unwrap_or_default();
+                if let Some(v) = Self::xml_attribute_number(e, "color") {
+                    farm.color = v
                 }
 
                 #[expect(clippy::cast_possible_truncation)]
-                if let Some(v) = Self::xml_attribute(e, "loan") {
-                    farm.loan = v.parse::<f64>().unwrap_or_default() as i64;
+                if let Some(v) = Self::xml_attribute_number::<f64>(e, "loan") {
+                    farm.loan = v as i64;
                 }
 
                 #[expect(clippy::cast_possible_truncation)]
-                if let Some(v) = Self::xml_attribute(e, "money") {
-                    farm.cash = v.parse::<f64>().unwrap_or_default() as i64;
+                if let Some(v) = Self::xml_attribute_number::<f64>(e, "money") {
+                    farm.cash = v as i64;
                 }
 
-                let _ = reader.read_to_end(e.to_end().name());
-                data.0.push(farm);
-                Ok(0)
+                self.0.push(farm);
+                Self::slurp(e, reader)
             },
             _ => Ok(1),
         }

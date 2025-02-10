@@ -34,7 +34,6 @@ mod tests {
     use super::super::XMLReader;
     use super::items::Mods;
     use super::career::Career;
-    // use assert_json_diff::assert_json_eq;
 
     #[test]
     fn good_vehicles() {

@@ -168,7 +168,7 @@ impl ModDetailBrand {
 }
 impl Default for ModDetailBrand {
     fn default() -> Self {
-        ModDetailBrand::new()
+        Self::new()
     }
 }
 
@@ -198,7 +198,7 @@ pub struct ModDetailVehicleSorting {
 impl ModDetailVehicleSorting {
     /// create new sorting sub-record
     fn new() -> Self {
-        ModDetailVehicleSorting {
+        Self {
             brand: None,
             category: None,
             combos: vec![],
@@ -239,7 +239,7 @@ pub struct ModDetailVehicleFlags {
 impl ModDetailVehicleFlags {
     /// Create new vehicle flag sub-record
     fn new() -> Self {
-        ModDetailVehicleFlags {
+        Self {
             beacons: VehicleCapability::No,
             color: VehicleCapability::No,
             enterable: VehicleCapability::No,
@@ -256,8 +256,8 @@ impl Serialize for VehicleCapability {
         S: Serializer,
     {
         match *self {
-            VehicleCapability::Yes => serializer.serialize_bool(true),
-            VehicleCapability::No => serializer.serialize_bool(false),
+            Self::Yes => serializer.serialize_bool(true),
+            Self::No => serializer.serialize_bool(false),
         }
     }
 }
@@ -277,7 +277,7 @@ pub struct ModDetailVehicleEngine {
 impl ModDetailVehicleEngine {
     /// create new engine sub-record
     fn new() -> Self {
-        ModDetailVehicleEngine {
+        Self {
             fuel_type: None,
             transmission_type: None,
             motors: vec![],
@@ -312,7 +312,7 @@ pub struct ModDetailVehicleFillSpray {
 impl ModDetailVehicleFillSpray {
     /// create new fill and spray sub-record
     fn new() -> Self {
-        ModDetailVehicleFillSpray {
+        Self {
             fill_cat: vec![],
             fill_level: 0,
             fill_type: vec![],
@@ -344,7 +344,7 @@ pub struct ModDetailVehicleSpecs {
 impl ModDetailVehicleSpecs {
     /// create new vehicle specs sub-record
     fn new() -> Self {
-        ModDetailVehicleSpecs {
+        Self {
             functions: vec![],
             joint_accepts: vec![],
             joint_requires: vec![],
@@ -386,7 +386,7 @@ impl ModDetailVehicle {
     #[must_use]
     /// Create new vehicle record
     pub fn new() -> Self {
-        ModDetailVehicle {
+        Self {
             fill_spray: ModDetailVehicleFillSpray::new(),
             flags: ModDetailVehicleFlags::new(),
             icon_base: None,
@@ -420,7 +420,7 @@ impl MotorValue {
     #[must_use]
     /// Create new motor value with round numbers
     pub fn new(rpm: f32, value: f32) -> Self {
-        MotorValue {
+        Self {
             rpm: Self::round_to_u32(rpm),
             value: Self::round_to_u32(value),
         }
@@ -452,7 +452,7 @@ impl MotorEntry {
     #[must_use]
     /// create new motor definition
     pub fn new(name: String, max_speed: u32) -> Self {
-        MotorEntry {
+        Self {
             name,
             horse_power: vec![],
             max_speed,
@@ -558,6 +558,8 @@ impl ModDetailPlaceStorage {
     }
 }
 
+
+//MARK: PRODUCTION
 /// Production ingredient list
 pub type ProductionIngredients = Vec<ProductionIngredient>;
 /// Production recipe (list of list of ingredients - ingredients in nested level are "OR", ingredient list in top level is "AND")

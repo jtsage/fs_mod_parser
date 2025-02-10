@@ -32,7 +32,7 @@ impl XMLReader<Self> for Mods {
     }
 
     /// Redefine paired tags processor
-    fn tags_paired(e: &BytesStart, depth : i32, data: &mut Self, reader: &mut quick_xml::Reader<&[u8]>) -> XMLReaderDepth {
+    fn tags_paired(&mut self, e: &BytesStart, depth : i32, reader: &mut quick_xml::Reader<&[u8]>) -> XMLReaderDepth {
         match (e.name().as_ref(), depth) {
             (b"vehicles" | b"placeables", 0) => Ok(1),
             (_, 0) => Err(AbstractFileError::XmlWrongFileType),
@@ -40,13 +40,12 @@ impl XMLReader<Self> for Mods {
             (b"vehicle" | b"placeable", 1) => {
                 if let Some(name) = Self::xml_attribute(e, "modName") {
                     if let Some(farm) = Self::xml_attribute(e, "farmId").and_then(|v| v.parse::<usize>().ok()) {
-                        let entry = data.0.entry(name).or_default();
+                        let entry = self.0.entry(name).or_default();
                         entry.farms.insert(farm);
                     }
                 }
 
-                let _ = reader.read_to_end(e.to_end().name());
-                Ok(0)
+                Self::slurp(e, reader)
             },
             _ => Ok(1),
         }

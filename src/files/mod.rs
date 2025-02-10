@@ -178,7 +178,7 @@ impl AbstractFile {
         matches!(self, Self::Folder(_, _))
     }
 
-    /// Get moddesc file
+    /// Get moddesc file 
     pub fn get_mod_desc(&mut self) -> Result<mod_desc::DescXML, AbstractFileError> {
         mod_desc::DescXML::from_abstract_file(self, "modDesc.xml")
     }
@@ -261,10 +261,10 @@ pub trait XMLReader<T> {
                 Ok(Event::Eof)                    => break,
                 Ok(Event::End(_))                 => depth -= 1,
                 Ok(Event::Start(e)) => {
-                    depth += Self::tags_paired(&e, depth, self, &mut reader)?;
+                    depth += self.tags_paired(&e, depth, &mut reader)?;
                 },
                 Ok(Event::Empty(e)) => {
-                    Self::tags_self_closing(&e, depth, self);
+                    self.tags_self_closing(&e, depth);
                 },
                 _ => ()
             }
@@ -277,14 +277,14 @@ pub trait XMLReader<T> {
     /// return value is the number of unclosed tags we traversed.
     #[expect(unused_variables)]
     #[inline]
-    fn tags_paired(e: &BytesStart, depth : i32, data: &mut Self, reader: &mut quick_xml::Reader<&[u8]>) -> XMLReaderDepth { Ok(0) }
+    fn tags_paired(&mut self, e: &BytesStart, depth : i32, reader: &mut quick_xml::Reader<&[u8]>) -> XMLReaderDepth { Ok(0) }
 
     /// Process unpaired tags (no need for reader)
     /// 
     /// no return value
     #[expect(unused_variables)]
     #[inline]
-    fn tags_self_closing(e: &BytesStart, depth : i32, data: &mut Self) {}
+    fn tags_self_closing(&mut self, e: &BytesStart, depth : i32) {}
 
     /// Get an xml attribute from [`BytesStart`] by name
     #[inline]
