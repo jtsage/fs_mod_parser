@@ -53,7 +53,7 @@ impl XMLReader<Self> for Farms {
                     farm.name = v;
                 }
                 if let Some(v) = Self::xml_attribute_number(e, "color") {
-                    farm.color = v
+                    farm.color = v;
                 }
 
                 #[expect(clippy::cast_possible_truncation)]

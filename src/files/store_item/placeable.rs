@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::errors::AbstractFileError;
 use crate::files::{XMLReader, XMLReaderDepth, PathType};
 use crate::files::store_item::Capability;
@@ -7,7 +9,7 @@ use quick_xml::Reader;
 
 // MARK: Placeable
 /// Vehicle storeItem record
-#[derive(serde::Serialize, serde::Deserialize, Clone, Eq, Ord, PartialEq, PartialOrd, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, PartialOrd, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Placeable {
     /// path to base game icon
@@ -21,7 +23,7 @@ pub struct Placeable {
     /// File is a sub of a different item
     pub parent_item: Option<String>,
     /// production list
-    pub productions: bool, //,Vec<ModDetailProduction>,
+    pub productions: Vec<Production>,
     /// show in store
     pub show_in_store: bool,
     /// placeable sorting information
@@ -32,7 +34,7 @@ pub struct Placeable {
 
 impl Default for Placeable {
     fn default() -> Self {
-        Self { icon_base: None, icon_file: None, icon_data: None, animals: Animals::default(), parent_item: None, productions: Default::default(), show_in_store: true, sorting: Sorting::default(), storage: Vec::default() }
+        Self { icon_base: None, icon_file: None, icon_data: None, animals: Animals::default(), parent_item: None, productions: Vec::default(), show_in_store: true, sorting: Sorting::default(), storage: Vec::default() }
     }
 }
 
@@ -188,6 +190,7 @@ impl XMLReader<Self> for Placeable {
                 self.tag_silo(reader, e);
                 Ok(0)
             }
+            (b"productionPoint", 1) => { self.tag_productions(reader, e); Ok(0) },
             (b"objectStorage", 1) => {
                 let pallets = Self::xml_attribute(e, "supportsPallets").is_some_and(|v| v == *"true");
                 let bales = Self::xml_attribute(e, "supportsBales").is_some_and(|v| v == *"true");
@@ -206,22 +209,6 @@ impl XMLReader<Self> for Placeable {
                 });
                 Self::slurp(e, reader)
             }
-
-            // productionPoint -> storage -> 
-        //     <storage isExtension="false" fillLevelSyncThreshold="50">
-		// 	<capacity fillType="CHAFF"   capacity="500000" />
-		// 	<capacity fillType="STRAW"   capacity="500000" />
-        //     <capacity fillType="GRASS_WINDROW"   capacity="500000" />
-		// 	<capacity fillType="SILAGE_ADDITIVE"   capacity="10000" />
-		// 	<capacity fillType="SILAGE"   capacity="500000" />
-        // </storage>
-
-        // <storages>
-        //     <storage node="storage" fillTypeCategories="farmSilo" capacity="980000" isExtension="false"/>
-        // </storages>
-
-            // MARK: ~storage
-
             _ => Ok(1),
         }
     }
@@ -302,7 +289,150 @@ impl Placeable {
             }
         }
     }
+
+    // MARK: _productions
+    /// Do parent productions point tag
+    #[inline]
+    fn tag_productions(&mut self, reader: &mut Reader<&[u8]>, e : &BytesStart) {
+        let mut buf_next = Vec::new();
+        loop {
+                
+            match reader.read_event_into(&mut buf_next) {
+                Ok(Event::Empty(e)) if e.name().as_ref() == b"capacity" => {
+                    self.tag_storage(&e);
+                },
+                Ok(Event::Start(e)) if e.name().as_ref() == b"production" => {
+                    self.tag_production(reader, &e);
+                }
+                Ok(Event::End(f)) if f.name() == e.name() => break,
+                _ => (),
+            }
+        }
+    }
+
+    // MARK: _productions
+    /// Do production
+    #[inline]
+    fn tag_production(&mut self, reader: &mut Reader<&[u8]>, e : &BytesStart) {
+        let mut buf_next = Vec::new();
+        let mut production = Production::default();
+
+        if let Some(name) = Self::xml_attribute(e, "name") {
+            name.clone_into(&mut production.name);
+        }
+        if let Some(params) = Self::xml_attribute(e, "params") {
+            let params = params.split('|').map(std::string::ToString::to_string).collect();
+            production.params = Some(params);
+        }
+
+        if let Some(costs) = Self::xml_attribute_number::<f32>(e, "costsPerActiveHour") {
+            production.cost_per_hour = costs;
+        } else if let Some(costs) = Self::xml_attribute_number::<f32>(e, "costsPerActiveMinute") {
+            production.cost_per_hour = costs * 60_f32;
+        } else if let Some(costs) = Self::xml_attribute_number::<f32>(e, "costsPerActiveMonth") {
+            production.cost_per_hour = costs / 24_f32;
+        }
+    
+        if let Some(cycles) = Self::xml_attribute_number::<f32>(e, "cyclesPerHour") {
+            production.cycles_per_hour = cycles;
+        } else if let Some(cycles) = Self::xml_attribute_number::<f32>(e, "cyclesPerMinute") {
+            production.cycles_per_hour = cycles * 60_f32;
+        } else if let Some(cycles) = Self::xml_attribute_number::<f32>(e, "cyclesPerMonth") {
+            production.cycles_per_hour = cycles / 24_f32;
+        }
+
+        let mut mix_map:HashMap<String, Vec<Ingredient>> = HashMap::new();
+
+        loop {
+            match reader.read_event_into(&mut buf_next) {
+                Ok(Event::Empty(e)) => {
+                    match e.name().as_ref() {
+                        b"output" => {
+                            let Some(fill_type) = Self::xml_attribute(&e, "fillType") else { continue };
+                            let Some(quantity) = Self::xml_attribute_number(&e, "amount") else { continue };
+                            production.output.push(Ingredient { quantity, fill_type, ..Default::default() });
+                        },
+                        b"input" => {
+                            let Some(fill_type) = Self::xml_attribute(&e, "fillType") else { continue };
+                            let Some(quantity) = Self::xml_attribute_number(&e, "amount") else { continue };
+
+                            match Self::xml_attribute(&e, "mix") {
+                                None => {
+                                    production.recipe.push(vec![Ingredient{ quantity, fill_type, ..Default::default()}]);
+                                },
+                                Some(v) if v == *"boost" => {
+                                    let factor = Self::xml_attribute_number::<f32>(&e, "boostfactor").unwrap_or(0.01);
+                                    #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+                                    let factor = (factor * 100.0).round() as u32;
+                                    production.boosts.push(Ingredient{ quantity, factor, fill_type });
+                                }
+                                Some(v) => {
+                                    let entry = mix_map.entry(v).or_default();
+                                    entry.push(Ingredient { quantity, fill_type, ..Default::default() });
+                                }
+                            };
+                        },
+                        _ => ()
+                    }
+                },
+                Ok(Event::End(f)) if f.name() == e.name() => break,
+                _ => (),
+            }
+        }
+
+        for (_, item) in mix_map { production.recipe.push(item); }
+
+        self.productions.push(production);
+    }
 }
+
+
+
+
+//MARK: PRODUCTION
+/// Production ingredient list
+pub type Ingredients = Vec<Ingredient>;
+/// Production recipe (list of list of ingredients - ingredients in nested level are "OR", ingredient list in top level is "AND")
+pub type Recipe = Vec<Ingredients>;
+
+/// production ingredient type
+#[derive(serde::Serialize, serde::Deserialize, Clone, Eq, Ord, PartialEq, PartialOrd, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct Ingredient {
+    /// quantity
+    quantity: u32,
+    /// amount of boost percentage
+    factor: u32,
+    /// fill type
+    fill_type: String,
+}
+
+/// Placeable production record
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, PartialOrd, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Production {
+    /// list of boosts
+    pub boosts: Ingredients,
+    /// cost per hour
+    pub cost_per_hour: f32,
+    /// cycles per hour
+    pub cycles_per_hour: f32,
+    /// name of production
+    pub name: String,
+    /// output types - multiples are AND
+    pub output: Ingredients,
+    /// name parameters (if used)
+    pub params: Option<Vec<String>>,
+    /// production recipe - items on root level are AND, items on second level are OR
+    pub recipe: Recipe,
+}
+
+impl Default for Production {
+    fn default() -> Self {
+        Self { boosts: Ingredients::default(), cost_per_hour: 1.0, cycles_per_hour: 1.0, name: String::from("--"), output: Ingredients::default(), params: None, recipe: Recipe::default() }
+    }
+}
+
 
 
 // MARK: TESTING
@@ -532,7 +662,7 @@ mod tests {
     #[test]
     fn from_file_fill_unit() {
         let filename = "tests/test_mods/DETAIL_Samples.zip";
-        let item = "xml/place-husbandry.xml";
+        let item = "xml/production-deep.xml";
         let json = "json/example-fill-unit.json";
         let dump = true;
 

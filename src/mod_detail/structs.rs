@@ -23,21 +23,21 @@ impl Serialize for ModDetailError {
         S: Serializer,
     {
         match *self {
-            ModDetailError::FileReadFail => {
+            Self::FileReadFail => {
                 serializer.serialize_unit_variant("ModDetailError", 0, "DETAIL_ERROR_UNREADABLE")
             }
-            ModDetailError::NotModModDesc => serializer.serialize_unit_variant(
+            Self::NotModModDesc => serializer.serialize_unit_variant(
                 "ModDetailError",
                 1,
                 "DETAIL_ERROR_MISSING_MODDESC",
             ),
-            ModDetailError::BrandMissingIcon => {
+            Self::BrandMissingIcon => {
                 serializer.serialize_unit_variant("ModDetailError", 2, "DETAIL_ERROR_MISSING_ICON")
             }
-            ModDetailError::StoreItemMissing => {
+            Self::StoreItemMissing => {
                 serializer.serialize_unit_variant("ModDetailError", 3, "DETAIL_ERROR_MISSING_ITEM")
             }
-            ModDetailError::StoreItemBroken => {
+            Self::StoreItemBroken => {
                 serializer.serialize_unit_variant("ModDetailError", 4, "DETAIL_ERROR_PARSE_ITEM")
             }
         }
@@ -68,7 +68,7 @@ impl ModDetail {
     /// Create new mod detail record
     #[must_use]
     pub fn new() -> Self {
-        ModDetail {
+        Self {
             brands: HashMap::new(),
             issues: HashSet::new(),
             item_brands: HashSet::new(),
@@ -82,7 +82,7 @@ impl ModDetail {
     /// Create new mod detail record with a single error condition
     #[must_use]
     pub fn fast_fail(e: ModDetailError) -> Self {
-        let mut record = ModDetail::default();
+        let mut record = Self::default();
         record.add_issue(e);
         record
     }
@@ -106,17 +106,14 @@ impl ModDetail {
     pub fn add_brand(&mut self, key_name: &str, title: Option<&str>) -> &mut ModDetailBrand {
         let this_brand = self.brands.entry(key_name.to_owned()).or_default();
 
-        this_brand.title = match title {
-            Some(title) => title.to_owned(),
-            None => key_name.to_owned(),
-        };
+        this_brand.title = title.map_or_else(|| key_name.to_owned(), std::borrow::ToOwned::to_owned);
         this_brand
     }
 
     /// Output as pretty-print JSON
     #[must_use]
     pub fn to_json_pretty(&self) -> String {
-        serde_json::to_string_pretty(&self).unwrap_or(String::from("{}"))
+        serde_json::to_string_pretty(&self).unwrap_or_else(|_| String::from("{}"))
     }
 
     /// Output as JSON
@@ -128,13 +125,13 @@ impl ModDetail {
 
 impl Default for ModDetail {
     fn default() -> Self {
-        ModDetail::new()
+        Self::new()
     }
 }
 
 impl std::fmt::Display for ModDetail {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&serde_json::to_string(&self).unwrap_or(String::from("{}")))
+        f.write_str(&serde_json::to_string(&self).unwrap_or_else(|_| String::from("{}")))
     }
 }
 
@@ -158,7 +155,7 @@ pub struct ModDetailBrand {
 impl ModDetailBrand {
     /// Create new brand record
     fn new() -> Self {
-        ModDetailBrand {
+        Self {
             title: String::new(),
             icon_file: None,
             icon_base: None,
@@ -485,7 +482,7 @@ pub struct ModDetailPlaceSorting {
 impl ModDetailPlaceSorting {
     /// create new placeable sorting sub-record
     fn new() -> Self {
-        ModDetailPlaceSorting {
+        Self {
             category: None,
             functions: vec![],
             has_color: VehicleCapability::No,
@@ -518,7 +515,7 @@ pub struct ModDetailPlaceAnimals {
 impl ModDetailPlaceAnimals {
     /// create new placeable husbandry sub-record
     fn new() -> Self {
-        ModDetailPlaceAnimals {
+        Self {
             beehive_exists: false,
             beehive_per_day: 0,
             beehive_radius: 0,
@@ -548,7 +545,7 @@ pub struct ModDetailPlaceStorage {
 impl ModDetailPlaceStorage {
     /// create new placeable storage sub-record
     fn new() -> Self {
-        ModDetailPlaceStorage {
+        Self {
             objects: None,
             silo_capacity: 0,
             silo_exists: false,
@@ -578,7 +575,7 @@ impl ProductionIngredient {
     /// create new production ingredient
     #[must_use]
     pub fn new(fill_type: String, amount: f32) -> Self {
-        ProductionIngredient { amount, fill_type }
+        Self { amount, fill_type }
     }
 }
 
@@ -597,7 +594,7 @@ impl ProductionBoost {
     /// create new boost type
     #[must_use]
     pub fn new(fill_type: String, amount: f32, boost_factor: f32) -> Self {
-        ProductionBoost {
+        Self {
             amount,
             boost_factor,
             fill_type,
@@ -629,7 +626,7 @@ impl ModDetailProduction {
     /// create new placeable production record
     #[must_use]
     pub fn new() -> Self {
-        ModDetailProduction {
+        Self {
             boosts: vec![],
             cost_per_hour: 1_f32,
             cycles_per_hour: 1_f32,
@@ -677,7 +674,7 @@ impl ModDetailPlace {
     #[must_use]
     /// create new Placable record
     pub fn new() -> Self {
-        ModDetailPlace {
+        Self {
             animals: ModDetailPlaceAnimals::new(),
             icon_base: None,
             icon_file: None,

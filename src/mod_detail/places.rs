@@ -335,7 +335,6 @@ fn place_parse_sorting(xml_tree: &roxmltree::Document, this_place: &mut ModDetai
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::shared::files::AbstractNull;
     use assert_json_diff::assert_json_include;
     use serde_json::json;
 
