@@ -19,11 +19,9 @@ struct StoreItem {
     item_type : StoreItemType,
     /// vehicle record
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(flatten)]
     vehicle : Option<Vehicle>,
     /// placable record
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(flatten)]
     placeable : Option<Placeable>,
 }
 

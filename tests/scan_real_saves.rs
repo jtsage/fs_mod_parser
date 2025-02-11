@@ -37,7 +37,7 @@ fn scan_real_saves() {
                     entry.clone().to_str().unwrap(),
                     this_file_start.elapsed()
                 );
-                // println!("{}", _output);
+                // println!("{:?}", _output);
             }
             Err(e) => panic!("{}", e),
         };

@@ -68,16 +68,12 @@ pub struct Sorting {
 #[derive(serde::Serialize, serde::Deserialize, Clone, Eq, Ord, PartialEq, PartialOrd, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Animals {
-    /// is a beehive
-    pub beehive_exists: bool,
     /// honey per day in liters
     pub beehive_per_day: Option<u32>,
     /// working radius in meters
     pub beehive_radius: Option<u32>,
     /// number of animals
     pub husbandry_count: Option<u32>,
-    /// is a husbandry
-    pub husbandry_exists: bool,
     /// type of husbandry
     pub husbandry_type: Option<String>,
     /// food capacity
@@ -181,7 +177,6 @@ impl XMLReader<Self> for Placeable {
             // MARK: ~animals
             (b"husbandry", 1) => { self.tag_husbandry(reader, e); Ok(0) },
             (b"beehive", 1) => {
-                self.animals.beehive_exists = true;
                 self.animals.beehive_per_day = Self::xml_attribute_number(e, "litersHoneyPerDay");
                 self.animals.beehive_radius = Self::xml_attribute_number(e, "actionRadius");
                 Self::slurp(e, reader)
@@ -232,13 +227,13 @@ impl Placeable {
             storage.capacity = v;
         }
         if let Some(v) = Self::xml_attribute(e, "fillType") {
-            storage.types = v.split_whitespace().filter_map(|v| if v == "unknown" { None } else { Some(v.to_owned()) }).collect();
+            storage.types = v.split_whitespace().filter_map(|v| if v == "unknown" { None } else { Some(v.to_ascii_lowercase()) }).collect();
         }
         if let Some(v) = Self::xml_attribute(e, "fillTypes") {
-            storage.types = v.split_whitespace().filter_map(|v| if v == "unknown" { None } else { Some(v.to_owned()) }).collect();
+            storage.types = v.split_whitespace().filter_map(|v| if v == "unknown" { None } else { Some(v.to_ascii_lowercase()) }).collect();
         }
         if let Some(v) = Self::xml_attribute(e, "fillTypeCategories") {
-            storage.categories = v.split_whitespace().map(std::string::ToString::to_string).collect();
+            storage.categories = v.split_whitespace().map(str::to_ascii_lowercase).collect();
         }
         if storage.capacity != 0 {
             self.storage.push(storage);
@@ -273,7 +268,6 @@ impl Placeable {
                         b"animals" => {
                             self.animals.husbandry_type = Self::xml_attribute(&e, "type");
                             self.animals.husbandry_count = Self::xml_attribute_number(&e, "maxNumAnimals");
-                            self.animals.husbandry_exists = true;
                         },
                         b"food" => {
                             self.animals.husbandry_food = Self::xml_attribute_number(&e, "capacity");
@@ -348,12 +342,12 @@ impl Placeable {
                 Ok(Event::Empty(e)) => {
                     match e.name().as_ref() {
                         b"output" => {
-                            let Some(fill_type) = Self::xml_attribute(&e, "fillType") else { continue };
+                            let Some(fill_type) = Self::xml_attribute(&e, "fillType").map(|v| v.to_ascii_lowercase()) else { continue };
                             let Some(quantity) = Self::xml_attribute_number(&e, "amount") else { continue };
                             production.output.push(Ingredient { quantity, fill_type, ..Default::default() });
                         },
                         b"input" => {
-                            let Some(fill_type) = Self::xml_attribute(&e, "fillType") else { continue };
+                            let Some(fill_type) = Self::xml_attribute(&e, "fillType").map(|v| v.to_ascii_lowercase()) else { continue };
                             let Some(quantity) = Self::xml_attribute_number(&e, "amount") else { continue };
 
                             match Self::xml_attribute(&e, "mix") {
@@ -363,7 +357,7 @@ impl Placeable {
                                 Some(v) if v == *"boost" => {
                                     let factor = Self::xml_attribute_number::<f32>(&e, "boostfactor").unwrap_or(0.01);
                                     #[expect(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-                                    let factor = (factor * 100.0).round() as u32;
+                                    let factor = Some((factor * 100.0).round() as u32);
                                     production.boosts.push(Ingredient{ quantity, factor, fill_type });
                                 }
                                 Some(v) => {
@@ -380,7 +374,17 @@ impl Placeable {
             }
         }
 
-        for (_, item) in mix_map { production.recipe.push(item); }
+        // production.boosts.sort();
+        // production.output.sort();
+
+        let mut mixes:Vec<String> = mix_map.clone().into_keys().collect();
+        mixes.sort_unstable();
+
+        for key in mixes {
+            if let Some(item) = mix_map.remove(&key) {
+                production.recipe.push(item);
+            }
+        }
 
         self.productions.push(production);
     }
@@ -402,7 +406,7 @@ pub struct Ingredient {
     /// quantity
     quantity: u32,
     /// amount of boost percentage
-    factor: u32,
+    factor: Option<u32>,
     /// fill type
     fill_type: String,
 }
@@ -436,7 +440,6 @@ impl Default for Production {
 
 
 // MARK: TESTING
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -511,7 +514,6 @@ mod tests {
         let actual = StoreItem::from_string(xml.as_ref()).unwrap();
         let place = actual.placeable.unwrap();
 
-        assert_eq!(place.animals.beehive_exists, true);
         assert_eq!(place.animals.beehive_per_day, Some(20));
         assert_eq!(place.animals.beehive_radius, Some(50));
     }
@@ -538,14 +540,13 @@ mod tests {
         let place = actual.placeable.unwrap();
 
         let expected = vec![
-            Storage { is_object: None, capacity: 156_250, categories: vec![], types: vec![String::from("LIQUIDMANURE")] },
-            Storage { is_object: None, capacity: 133_750, categories: vec![], types: vec![String::from("MILK")] },
-            Storage { is_object: None, capacity: 133_750, categories: vec![], types: vec![String::from("BUFFALOMILK")] },
-            Storage { is_object: None, capacity: 121_375, categories: vec![], types: vec![String::from("STRAW")] },
+            Storage { is_object: None, capacity: 156_250, categories: vec![], types: vec![String::from("liquidmanure")] },
+            Storage { is_object: None, capacity: 133_750, categories: vec![], types: vec![String::from("milk")] },
+            Storage { is_object: None, capacity: 133_750, categories: vec![], types: vec![String::from("buffalomilk")] },
+            Storage { is_object: None, capacity: 121_375, categories: vec![], types: vec![String::from("straw")] },
         ];
         // cSpell:enable
 
-        assert_eq!(place.animals.husbandry_exists, true);
         assert_eq!(place.animals.husbandry_count, Some(200));
         assert_eq!(place.animals.husbandry_food, Some(150750));
         assert_eq!(place.animals.husbandry_type, Some(String::from("COW")));
@@ -611,7 +612,8 @@ mod tests {
         let place = actual.placeable.unwrap();
 
         let expected = vec![
-            Storage { is_object: None, capacity: 980_000, categories: vec![String::from("farmSilo")], types: vec![] },
+            // cSpell:disable-next-line
+            Storage { is_object: None, capacity: 980_000, categories: vec![String::from("farmsilo")], types: vec![] },
         ];
 
         assert_eq!(place.storage, expected);
@@ -631,7 +633,8 @@ mod tests {
         let place = actual.placeable.unwrap();
 
         let expected = vec![
-            Storage { is_object: None, capacity: 250_000, categories: vec![String::from("farmSilo")], types: vec![] },
+            // cSpell:disable-next-line
+            Storage { is_object: None, capacity: 250_000, categories: vec![String::from("farmsilo")], types: vec![] },
         ];
 
         assert_eq!(place.storage, expected);
@@ -657,23 +660,105 @@ mod tests {
     }
 
 
+    #[test]
+    fn production_silo() {
+        // cSpell:disable
+        let xml = xml_test(r#"<placeable>
+            <productionPoint>
+                <storage isExtension="false" fillLevelSyncThreshold="50">
+                    <capacity fillType="POTATO"   capacity="1000000" />
+                    <capacity fillType="SUGARBEET_CUT"   capacity="2000000" />
+                    <capacity fillType="SUGARBEET"   capacity="1000000" />
+                </storage>
+            </productionPoint>
+        </placeable>"#);
+        // cSpell:enable
+
+        let actual = StoreItem::from_string(xml.as_ref()).unwrap();
+        let place = actual.placeable.unwrap();
+
+        let expected = vec![
+            Storage { is_object: None, capacity: 1_000_000, categories: vec![], types: vec![String::from("potato")] },
+            Storage { is_object: None, capacity: 2_000_000, categories: vec![], types: vec![String::from("sugarbeet_cut")] },
+            Storage { is_object: None, capacity: 1_000_000, categories: vec![], types: vec![String::from("sugarbeet")] },
+        ];
+
+        assert_eq!(place.storage, expected);
+    }
+
+    #[test]
+    fn production_params() {
+        // cSpell:disable
+        let xml = xml_test(r#"<placeable>
+            <productionPoint>
+                <production id="fabric_cotton" name="%s %s" params="$l10n_fillType_fabric|$l10n_fillType_cotton" cyclesPerMinute="4" costsPerActiveMinute="3">
+                <inputs><input fillType="COTTON" amount="5" /></inputs>
+                <outputs><output fillType="FABRIC" amount="3" /></outputs>
+            </production>
+            </productionPoint>
+        </placeable>"#);
+        // cSpell:enable
+
+        let actual = StoreItem::from_string(xml.as_ref()).unwrap();
+        let place = actual.placeable.unwrap();
+
+        assert_eq!(place.productions[0].params, Some(vec![String::from("$l10n_fillType_fabric"), String::from("$l10n_fillType_cotton")]));
+        assert_eq!(place.productions[0].output, vec![Ingredient{ fill_type: String::from("fabric"), quantity : 3, factor: None}]);
+        assert_eq!(place.productions[0].recipe[0], vec![Ingredient{ fill_type: String::from("cotton"), quantity : 5, factor: None}]);
+    }
 
 
     #[test]
-    fn from_file_fill_unit() {
+    fn from_file_husband() {
         let filename = "tests/test_mods/DETAIL_Samples.zip";
-        let item = "xml/production-deep.xml";
-        let json = "json/example-fill-unit.json";
-        let dump = true;
+        let item = "xml/place-husbandry.xml";
+        let json = "json/place-husbandry.json";
+        let dump = false;
 
         let mut file_handle = AbstractFile::new(filename);
         let actual = StoreItem::from_abstract_file(&mut file_handle, item).unwrap();
 
         if dump { println!("{}", serde_json::to_string_pretty(&actual).unwrap()); }
 
-        // let expected = file_handle.text(json).unwrap();
-        // let re_read:StoreItem = serde_json::from_str(&expected).unwrap();
+        let expected = file_handle.text(json).unwrap();
+        let re_read:StoreItem = serde_json::from_str(&expected).unwrap();
 
-        // assert_eq!(actual, re_read);
+        assert_eq!(actual, re_read);
+    }
+
+    #[test]
+    fn from_file_prod_simple() {
+        let filename = "tests/test_mods/DETAIL_Samples.zip";
+        let item = "xml/production-simple.xml";
+        let json = "json/production-simple.json";
+        let dump = false;
+
+        let mut file_handle = AbstractFile::new(filename);
+        let actual = StoreItem::from_abstract_file(&mut file_handle, item).unwrap();
+
+        if dump { println!("{}", serde_json::to_string_pretty(&actual).unwrap()); }
+
+        let expected = file_handle.text(json).unwrap();
+        let re_read:StoreItem = serde_json::from_str(&expected).unwrap();
+
+        assert_eq!(actual, re_read);
+    }
+
+    #[test]
+    fn from_file_prod_deep() {
+        let filename = "tests/test_mods/DETAIL_Samples.zip";
+        let item = "xml/production-deep.xml";
+        let json = "json/production-deep.json";
+        let dump = false;
+
+        let mut file_handle = AbstractFile::new(filename);
+        let actual = StoreItem::from_abstract_file(&mut file_handle, item).unwrap();
+
+        if dump { println!("{}", serde_json::to_string_pretty(&actual).unwrap()); }
+
+        let expected = file_handle.text(json).unwrap();
+        let re_read:StoreItem = serde_json::from_str(&expected).unwrap();
+
+        assert_eq!(actual, re_read);
     }
 }
