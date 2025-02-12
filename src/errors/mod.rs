@@ -2,8 +2,11 @@
 //! 
 
 /// Possible Detectable Mod Errors
-#[derive(PartialEq, PartialOrd, Eq, Ord, Clone, Copy, Debug)]
+#[derive(Eq, PartialEq, PartialOrd, Clone, Copy, Debug, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all="SCREAMING_SNAKE_CASE")]
 pub enum ModError {
+    /// File is unreadable
+    FileErrorUnreadable,
     /// File is not the right type for a mod
     FileErrorGarbageFile,
     /// File is probably a copy

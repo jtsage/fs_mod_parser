@@ -2,14 +2,35 @@
 #![allow(dead_code)]
 #![warn(missing_docs)]
 
-pub mod maps;
-pub mod mod_basic;
-pub mod mod_detail;
+// pub mod maps;
+// pub mod mod_basic;
+// pub mod mod_detail;
 pub mod savegame;
-pub mod shared;
+// pub mod shared;
+pub mod parser;
 
 mod errors;
 mod files;
+
+/// Known none malware files that fail the general check
+pub const NOT_MALWARE: [&str; 16] = [
+    "FS25_000_DevTools",
+    "FS25_AutoDrive",
+    "FS25_Courseplay",
+    "FS25_FSG_Companion",
+    "FS25_VehicleControlAddon",
+    "FS22_001_NoDelete",
+    "FS22_AutoDrive",
+    "FS22_Courseplay",
+    "FS22_FSG_Companion",
+    "FS22_VehicleControlAddon",
+    "MultiOverlayV3",   // Happylooser
+    "MultiOverlayV4",   // Happylooser
+    "VehicleInspector", // Happylooser
+    "FS19_AutoDrive",
+    "FS19_Courseplay",
+    "FS19_GlobalCompany",
+];
 
 #[derive(Default)]
 #[expect(clippy::struct_excessive_bools)]
@@ -25,10 +46,45 @@ pub struct ModParserOptions {
     pub skip_mod_icons: bool,
 }
 
-pub use savegame::parser as parse_savegame;
+/// Options for the parsers
+pub struct ParseOptions(Vec<ParseOption>);
 
-pub use mod_basic::parser as parse_mod;
-pub use mod_basic::parser_with_options as parse_mod_with_options;
+impl Default for ParseOptions {
+    fn default() -> Self {
+        Self(vec![ParseOption::IncludeSaveGame, ParseOption::IncludeDetail, ParseOption::IncludeMap, ParseOption::ImageMod, ParseOption::ImageDetail, ParseOption::ImageMap])
+    }
+}
+impl From<Vec<ParseOption>> for ParseOptions {
+    fn from(value: Vec<ParseOption>) -> Self { Self(value) }
+}
+impl Deref for ParseOptions {
+    type Target = Vec<ParseOption>;
 
-pub use mod_detail::parser as parse_detail;
-pub use mod_detail::parser_with_options as parse_detail_with_options;
+    fn deref(&self) -> &Self::Target { &self.0 }
+}
+
+/// Options for the parser
+pub enum ParseOption {
+    /// Include savegame, if found
+    IncludeSaveGame,
+    /// Include detail scans
+    IncludeDetail,
+    /// Include Map
+    IncludeMap,
+    /// Include detail icons
+    ImageDetail,
+    /// Include mod icon
+    ImageMod,
+    /// Include map image
+    ImageMap,
+}
+
+use std::ops::Deref;
+
+// pub use savegame::parser as parse_savegame;
+
+// pub use mod_basic::parser as parse_mod;
+// pub use mod_basic::parser_with_options as parse_mod_with_options;
+
+// pub use mod_detail::parser as parse_detail;
+// pub use mod_detail::parser_with_options as parse_detail_with_options;
