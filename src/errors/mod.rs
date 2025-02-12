@@ -46,26 +46,35 @@ pub enum ModError {
     /// Some files contain spaces
     PerformanceFileSpaces,
     /// Translated title or description not available
-    PerformanceMissingL10N,
+    PerformanceMissingL10n,
     /// File contains DDS files that are too big
+    #[serde(rename="PERFORMANCE_OVERSIZE_DDS")]
     PerformanceOversizeDDS,
     /// File contains GDM files that are too big
+    #[serde(rename="PERFORMANCE_OVERSIZE_GDM")]
     PerformanceOversizeGDM,
     /// File contains I3D.CACHE files that are too big
+    #[serde(rename="PERFORMANCE_OVERSIZE_I3D")]
     PerformanceOversizeI3D,
     /// File contains SHAPES files that are too big
+    #[serde(rename="PERFORMANCE_OVERSIZE_SHAPES")]
     PerformanceOversizeSHAPES,
     /// File contains XML files that are too big
+    #[serde(rename="PERFORMANCE_OVERSIZE_XML")]
     PerformanceOversizeXML,
     /// File contains too many extra files
     PerformanceQuantityExtra,
     /// File contains too many GRLE files
+    #[serde(rename="PERFORMANCE_OVERSIZE_GRLE")]
     PerformanceQuantityGRLE,
     /// File contains too many PDF files
+    #[serde(rename="PERFORMANCE_QUANTITY_PDF")]
     PerformanceQuantityPDF,
     /// File contains too many PNG files
+    #[serde(rename="PERFORMANCE_QUANTITY_PNG")]
     PerformanceQuantityPNG,
     /// File contains too many TXT files
+    #[serde(rename="PERFORMANCE_QUANTITY_TXT")]
     PerformanceQuantityTXT,
 }
 
@@ -171,7 +180,7 @@ impl From<std::io::Error> for AbstractFileError {
 
 // MARK: SaveError
 /// Possible parse problems with a savegame
-#[derive(PartialEq, PartialOrd, Eq, Ord, Hash, Debug, serde::Serialize)]
+#[derive(Clone, PartialEq, PartialOrd, Eq, Ord, Hash, Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(test, derive(strum_macros::EnumCount))]
 pub enum SaveError {
     /// farms.xml is missing

@@ -18,9 +18,9 @@ fn main() {
 
     let start_time = Instant::now();
 
-    // let pattern = "./tests/test_mods/**/*";
+    let pattern = "./tests/test_mods/*";
     // let pattern = "C:\\Users\\jtsag\\Documents\\My Games\\FarmingSimulator2022\\mods\\test-downloading\\*.zip";
-    let pattern = "C:\\Users\\jtsag\\Documents\\My Games\\FarmingSimulator2022\\mods\\*\\*.zip";
+    // let pattern = "C:\\Users\\jtsag\\Documents\\My Games\\FarmingSimulator2022\\mods\\*\\*.zip";
 
     let file_list: Vec<PathBuf> = glob(pattern).expect("die").filter_map(Result::ok).collect();
     let counter = file_list.len();
@@ -37,7 +37,7 @@ fn main() {
                     entry.clone().to_string_lossy(),
                     this_file_start.elapsed(),
                 );
-                // println!("{}", serde_json::to_string_pretty(&result).expect(""));
+                println!("{}", serde_json::to_string_pretty(&result.issues).expect(""));
             }
             Err(e) => panic!("{}", e),
         };

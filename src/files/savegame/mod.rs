@@ -9,7 +9,7 @@ pub mod items;
 pub mod career;
 
 /// Data structure for a savegame mod
-#[derive(serde::Serialize, Clone, PartialEq, Eq, Debug, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Eq, Debug, Default)]
 pub struct Mod {
     /// Mod version from careerSavegame
     pub version: String,

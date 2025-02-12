@@ -63,6 +63,7 @@ impl Deref for ParseOptions {
     fn deref(&self) -> &Self::Target { &self.0 }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 /// Options for the parser
 pub enum ParseOption {
     /// Include savegame, if found

@@ -178,6 +178,14 @@ impl AbstractFile {
         matches!(self, Self::Folder(_, _))
     }
 
+    /// Size of file?
+    pub fn size(&self) -> u64 {
+        match self {
+            Self::Folder(_, f) | Self::Zip(_, f) => f.size,
+            Self::Null(_) => 0,
+        }
+    }
+
     /// Get moddesc file 
     pub fn get_mod_desc(&mut self) -> Result<mod_desc::DescXML, AbstractFileError> {
         mod_desc::DescXML::from_abstract_file(self, "modDesc.xml")

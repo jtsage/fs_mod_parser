@@ -7,7 +7,7 @@ use quick_xml::events::BytesStart;
 
 
 /// Data structure for savegame mods
-#[derive(serde::Serialize, Clone, PartialEq, Eq, Default, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Eq, Default, Debug)]
 pub struct Mods(pub HashMap<String, Mod>);
 
 impl Mods {

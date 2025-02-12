@@ -51,7 +51,7 @@ pub fn parser<P: AsRef<Path>>(filename : P) -> SaveGame {
 }
 
 /// Data structure for a savegame
-#[derive(serde::Serialize, Debug, PartialEq, Eq, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, PartialEq, Eq, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct SaveGame {
     /// List of found errors
@@ -87,7 +87,7 @@ impl SaveGame {
     }
 
     /// Load from an [`AbstractFile`]
-    fn from_abstract(mod_file : &mut AbstractFile) -> Self {
+    pub fn from_abstract(mod_file : &mut AbstractFile) -> Self {
         let mut save_record = Self::default();
 
         let Ok(career) = SaveCareer::from_abstract(mod_file).map_err(|e| {

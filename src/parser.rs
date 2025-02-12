@@ -4,11 +4,13 @@ use std::path::{self, Path};
 use md5::{Md5, Digest};
 use base64ct::{Base64UrlUnpadded, Encoding};
 use std::io::{Read, Seek, SeekFrom};
+use std::time::SystemTime;
 
 use crate::files::{AbstractFile, XMLReader};
 use crate::files::mod_desc::DescXML;
+use crate::savegame::SaveGame;
 
-use crate::ParseOptions;
+use crate::{ParseOption, ParseOptions};
 use crate::errors::{AbstractFileError, ModError};
 
 /// one megabyte
@@ -50,22 +52,16 @@ pub struct Record {
     pub current_collection: String,
     // /// Detail icons processed flag
     // pub detail_icon_loaded: bool,
-    // /// File details
-    // pub file_detail: ModFile,
     /// Errors or issues found
     pub issues: HashSet<ModError>,
     // /// storeItems found (if processed)
     // pub include_detail: Option<ModDetail>,
-    // /// save game record (if processed)
-    // pub include_save_game: Option<bool>, //FIXME:
+    /// save game record (if processed)
+    pub include_save_game: Option<SaveGame>,
     // /// L10N title and description
     // pub l10n: ModDescL10N,
-    // /// MD5 Sum (not yet implemented)
-    // pub md5_sum: Option<String>,
     /// modDesc.xml fields
     pub mod_desc: DescXML,
-    // /// Mod UUID from full path and filename (MD5)
-    // pub uuid: String,
 }
 
 impl Record {
@@ -82,6 +78,76 @@ impl Record {
             file : FileInfo::new(full_path),
             ..Default::default()
         }
+    }
+
+    /// Create record from filename
+    pub fn from_filename<P: AsRef<Path>>(filename: P, options : &ParseOptions) -> Self {
+        let mut record = Self::new(filename);
+    
+        record.check_name();
+    
+        let mut file = AbstractFile::new(&record.file.full_path);
+    
+        match file {
+            AbstractFile::Null(AbstractFileError::ZipReadError) => {
+                record.issues.insert(ModError::FileErrorUnreadableZip);
+                record.can_not_use = true;
+                return record
+            },
+            AbstractFile::Null(_) => {
+                record.issues.insert(ModError::FileErrorUnreadable);
+                record.can_not_use = true;
+                return record
+            },
+            AbstractFile::Folder(_, _) => {
+                record.issues.insert(ModError::InfoNoMultiplayerUnzipped);
+            }
+            AbstractFile::Zip(_, _) => (),
+        }
+    
+        if let Ok(meta) = std::fs::metadata(&record.file.full_path) {
+            if let Ok(date) = meta.created() {
+                record.file.file_date = date.duration_since(SystemTime::UNIX_EPOCH).map(|v|v.as_secs()).unwrap_or_default();
+            }
+        }
+    
+        record.file.file_size = file.size();
+    
+        if file.is_in_list("careerSavegame.xml") {
+            record.file.is_save_game = true;
+            record.issues.insert(ModError::FileErrorLikelySaveGame);
+            record.can_not_use = true;
+            if options.contains(&ParseOption::IncludeSaveGame) {
+                record.include_save_game = Some(SaveGame::from_abstract(&mut file));
+            }
+            return record
+        }
+    
+        if !record.file.is_folder && record.check_mod_pack(&file) {
+            return record
+        }
+    
+        match DescXML::from_abstract(&mut file) {
+            Ok(mod_desc) => {
+                record.mod_desc = mod_desc;
+            },
+            Err(AbstractFileError::XmlParseError) => {
+                record.issues.insert(ModError::ModDescParseError);
+                record.can_not_use = true;
+                return record
+            },
+            Err(_) => {
+                record.issues.insert(ModError::ModDescMissing);
+                record.can_not_use = true;
+                return record
+            }
+        }
+    
+        record.do_file_counts(&file);
+    
+        // check moddesc for error
+    
+        record
     }
 
     /// Check file name
@@ -131,6 +197,132 @@ impl Record {
             self.can_not_use = true;
         }
     }
+
+    /// Check if this a pack of mods, not a single mod
+    fn check_mod_pack(&mut self, file : &AbstractFile) -> bool {
+        let mut zip_list: Vec<ZipPackFile> = vec![];
+        let mut max_non_zip_files = 2;
+        let mut zip_files = false;
+        
+        for file in file.list() {
+            if file.is_dir { return false }
+        
+            match file.extension.as_str() {
+                "xml" => return false,
+                "zip" => {
+                    zip_files = true;
+                    zip_list.push(ZipPackFile {
+                        name: file.path,
+                        size: file.size,
+                    });
+                }
+                _ if max_non_zip_files < 1 => return false,
+                _ => max_non_zip_files -= 1,
+            }
+        }
+        
+        if max_non_zip_files > 0 && zip_files {
+            self.file.is_mod_pack = true;
+            self.can_not_use      = true;
+            self.file.zip_files   = zip_list;
+            self.issues.insert(ModError::FileErrorLikelyZipPack);
+            return true;
+        }
+        false
+    }
+
+    /// Count mod files
+    fn do_file_counts(&mut self, file : &AbstractFile) {
+        let mut found_grle: u32 = 0;
+        let mut found_pdf: u32 = 0;
+        let mut found_png: u32 = 0;
+        let mut found_txt: u32 = 0;
+        
+        let known_good = vec![
+            "png", "dds", "i3d", "shapes", "lua",
+            "gdm", "cache", "xml", "grle", "pdf",
+            "txt", "gls", "anim", "ogg",
+        ];
+        
+        for file in file.list() {
+            if file.is_dir { continue }
+        
+            if known_good.contains(&file.extension.as_str()) {
+                if file.path.contains(' ') {
+                    self.issues.insert(ModError::PerformanceFileSpaces);
+                    self.file.space_files.push(file.path.clone());
+                }
+                match file.extension.as_str() {
+                    "lua" => self.file.lua_count += 1,
+                    "png" => {
+                        if !file.path.ends_with("_weight.png") {
+                            self.file.image_non_dds.push(file.path.clone());
+                            self.file.png_texture.push(file.path);
+                        }
+                        found_png += 1;
+                    }
+                    "pdf" => found_pdf += 1,
+                    "grle" => found_grle += 1,
+                    "txt" => found_txt += 1,
+                    "cache" => {
+                        if file.size > SIZE_CACHE {
+                            self.issues.insert(ModError::PerformanceOversizeI3D);
+                            self.file.too_big_files.push(file.path);
+                        }
+                    }
+                    "dds" => {
+                        self.file.image_dds.push(file.path.clone());
+                        if file.size > SIZE_DDS {
+                            self.issues.insert(ModError::PerformanceOversizeDDS);
+                            self.file.too_big_files.push(file.path);
+                        }
+                    }
+                    "gdm" => {
+                        if file.size > SIZE_GDM {
+                            self.issues.insert(ModError::PerformanceOversizeGDM);
+                            self.file.too_big_files.push(file.path);
+                        }
+                    }
+                    "shapes" => {
+                        if file.size > SIZE_SHAPES {
+                            self.issues.insert(ModError::PerformanceOversizeSHAPES);
+                            self.file.too_big_files.push(file.path);
+                        }
+                    }
+                    "xml" => {
+                        if file.size > SIZE_XML {
+                            self.issues.insert(ModError::PerformanceOversizeXML);
+                            self.file.too_big_files.push(file.path);
+                        }
+                    }
+                    _ => {}
+                }
+        
+                if found_grle > MAX_GRLE {
+                    self.issues.insert(ModError::PerformanceQuantityGRLE);
+                }
+                if found_pdf > MAX_PDF {
+                    self.issues.insert(ModError::PerformanceQuantityPDF);
+                }
+                if found_png > MAX_PNG {
+                    self.issues.insert(ModError::PerformanceQuantityPNG);
+                }
+                if found_txt > MAX_TXT {
+                    self.issues.insert(ModError::PerformanceQuantityTXT);
+                }
+            } else {
+                if file.extension == "dat" || file.extension == "l64" {
+                    self.issues.insert(ModError::InfoLikelyPiracy);
+                }
+                if file.extension == "exe" || file.extension == "bat" || file.extension == "ps1" {
+                    self.can_not_use = true;
+                    self.issues.insert(ModError::InfoDangerousFile);
+                }
+                self.issues.insert(ModError::PerformanceQuantityExtra);
+                self.file.extra_files.push(file.path);
+            }
+        }
+    }
 }
 
 
@@ -145,7 +337,7 @@ pub struct FileInfo {
     /// list of extra files in mod
     pub extra_files: Vec<String>,
     /// mod file date
-    pub file_date: String,
+    pub file_date: u64,
     /// mod size (packed zip or folder contents)
     pub file_size: u64,
     /// full path to file
@@ -172,8 +364,19 @@ pub struct FileInfo {
     pub space_files: Vec<String>,
     /// list of oversized files
     pub too_big_files: Vec<String>,
-    // /// list of zip files
-    // pub zip_files: Vec<ZipPackFile>,
+    /// list of zip files
+    pub zip_files: Vec<ZipPackFile>,
+    /// has lua files
+    pub lua_count: u32,
+}
+
+/// Entry for zip files inside a "mod" file.
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
+pub struct ZipPackFile {
+    /// name of file (includes relative path)
+    pub name: String,
+    /// size of file (unpacked)
+    pub size: u64,
 }
 
 /// Default hash value (for invalid caching items)
@@ -212,53 +415,13 @@ impl FileInfo {
 
 /// Parse a mod file
 pub fn parse<P: AsRef<Path>>(filename: P) -> Record {
-    parse_with_options(filename, ParseOptions::default())
+    parse_with_options(filename, &ParseOptions::default())
 }
 
 /// Parse a mod file with defined options
-pub fn parse_with_options<P: AsRef<Path>>(filename: P, options : ParseOptions) -> Record {
-    let record = mod_parser(filename, options);
-    //record.do_stuff();
-    record
-}
-
-/// private version of the parser, for post-processing in one place.
-fn mod_parser<P: AsRef<Path>>(filename: P, _options : ParseOptions) -> Record {
-    let mut record = Record::new(filename);
-
-    record.check_name();
-
-    let mut file = AbstractFile::new(&record.file.full_path);
-
-    match file {
-        AbstractFile::Null(AbstractFileError::ZipReadError) => {
-            record.issues.insert(ModError::FileErrorUnreadableZip);
-            record.can_not_use = true;
-            return record
-        },
-        AbstractFile::Null(_) => {
-            record.issues.insert(ModError::FileErrorUnreadable);
-            record.can_not_use = true;
-            return record
-        },
-        _ => (),
-    }
-
-    match DescXML::from_abstract(&mut file) {
-        Ok(mod_desc) => {
-            record.mod_desc = mod_desc;
-        },
-        Err(AbstractFileError::XmlParseError) => {
-            record.issues.insert(ModError::ModDescParseError);
-            record.can_not_use = true;
-            return record
-        },
-        Err(_) => {
-            record.issues.insert(ModError::ModDescMissing);
-            record.can_not_use = true;
-            return record
-        }
-    };
-
-    record
+pub fn parse_with_options<P: AsRef<Path>>(filename: P, options : &ParseOptions) -> Record {
+    // let record = Record::from_filename(filename, options);
+    // record.do_stuff();
+    // record
+    Record::from_filename(filename, options)
 }

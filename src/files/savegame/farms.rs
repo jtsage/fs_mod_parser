@@ -4,12 +4,12 @@ use crate::files::{AbstractFile, XMLReader, XMLReaderDepth};
 use quick_xml::events::BytesStart;
 
 /// List of farms
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize, Default)]
 pub struct Farms(pub Vec<Farm>);
 
 
 /// Individual farm
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize, Default)]
 pub struct Farm {
     /// Name of farm
     pub name: String,
