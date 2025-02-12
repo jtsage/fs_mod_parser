@@ -90,17 +90,15 @@ impl Record {
     
         match file {
             AbstractFile::Null(AbstractFileError::ZipReadError) => {
-                record.issues.insert(ModError::FileErrorUnreadableZip);
-                record.can_not_use = true;
+                record.fail(ModError::FileErrorUnreadableZip);
                 return record
             },
             AbstractFile::Null(_) => {
-                record.issues.insert(ModError::FileErrorUnreadable);
-                record.can_not_use = true;
+                record.fail(ModError::FileErrorUnreadable);
                 return record
             },
             AbstractFile::Folder(_, _) => {
-                record.issues.insert(ModError::InfoNoMultiplayerUnzipped);
+                record.warn(ModError::InfoNoMultiplayerUnzipped);
             }
             AbstractFile::Zip(_, _) => (),
         }
@@ -115,8 +113,8 @@ impl Record {
     
         if file.is_in_list("careerSavegame.xml") {
             record.file.is_save_game = true;
-            record.issues.insert(ModError::FileErrorLikelySaveGame);
-            record.can_not_use = true;
+            record.fail(ModError::FileErrorLikelySaveGame);
+
             if options.contains(&ParseOption::IncludeSaveGame) {
                 record.include_save_game = Some(SaveGame::from_abstract(&mut file));
             }
@@ -132,13 +130,11 @@ impl Record {
                 record.mod_desc = mod_desc;
             },
             Err(AbstractFileError::XmlParseError) => {
-                record.issues.insert(ModError::ModDescParseError);
-                record.can_not_use = true;
+                record.fail(ModError::ModDescParseError);
                 return record
             },
             Err(_) => {
-                record.issues.insert(ModError::ModDescMissing);
-                record.can_not_use = true;
+                record.fail(ModError::ModDescMissing);
                 return record
             }
         }
@@ -150,6 +146,11 @@ impl Record {
         record
     }
 
+    /// add a warning issue
+    fn warn(&mut self, e : ModError) { self.issues.insert(e); }
+    /// set mod has failed
+    fn fail(&mut self, e : ModError) { self.issues.insert(e); self.can_not_use = true; }
+
     /// Check file name
     fn check_name(&mut self) {
         if !self.file.is_folder {
@@ -157,27 +158,24 @@ impl Record {
                 match ext.to_ascii_lowercase().as_encoded_bytes() {
                     b"zip" => (),
                     b"rar" | b"7z" => {
-                        self.issues.insert(ModError::FileErrorUnsupportedArchive);
-                        self.issues.insert(ModError::FileErrorNameInvalid);
-                        self.can_not_use = true;
+                        self.fail(ModError::FileErrorUnsupportedArchive);
+                        self.fail(ModError::FileErrorNameInvalid);
                     },
                     _ => {
-                        self.issues.insert(ModError::FileErrorGarbageFile);
-                        self.issues.insert(ModError::FileErrorNameInvalid);
-                        self.can_not_use = true;
+                        self.fail(ModError::FileErrorGarbageFile);
+                        self.fail(ModError::FileErrorNameInvalid);
                     }
                 }
             }
         }
 
         if self.file.short_name.to_ascii_lowercase().contains("unzip") {
-            self.issues.insert(ModError::FileErrorLikelyZipPack);
+            self.warn(ModError::FileErrorLikelyZipPack);
         }
 
         if self.file.short_name.starts_with(|c: char| c.is_ascii_digit()) {
-            self.issues.insert(ModError::FileErrorNameStartsDigit);
-            self.issues.insert(ModError::FileErrorNameInvalid);
-            self.can_not_use = true;
+            self.fail(ModError::FileErrorNameStartsDigit);
+            self.fail(ModError::FileErrorNameInvalid);
         }
 
         if !self.file.short_name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '.' ) {
@@ -193,8 +191,7 @@ impl Record {
                 self.file.copy_name = Some(copy_name[0].to_owned());
             }
             
-            self.issues.insert(ModError::FileErrorNameInvalid);
-            self.can_not_use = true;
+            self.fail(ModError::FileErrorNameInvalid);
         }
     }
 
@@ -223,9 +220,8 @@ impl Record {
         
         if max_non_zip_files > 0 && zip_files {
             self.file.is_mod_pack = true;
-            self.can_not_use      = true;
             self.file.zip_files   = zip_list;
-            self.issues.insert(ModError::FileErrorLikelyZipPack);
+            self.fail(ModError::FileErrorLikelyZipPack);
             return true;
         }
         false
@@ -249,7 +245,7 @@ impl Record {
         
             if known_good.contains(&file.extension.as_str()) {
                 if file.path.contains(' ') {
-                    self.issues.insert(ModError::PerformanceFileSpaces);
+                    self.warn(ModError::PerformanceFileSpaces);
                     self.file.space_files.push(file.path.clone());
                 }
                 match file.extension.as_str() {
@@ -266,32 +262,32 @@ impl Record {
                     "txt" => found_txt += 1,
                     "cache" => {
                         if file.size > SIZE_CACHE {
-                            self.issues.insert(ModError::PerformanceOversizeI3D);
+                            self.warn(ModError::PerformanceOversizeI3D);
                             self.file.too_big_files.push(file.path);
                         }
                     }
                     "dds" => {
                         self.file.image_dds.push(file.path.clone());
                         if file.size > SIZE_DDS {
-                            self.issues.insert(ModError::PerformanceOversizeDDS);
+                            self.warn(ModError::PerformanceOversizeDDS);
                             self.file.too_big_files.push(file.path);
                         }
                     }
                     "gdm" => {
                         if file.size > SIZE_GDM {
-                            self.issues.insert(ModError::PerformanceOversizeGDM);
+                            self.warn(ModError::PerformanceOversizeGDM);
                             self.file.too_big_files.push(file.path);
                         }
                     }
                     "shapes" => {
                         if file.size > SIZE_SHAPES {
-                            self.issues.insert(ModError::PerformanceOversizeSHAPES);
+                            self.warn(ModError::PerformanceOversizeSHAPES);
                             self.file.too_big_files.push(file.path);
                         }
                     }
                     "xml" => {
                         if file.size > SIZE_XML {
-                            self.issues.insert(ModError::PerformanceOversizeXML);
+                            self.warn(ModError::PerformanceOversizeXML);
                             self.file.too_big_files.push(file.path);
                         }
                     }
@@ -299,26 +295,25 @@ impl Record {
                 }
         
                 if found_grle > MAX_GRLE {
-                    self.issues.insert(ModError::PerformanceQuantityGRLE);
+                    self.warn(ModError::PerformanceQuantityGRLE);
                 }
                 if found_pdf > MAX_PDF {
-                    self.issues.insert(ModError::PerformanceQuantityPDF);
+                    self.warn(ModError::PerformanceQuantityPDF);
                 }
                 if found_png > MAX_PNG {
-                    self.issues.insert(ModError::PerformanceQuantityPNG);
+                    self.warn(ModError::PerformanceQuantityPNG);
                 }
                 if found_txt > MAX_TXT {
-                    self.issues.insert(ModError::PerformanceQuantityTXT);
+                    self.warn(ModError::PerformanceQuantityTXT);
                 }
             } else {
                 if file.extension == "dat" || file.extension == "l64" {
-                    self.issues.insert(ModError::InfoLikelyPiracy);
+                    self.warn(ModError::InfoLikelyPiracy);
                 }
                 if file.extension == "exe" || file.extension == "bat" || file.extension == "ps1" {
-                    self.can_not_use = true;
-                    self.issues.insert(ModError::InfoDangerousFile);
+                    self.fail(ModError::InfoDangerousFile);
                 }
-                self.issues.insert(ModError::PerformanceQuantityExtra);
+                self.warn(ModError::PerformanceQuantityExtra);
                 self.file.extra_files.push(file.path);
             }
         }
