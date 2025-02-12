@@ -44,8 +44,12 @@ pub struct DescXML {
     pub dependencies: Vec<String>,
     /// desc version
     pub desc_version: u32,
+    /// game version
+    pub game_version: u32,
     /// icon filename
-    pub icon_filename: Option<String>,
+    pub icon_file: Option<String>,
+    /// icon filename
+    pub icon_data: Option<String>,
     /// map config file (if map)
     pub map_config_filename: Option<String>,
     /// multiplayer flag
@@ -76,7 +80,18 @@ pub struct DescBrand {
 impl XMLReader<Self> for DescXML {
     /// Load the modDesc.xml from an already decoded string
     fn from_string(xml_text: &str) -> Result<Self, AbstractFileError> {
-        Self::default().read_xml(xml_text).cloned()
+        let mut record = Self::default().read_xml(xml_text).cloned()?;
+        match record.desc_version {
+            4..=6   => record.game_version = 11,
+            9..=16  => record.game_version = 13,
+            20..=25 => record.game_version = 15,
+            31..=39 => record.game_version = 17,
+            40..=53 => record.game_version = 19,
+            60..=85 => record.game_version = 22,
+            90..    => record.game_version = 25,
+            _       => record.game_version = 0,
+        }
+        Ok(record)
     }
 
     /// Read modDesc from mod file
@@ -95,7 +110,7 @@ impl XMLReader<Self> for DescXML {
             (_, 0) => Err(AbstractFileError::XmlParseError),
             (b"author", 1) => { self.author = Self::xml_text(e, reader); Ok(0) },
             (b"version", 1) => { self.version = Self::xml_text(e, reader); Ok(0) },
-            (b"iconFilename", 1) => { self.icon_filename = Self::xml_text(e, reader); Ok(0) },
+            (b"iconFilename", 1) => { self.icon_file = Self::xml_text(e, reader); Ok(0) },
             (b"dependency", 2) => {
                 if let Some(v) = Self::xml_text(e, reader) {
                     self.dependencies.push(v);
@@ -104,8 +119,9 @@ impl XMLReader<Self> for DescXML {
             },
             (b"map", 2) if self.map_config_filename.is_none() => {
                 self.map_config_filename = Self::xml_attribute(e, "configFilename");
-                Ok(0)
+                Ok(1)
             },
+            (b"productId", 1)     => { self.warnings.insert(ModDescWarnings::MaybePiracy()); Ok(1) },
             (b"text", 2)          => { self.tag_l10n_text(reader, e)?; Ok(0) },
             (b"title", 1)         => { self.tag_title(reader, e)?; Ok(0) },
             (b"description", 1)   => { self.tag_description(reader, e)?; Ok(0) },
@@ -332,7 +348,9 @@ mod tests {
                 "FS22_RedBarnPack"
             ],
             "desc_version": 69,
-            "icon_filename": "modIcon.dds",
+            "game_version": 22,
+            "icon_file": "modIcon.dds",
+            "icon_data": null,
             "map_config_filename": "map/xml/map.xml",
             "multiplayer": true,
             "version": "1.0.0.0",
@@ -410,7 +428,9 @@ mod tests {
             "store_items": [],
             "dependencies": [],
             "desc_version": 69,
-            "icon_filename": "modIcon.dds",
+            "game_version": 22,
+            "icon_file": "modIcon.dds",
+            "icon_data": null,
             "map_config_filename": null,
             "multiplayer": true,
             "version": null,

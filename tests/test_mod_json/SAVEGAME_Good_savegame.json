@@ -1,0 +1,283 @@
+{
+    "errorList": [],
+    "farms": [
+        {
+            "name": "--unowned--",
+            "cash": 0,
+            "loan": 0,
+            "color": 0
+        },
+        {
+            "name": "HENNESSEY ACRES",
+            "cash": 46198,
+            "loan": 230000,
+            "color": 7
+        },
+        {
+            "name": "joinFSG.gg",
+            "cash": 100000,
+            "loan": 0,
+            "color": 1
+        },
+        {
+            "name": "PUBLIC",
+            "cash": 878837,
+            "loan": 0,
+            "color": 8
+        },
+        {
+            "name": "BELLWETHER RANCH",
+            "cash": 110758,
+            "loan": 0,
+            "color": 2
+        },
+        {
+            "name": "THE CROFT",
+            "cash": 42937,
+            "loan": 0,
+            "color": 6
+        }
+    ],
+    "isValid": true,
+    "mapMod": "FS22_BackRoadsCounty",
+    "mapTitle": "Back Roads County",
+    "modCount": 38,
+    "mods": {
+        "FS22_KroneBigPack120_80": {
+            "version": "1.0.0.0",
+            "title": "Krone Big Pack 120-80",
+            "farms": [
+                1
+            ]
+        },
+        "FS22_JDBalers": {
+            "version": "1.0.0.0",
+            "title": "John Deere Balers",
+            "farms": [
+                4,
+                5
+            ]
+        },
+        "FS22_wifoBPseries": {
+            "version": "1.0.0.0",
+            "title": "WIFO BP Series",
+            "farms": []
+        },
+        "FS22_modernCowsBarn": {
+            "version": "1.0.0.0",
+            "title": "Modern Cow Barn",
+            "farms": []
+        },
+        "FS22_BackRoadsCounty": {
+            "version": "1.0.0.2",
+            "title": "Back Roads County",
+            "farms": [
+                0,
+                1,
+                4,
+                5,
+                15
+            ]
+        },
+        "FS22_hydroGreenhouse": {
+            "version": "1.0.0.0",
+            "title": "Hydroponics Greenhouse",
+            "farms": [
+                1,
+                5
+            ]
+        },
+        "FS22_JD_HX20": {
+            "version": "1.0.0.0",
+            "title": "John Deere HX20",
+            "farms": [
+                1,
+                5
+            ]
+        },
+        "FS22_Large_Metal_Pavilion": {
+            "version": "1.0.0.1",
+            "title": "Large Metal Pavilion",
+            "farms": [
+                5
+            ]
+        },
+        "FS22_Case_W20E": {
+            "version": "1.0.0.0",
+            "title": "Case W20E",
+            "farms": []
+        },
+        "FS22_openCowPasture": {
+            "version": "1.0.0.0",
+            "title": "Open Cow Pasture",
+            "farms": [
+                1
+            ]
+        },
+        "FS22_Shed_10x12m": {
+            "version": "1.0.0.0",
+            "title": "Shed 10x12m",
+            "farms": []
+        },
+        "FS22_MX_Pack": {
+            "version": "1.0.0.0",
+            "title": "MX Pack",
+            "farms": [
+                1
+            ]
+        },
+        "FS22_Machinehall_grainstorage": {
+            "version": "1.0.0.0",
+            "title": "Machinesheds",
+            "farms": [
+                2
+            ]
+        },
+        "FS22_SiloFillInfo": {
+            "version": "1.0.0.0",
+            "title": "Silo Fill Information",
+            "farms": []
+        },
+        "FS22_guidanceSteering": {
+            "version": "2.1.6.0",
+            "title": "Guidance Steering",
+            "farms": []
+        },
+        "FS22_SimpleInspector": {
+            "version": "1.0.1.10",
+            "title": "Simple Inspector",
+            "farms": []
+        },
+        "FS22_DutchShedPack": {
+            "version": "1.0.0.0",
+            "title": "Dutch Shed Pack",
+            "farms": [
+                1
+            ]
+        },
+        "FS22_HesstonBalers": {
+            "version": "1.0.0.0",
+            "title": "Hesston Balers",
+            "farms": []
+        },
+        "FS22_36ftLowLoader": {
+            "version": "1.0.0.0",
+            "title": "Lizard Class C 450/455/460 Low Loader",
+            "farms": [
+                1
+            ]
+        },
+        "FS22_bigCowBarn": {
+            "version": "1.0.0.0",
+            "title": "Big Cow Barn",
+            "farms": []
+        },
+        "FS22_AdvancedFarmManager": {
+            "version": "1.0.0.1",
+            "title": "Advanced Farm Manager",
+            "farms": []
+        },
+        "FS22_BigBagCattlePack": {
+            "version": "1.0.0.1",
+            "title": "BigBags Cattle Pack",
+            "farms": []
+        },
+        "FS22_RoadrunnerPlus": {
+            "version": "1.0.2.0",
+            "title": "Roadrunner+",
+            "farms": []
+        },
+        "FS22_Tanker_Trailer_IMT_525": {
+            "version": "1.0.0.0",
+            "title": "Tanker Trailer IMT 525",
+            "farms": [
+                1,
+                5
+            ]
+        },
+        "FS22_AirFlex_Series": {
+            "version": "1.0.0.0",
+            "title": "HoneyBee AirFLEX Series",
+            "farms": []
+        },
+        "FS22_25DU_Trailers": {
+            "version": "1.0.0.0",
+            "title": "Lizard 25DU Trailer",
+            "farms": []
+        },
+        "FS22_LizardBaleSpike": {
+            "version": "1.0.0.0",
+            "title": "Lizard 3-Point Bale Spike",
+            "farms": []
+        },
+        "FS22_2150_Series": {
+            "version": "1.0.0.0",
+            "title": "Case IH 2150 Early Riser Planters Series",
+            "farms": []
+        },
+        "FS22_MPsignPack": {
+            "version": "1.0.0.0",
+            "title": "Multiplayer Sign Pack",
+            "farms": []
+        },
+        "FS22_ExtraLargeSheepBarn": {
+            "version": "1.0.0.0",
+            "title": "Extra Large Sheep Barn Pack",
+            "farms": [
+                4
+            ]
+        },
+        "FS22_hydraulicBaleFork": {
+            "version": "1.0.0.0",
+            "title": "Hydraulic Bale Fork",
+            "farms": []
+        },
+        "FS22_largeCowshed3_3": {
+            "version": "1.1.0.0",
+            "title": "Cowshed 3+3",
+            "farms": []
+        },
+        "FS22_CaseEcoloTil2500": {
+            "version": "1.0.0.0",
+            "title": "Case Ecolo-Til 2500",
+            "farms": [
+                2,
+                4
+            ]
+        },
+        "FS22_TreeBGone": {
+            "version": "1.0.1.0",
+            "title": "Tree-B-Gone",
+            "farms": []
+        },
+        "FS22_EasyDevControls": {
+            "version": "1.2.0.0",
+            "title": "Easy Development Controls",
+            "farms": []
+        },
+        "FS22_Large_Pole_Barn": {
+            "version": "1.0.0.0",
+            "title": "Lage Pole Barn",
+            "farms": [
+                5
+            ]
+        },
+        "FS22_SeedHawkPack": {
+            "version": "1.0.0.1",
+            "title": "Seed Hawk Pack",
+            "farms": []
+        },
+        "FS22_ObjectStorage": {
+            "version": "1.0.1.0",
+            "title": "Object Storage",
+            "farms": [
+                1,
+                4
+            ]
+        }
+    },
+    "name": "BRC",
+    "playTime": "306:40",
+    "saveDate": "2022-10-14",
+    "singleFarm": false
+}

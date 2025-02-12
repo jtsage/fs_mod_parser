@@ -98,6 +98,9 @@ pub enum ModDescWarnings {
     /// Bare text found in a tag that should be localized
     #[serde(rename="MODDESC__SHOULD_BE_L10N")]
     ShouldBeL10n(String),
+    /// Has DLC data
+    #[serde(rename="MODDESC__MAYBE_PIRACY")]
+    MaybePiracy(),
 }
 
 impl std::fmt::Display for ModDescWarnings {
@@ -108,6 +111,7 @@ impl std::fmt::Display for ModDescWarnings {
             Self::L10nMalformed() => write!(f, "malformed l10n text tag"),
             Self::L10nInvalidLanguage(i,l) => write!(f, "unknown l10n language: {i} in {l}"),
             Self::ShouldBeL10n(v) => write!(f, "found un-translated entry in: {v}"),
+            Self::MaybePiracy() => write!(f, "possible cracked DLC"),
         }
     }
 }
@@ -225,6 +229,57 @@ impl std::fmt::Display for SaveError {
 }
 
 
+/// [`ModError`] the mean a mod is broken (won't work)
+pub const BADGE_BROKEN: [&ModError; 10] = [
+    &ModError::FileErrorGarbageFile,
+    &ModError::FileErrorLikelySaveGame,
+    &ModError::FileErrorLikelyZipPack,
+    &ModError::FileErrorNameInvalid,
+    &ModError::FileErrorNameStartsDigit,
+    &ModError::FileErrorUnreadableZip,
+    &ModError::FileErrorUnsupportedArchive,
+    &ModError::ModDescParseError,
+    &ModError::ModDescVersionOldOrMissing,
+    &ModError::ModDescMissing,
+];
+
+/// [`ModError`] that should be fixed, but probably still work
+pub const BADGE_ISSUE: [&ModError; 6] = [
+    &ModError::InfoLikelyPiracy,
+    &ModError::InfoMaliciousCode,
+    &ModError::InfoDangerousFile,
+    &ModError::ModDescNoModIcon,
+    &ModError::ModDescNoModVersion,
+    &ModError::ModDescDamaged,
+];
+
+/// [`ModError`] that only refer to performance.  probably fine
+pub const BADGE_PERF: [&ModError; 12] = [
+    &ModError::PerformanceFileSpaces,
+    &ModError::PerformanceMissingL10n,
+    &ModError::PerformanceOversizeDDS,
+    &ModError::PerformanceOversizeGDM,
+    &ModError::PerformanceOversizeI3D,
+    &ModError::PerformanceOversizeSHAPES,
+    &ModError::PerformanceOversizeXML,
+    &ModError::PerformanceQuantityExtra,
+    &ModError::PerformanceQuantityGRLE,
+    &ModError::PerformanceQuantityPDF,
+    &ModError::PerformanceQuantityPNG,
+    &ModError::PerformanceQuantityTXT,
+];
+
+/// [`ModError`] that denote it's not actually a mod
+pub const BADGE_NOT_MOD: [&ModError; 6] = [
+    &ModError::FileErrorGarbageFile,
+    &ModError::FileErrorLikelySaveGame,
+    &ModError::FileErrorLikelyZipPack,
+    &ModError::FileErrorUnreadableZip,
+    &ModError::FileErrorUnsupportedArchive,
+    &ModError::ModDescMissing,
+];
+
+
 // MARK: TESTS
 #[cfg(test)]
 mod tests {
@@ -254,19 +309,20 @@ mod tests {
 
     #[test]
     fn xml_parse_errors_moddesc() {
-        let errors:[ModDescWarnings; 5] = [
+        let errors:[ModDescWarnings; 6] = [
             ModDescWarnings::ActionBindingInvalidTag(String::from("xx")),
             ModDescWarnings::ActionBindingMalformed(),
             ModDescWarnings::L10nInvalidLanguage(String::from("xx"), String::from("yy")),
             ModDescWarnings::L10nMalformed(),
-            ModDescWarnings::ShouldBeL10n(String::from("xx"))
+            ModDescWarnings::ShouldBeL10n(String::from("xx")),
+            ModDescWarnings::MaybePiracy()
         ];
 
         for e in &errors { assert!(e.to_string().len() > 0); }
         assert_eq!(ModDescWarnings::COUNT, errors.len());
         assert_eq!(
             serde_json::to_string(&errors).unwrap(),
-            r#"[{"MODDESC__ACTION_BIND_INVALID_TAG":"xx"},{"MODDESC__ACTION_BIND_MALFORMED":[]},{"MODDESC__L10N_INVALID_LANGUAGE":["xx","yy"]},{"MODDESC__L10N_MALFORMED":[]},{"MODDESC__SHOULD_BE_L10N":"xx"}]"#
+            r#"[{"MODDESC__ACTION_BIND_INVALID_TAG":"xx"},{"MODDESC__ACTION_BIND_MALFORMED":[]},{"MODDESC__L10N_INVALID_LANGUAGE":["xx","yy"]},{"MODDESC__L10N_MALFORMED":[]},{"MODDESC__SHOULD_BE_L10N":"xx"},{"MODDESC__MAYBE_PIRACY":[]}]"#
         );
     }
 

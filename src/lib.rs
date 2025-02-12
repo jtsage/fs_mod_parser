@@ -3,7 +3,7 @@
 #![warn(missing_docs)]
 
 // pub mod maps;
-// pub mod mod_basic;
+
 // pub mod mod_detail;
 pub mod savegame;
 // pub mod shared;
@@ -82,10 +82,10 @@ pub enum ParseOption {
 
 use std::ops::Deref;
 
-// pub use savegame::parser as parse_savegame;
+pub use savegame::parse as parse_savegame;
 
-// pub use mod_basic::parser as parse_mod;
-// pub use mod_basic::parser_with_options as parse_mod_with_options;
+pub use parser::parse;
+pub use parser::parse_with_options;
 
-// pub use mod_detail::parser as parse_detail;
-// pub use mod_detail::parser_with_options as parse_detail_with_options;
+pub use parser::parse_detail;
+pub use parser::parse_detail_with_options;

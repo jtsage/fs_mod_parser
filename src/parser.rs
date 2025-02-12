@@ -1,6 +1,6 @@
 //! Main mod parser
-use std::collections::HashSet;
-use std::path::{self, Path};
+use std::collections::{HashMap, HashSet};
+use std::path::{self, Path, PathBuf};
 use md5::{Md5, Digest};
 use base64ct::{Base64UrlUnpadded, Encoding};
 use std::io::{Read, Seek, SeekFrom};
@@ -8,10 +8,14 @@ use std::time::SystemTime;
 
 use crate::files::{AbstractFile, XMLReader};
 use crate::files::mod_desc::DescXML;
+use crate::files::store_item::StoreItem;
+use crate::files::l10n::L10n;
 use crate::savegame::SaveGame;
 
+
 use crate::{ParseOption, ParseOptions};
-use crate::errors::{AbstractFileError, ModError};
+use crate::errors::{AbstractFileError, ModError, ModDescWarnings};
+use crate::errors::{BADGE_BROKEN, BADGE_NOT_MOD, BADGE_ISSUE, BADGE_PERF};
 
 /// one megabyte
 const MB: u64 = 0x0010_0000;
@@ -36,53 +40,118 @@ const MAX_PNG: u32 = 128;
 const MAX_TXT: u32 = 2;
 
 
+/// Parse a mod file
+///
+/// Returns a [`Record`]
+///
+/// captured information includes version, l10n title and description,
+/// key bindings, multiplayer status, if it's a map,
+/// icon, abd some simple piracy detection.
+///
+pub fn parse<P: AsRef<Path>>(filename: P) -> Record {
+    parse_with_options(filename, &ParseOptions::default())
+}
+
+/// Parse a mod file with defined options
+pub fn parse_with_options<P: AsRef<Path>>(filename: P, options : &ParseOptions) -> Record {
+    let mut record = Record::from_filename(filename, options);
+    record.update_badges();
+    record
+}
+
+/// Parse a mod file
+/// 
+/// # Errors
+/// will return an error if either the mod or the indicated store item does not exist
+pub fn parse_detail<P: AsRef<Path>, S: AsRef<str>>(filename: P, needle : S) -> Result<StoreItem, AbstractFileError> {
+    parse_detail_with_options(filename, needle, &ParseOptions::default())
+}
+
+/// Parse a mod file with defined options
+/// 
+/// # Errors
+/// will return an error if either the mod or the indicated store item does not exist
+pub fn parse_detail_with_options<P: AsRef<Path>, S: AsRef<str>>(filename: P, needle: S, options : &ParseOptions) -> Result<StoreItem, AbstractFileError> {
+    let mut file = AbstractFile::new(filename);
+    let item = StoreItem::from_abstract_file(&mut file, needle)?;
+
+    if options.contains(&ParseOption::ImageDetail) {
+        // do stuff
+    }
+
+    Ok(item)
+}
+
+
 /// file record
-#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Eq, Debug, Default)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Record {
     /// Full path to file
     pub file: FileInfo,
     /// Mod ident from full path and filename (MD5)
     pub ident: String,
-    //// Is a folder record?
-    // pub badge_array: ModBadges,
+    /// Mod badges
+    pub badge_array: Vec<Badges>,
     /// Mod not usable flag
     pub can_not_use: bool,
     /// Current collection for mod (not set)
     pub current_collection: String,
-    // /// Detail icons processed flag
-    // pub detail_icon_loaded: bool,
     /// Errors or issues found
     pub issues: HashSet<ModError>,
-    // /// storeItems found (if processed)
-    // pub include_detail: Option<ModDetail>,
+    /// storeItems found (if processed)
+    pub include_detail: HashMap<String, StoreItem>,
     /// save game record (if processed)
     pub include_save_game: Option<SaveGame>,
-    // /// L10N title and description
-    // pub l10n: ModDescL10N,
+    /// L10N data
+    pub l10n: L10n,
     /// modDesc.xml fields
     pub mod_desc: DescXML,
 }
 
+/// mod file identity
+pub struct ModIdent {
+    /// full path
+    full_path : PathBuf,
+    /// identity hash (full path -> MD5)
+    ident : String,
+    /// age hash (name, size, and last 2k of file -> MD5)
+    hash : String,
+}
+
 impl Record {
     /// make a new record
-    fn new<P: AsRef<Path>>(filename: P) -> Self {
+    fn new(mod_ident: ModIdent) -> Self {
+        Self {
+            ident : mod_ident.ident,
+            file : FileInfo::new(mod_ident.full_path, mod_ident.hash),
+            ..Default::default()
+        }
+    }
+
+    /// Get a mod ident
+    pub fn get_ident<P: AsRef<Path>>(filename: P) -> ModIdent {
         let full_path = path::absolute(&filename).unwrap_or_else(|_| filename.as_ref().to_path_buf());
 
         let mut ident = Md5::new();
         ident.update(full_path.to_string_lossy().as_ref());
-        let ident = Base64UrlUnpadded::encode_string(&ident.finalize());
 
-        Self {
-            ident,
-            file : FileInfo::new(full_path),
-            ..Default::default()
+        ModIdent {
+            ident : Base64UrlUnpadded::encode_string(&ident.finalize()),
+            hash : FileInfo::make_hash(&full_path),
+            full_path,
         }
     }
 
     /// Create record from filename
     pub fn from_filename<P: AsRef<Path>>(filename: P, options : &ParseOptions) -> Self {
-        let mut record = Self::new(filename);
+        let mod_ident = Self::get_ident(filename);
+
+        // TODO: allow cache checking here? or allow passing mod_ident?
+        // expectation hash == other.hash and ident == other.ident but
+        // hash != DEFAULT_HASH
+
+        let mut record = Self::new(mod_ident);
     
         record.check_name();
     
@@ -141,8 +210,57 @@ impl Record {
     
         record.do_file_counts(&file);
     
-        // check moddesc for error
-    
+        if record.mod_desc.desc_version == 0 { record.warn(ModError::ModDescVersionOldOrMissing) }
+        if record.mod_desc.version.is_none() { record.warn(ModError::ModDescNoModVersion) }
+        if record.mod_desc.icon_file.is_none() { record.warn(ModError::ModDescNoModIcon) }
+
+        for item in record.mod_desc.warnings.clone() {
+            match item {
+                ModDescWarnings::L10nMalformed() | ModDescWarnings::L10nInvalidLanguage(_, _) | ModDescWarnings::ShouldBeL10n(_) => 
+                    record.warn(ModError::PerformanceMissingL10n),
+                ModDescWarnings::MaybePiracy() => record.warn(ModError::InfoLikelyPiracy),
+                _ => ()
+            }
+        }
+
+        record.check_lua(&mut file);
+
+        //TODO: maps
+
+        
+        if options.contains(&ParseOption::ImageMod) {
+            if let Some(filename) = &record.mod_desc.icon_file {
+                if let Ok(_bin) = file.bin(filename) {
+                    //TODO: icon
+                    // record.mod_desc.icon_data = convert_mod_icon(binary_file);
+                } else {
+                    record.warn(ModError::ModDescNoModIcon);
+                }
+            }
+        }
+
+        if options.contains(&ParseOption::IncludeDetail) {
+            if let Some(folder) = record.mod_desc.l10n_file_prefix.clone() {
+                record.l10n = L10n::from_abstract_folder(&mut file, folder);
+            }
+            for item in record.mod_desc.store_items.clone() {
+                if let Ok(item_record) = StoreItem::from_abstract_file(&mut file, item.clone()) {
+                    record.include_detail.insert(item, item_record);
+                }
+            }
+            if options.contains(&ParseOption::ImageDetail) {
+                // TODO: detail icons
+            }
+        }
+
+        for (key,lang_map) in record.mod_desc.l10n_local.clone() {
+            for ( k, v ) in lang_map {
+                let lang_entry = record.l10n.0.entry(k).or_default();
+                lang_entry.insert(key.clone(), v);
+            }
+        }
+        record.mod_desc.l10n_local.clear();
+
         record
     }
 
@@ -318,6 +436,74 @@ impl Record {
             }
         }
     }
+
+    /// Check for malicious LUA files
+    fn check_lua(&mut self, file : &mut AbstractFile) {
+        if crate::NOT_MALWARE.contains(&self.file.short_name.as_str()) { return }
+        
+        for lua_file in file.list().into_iter().filter(|n| n.extension == "lua") {
+            if let Ok(content) = file.text(&lua_file.path) {
+                if content.contains(".deleteFolder") || content.contains(".deleteFile") {
+                    self.warn(ModError::InfoDangerousFile);
+                    return
+                }
+            }
+        }
+    }
+
+    /// Update the badge list
+    fn update_badges(&mut self) {
+        if BADGE_NOT_MOD.iter().any(|x| self.issues.contains(x)) {
+            self.badge_array.push(Badges::NotMod);
+
+            if self.issues.contains(&ModError::FileErrorLikelySaveGame) {
+                self.badge_array.push(Badges::SaveGame);
+            }
+
+        } else if BADGE_BROKEN.iter().any(|x| self.issues.contains(x)) {
+            self.badge_array.push(Badges::Broken);
+        } else {
+
+            if BADGE_ISSUE.iter().any(|x| self.issues.contains(x)) {
+                self.badge_array.push(Badges::Problem);
+            }
+            if BADGE_PERF.iter().any(|x| self.issues.contains(x)) {
+                self.badge_array.push(Badges::Performance);
+            }
+            if self.file.is_folder || !self.mod_desc.multiplayer {
+                self.badge_array.push(Badges::NoMp);
+            }
+            if self.mod_desc.script_files {
+                self.badge_array.push(Badges::PcOnly);
+            }
+            if self.mod_desc.map_config_filename.is_some() {
+                self.badge_array.push(Badges::Map);
+            }
+
+            if !self.mod_desc.action_binding.is_empty() {
+                self.badge_array.push(Badges::Keys);
+            }
+
+            if !self.mod_desc.dependencies.is_empty() {
+                self.badge_array.push(Badges::Depend);
+            }
+        }
+
+        if self.issues.contains(&ModError::InfoMaliciousCode) || self.issues.contains(&ModError::InfoDangerousFile) {
+            self.badge_array.push(Badges::Malware);
+        }
+
+        match self.mod_desc.game_version {
+            11 => self.badge_array.push(Badges::Fs11),
+            13 => self.badge_array.push(Badges::Fs13),
+            15 => self.badge_array.push(Badges::Fs15),
+            17 => self.badge_array.push(Badges::Fs17),
+            19 => self.badge_array.push(Badges::Fs19),
+            22 => self.badge_array.push(Badges::Fs22),
+            25 => self.badge_array.push(Badges::Fs25),
+            _  => self.badge_array.push(Badges::FsUnknown),
+        }
+    }
 }
 
 
@@ -379,14 +565,19 @@ pub const DEFAULT_HASH:&str = "ERR-HASH-NOT-COMPUTED--";
 
 impl FileInfo {
     /// Create a new fileinfo (from abs path)
-    fn new<P: AsRef<Path>>(filename : P) -> Self {
+    fn new<P: AsRef<Path>>(filename : P, age_hash : String) -> Self {
         Self {
             full_path  : filename.as_ref().to_string_lossy().to_string(),
             short_name : filename.as_ref().file_stem().map(|v| v.to_string_lossy().to_string() ).unwrap_or_default(),
             is_folder  : filename.as_ref().is_dir(),
-            age_hash   : Self::hash_from_file(filename).unwrap_or_else(|_| DEFAULT_HASH.to_owned()),
+            age_hash,
             ..Default::default()
         }
+    }
+
+    /// Get a hash from a filename
+    pub fn make_hash<P: AsRef<Path>>(filename : P) -> String {
+        Self::hash_from_file(filename).unwrap_or_else(|_| DEFAULT_HASH.to_owned())
     }
 
     /// compute hash from filename
@@ -408,15 +599,49 @@ impl FileInfo {
     }
 }
 
-/// Parse a mod file
-pub fn parse<P: AsRef<Path>>(filename: P) -> Record {
-    parse_with_options(filename, &ParseOptions::default())
+
+/// Badges
+#[derive(Copy, Clone, serde::Serialize, serde::Deserialize, PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
+pub enum Badges {
+    /// Mod has performance issues (maybe)
+    Performance,
+    /// mod is totally broken
+    Broken,
+    /// mod is a folder
+    Folder,
+    /// mod might be malware
+    Malware,
+    /// can't be used in multiplayer
+    NoMp,
+    /// not actually a mod
+    NotMod,
+    /// pc only (scripts)
+    PcOnly,
+    /// mod has issues
+    Problem,
+    /// actually a savegame
+    SaveGame,
+    /// depends on something else
+    Depend,
+    /// version unknown
+    FsUnknown,
+    /// FS11
+    Fs11,
+    /// FS13
+    Fs13,
+    /// FS15
+    Fs15,
+    /// FS17
+    Fs17,
+    /// FS19
+    Fs19,
+    /// FS22
+    Fs22,
+    /// FS25
+    Fs25,
+    /// Has keyboard bindings
+    Keys,
+    /// is a map
+    Map,
 }
 
-/// Parse a mod file with defined options
-pub fn parse_with_options<P: AsRef<Path>>(filename: P, options : &ParseOptions) -> Record {
-    // let record = Record::from_filename(filename, options);
-    // record.do_stuff();
-    // record
-    Record::from_filename(filename, options)
-}

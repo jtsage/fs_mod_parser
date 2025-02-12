@@ -45,7 +45,7 @@ use crate::files::savegame::items::Mods as SaveMods;
 /// 
 /// If you already have an open file handle, see [`SaveGame::from_abstract`]
 /// 
-pub fn parser<P: AsRef<Path>>(filename : P) -> SaveGame {
+pub fn parse<P: AsRef<Path>>(filename : P) -> SaveGame {
     let mut file_handle = AbstractFile::new(filename);
     SaveGame::from_abstract(&mut file_handle)
 }
@@ -151,91 +151,64 @@ impl SaveGame {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use assert_json_diff::assert_json_include;
 
     #[test]
     fn good_file() {
-        let actual = parser("tests/test_mods/SAVEGAME_Good.zip");
+        let actual = parse("tests/test_mods/SAVEGAME_Good.zip");
+        let mut json_handle = AbstractFile::new("tests/test_mod_json");
+        let expected =json_handle.text("SAVEGAME_Good_savegame.json").unwrap();
 
-        // cSpell: disable
-        let expected = serde_json::json!({
-            "errorList": [],
-            "farms": [
-                { "name": "--unowned--", "cash": 0, "loan": 0, "color": 0 },
-                { "name": "HENNESSEY ACRES", "cash": 46198, "loan": 230000, "color": 7 },
-                { "name": "joinFSG.gg", "cash": 100000, "loan": 0, "color": 1 },
-                { "name": "PUBLIC", "cash": 878837, "loan": 0, "color": 8 },
-                { "name": "BELLWETHER RANCH", "cash": 110758,"loan": 0,"color": 2 },
-                { "name": "THE CROFT", "cash": 42937, "loan": 0, "color": 6 }
-            ],
-            "isValid": true,
-            "mapMod": "FS22_BackRoadsCounty",
-            "mapTitle": "Back Roads County",
-            "modCount": 38,
-            "mods": {
-                "FS22_BackRoadsCounty": {
-                    "version": "1.0.0.2",
-                    "title": "Back Roads County",
-                    "farms": [ 0, 1, 4, 5, 15]
-                }
-            },
-            "name": "BRC",
-            "playTime": "306:40",
-            "saveDate": "2022-10-14",
-            "singleFarm": false
-        });
-        // cSpell:enable
-
-        assert_json_include!(actual: serde_json::json!(actual), expected: expected);
+        let re_read:SaveGame = serde_json::from_str(&expected).expect("oops.");
+        assert_eq!(actual, re_read);
     }
 
     #[test]
     fn bad_career_file() {
-        let actual = parser("tests/test_mods/SAVEGAME_No_Career.zip");
+        let actual = parse("tests/test_mods/SAVEGAME_No_Career.zip");
         assert_eq!(actual.error_list.len(), 1);
         assert!(actual.error_list.contains(&SaveError::CareerMissing));
 
-        let actual = parser("tests/test_mods/SAVEGAME_Broken_Career.zip");
+        let actual = parse("tests/test_mods/SAVEGAME_Broken_Career.zip");
         assert_eq!(actual.error_list.len(), 1);
         assert!(actual.error_list.contains(&SaveError::CareerParseError));
     }
 
     #[test]
     fn bad_farms_file() {
-        let actual = parser("tests/test_mods/SAVEGAME_No_Farms.zip");
+        let actual = parse("tests/test_mods/SAVEGAME_No_Farms.zip");
         assert_eq!(actual.error_list.len(), 1);
         assert!(actual.error_list.contains(&SaveError::FarmsMissing));
 
-        let actual = parser("tests/test_mods/SAVEGAME_Broken_Farms.zip");
+        let actual = parse("tests/test_mods/SAVEGAME_Broken_Farms.zip");
         assert_eq!(actual.error_list.len(), 1);
         assert!(actual.error_list.contains(&SaveError::FarmsParseError));
     }
 
     #[test]
     fn bad_placeable_file() {
-        let actual = parser("tests/test_mods/SAVEGAME_No_Placeable.zip");
+        let actual = parse("tests/test_mods/SAVEGAME_No_Placeable.zip");
         assert_eq!(actual.error_list.len(), 1);
         assert!(actual.error_list.contains(&SaveError::PlaceableMissing));
 
-        let actual = parser("tests/test_mods/SAVEGAME_Broken_Placeable.zip");
+        let actual = parse("tests/test_mods/SAVEGAME_Broken_Placeable.zip");
         assert_eq!(actual.error_list.len(), 1);
         assert!(actual.error_list.contains(&SaveError::PlaceableParseError));
     }
 
     #[test]
     fn bad_vehicle_file() {
-        let actual = parser("tests/test_mods/SAVEGAME_No_Vehicles.zip");
+        let actual = parse("tests/test_mods/SAVEGAME_No_Vehicles.zip");
         assert_eq!(actual.error_list.len(), 1);
         assert!(actual.error_list.contains(&SaveError::VehicleMissing));
 
-        let actual = parser("tests/test_mods/SAVEGAME_Broken_Vehicles.zip");
+        let actual = parse("tests/test_mods/SAVEGAME_Broken_Vehicles.zip");
         assert_eq!(actual.error_list.len(), 1);
         assert!(actual.error_list.contains(&SaveError::VehicleParseError));
     }
 
     #[test]
     fn single_farm() {
-        let actual = parser("tests/test_mods/SAVEGAME_Single_Farm.zip");
+        let actual = parse("tests/test_mods/SAVEGAME_Single_Farm.zip");
         assert_eq!(actual.error_list.len(), 0);
         assert_eq!(actual.single_farm, true);
     }

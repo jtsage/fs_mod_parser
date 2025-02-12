@@ -124,6 +124,10 @@ impl XMLReader<Self> for Placeable {
             },
             (_, 0) => Err(AbstractFileError::XmlWrongFileType),
 
+            (b"i3dMappings", 1) => {
+                Self::slurp(e, reader)
+            }
+
             (b"image", 2) => {
                 if let Some(filename) = Self::xml_text(e, reader) {
                     let filename = Self::unwrap_base_path(filename);

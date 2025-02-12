@@ -13,7 +13,7 @@ use placeable::Placeable;
 
 /// Store item definition
 #[derive(Debug, Clone, PartialEq, PartialOrd, serde::Serialize, serde::Deserialize, Default)]
-struct StoreItem {
+pub struct StoreItem {
     /// item type
     #[serde(rename="itemType")]
     item_type : StoreItemType,

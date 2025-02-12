@@ -16,6 +16,8 @@ pub mod mod_desc;
 pub mod savegame;
 /// store item processing
 pub mod store_item;
+/// extra l10n process
+pub mod l10n;
 
 
 /// Abstract file implementation
@@ -166,6 +168,16 @@ impl AbstractFile {
             Self::Folder(_, l) | Self::Zip(_, l) => l.name_index.contains(&needle.into()),
             Self::Null(_) => false
         }
+    }
+
+    /// Get files with the specified prefix
+    pub fn name_filter<S: AsRef<str>, T: AsRef<str>>(&self, prefix: S, extension: T) -> Vec<String> {
+        let prefix = prefix.as_ref().replace('\\', "/");
+
+        self.list().into_iter()
+            .filter(|v| v.extension.eq_ignore_ascii_case(extension.as_ref()) && v.path.starts_with(&prefix))
+            .map(|v| v.path)
+            .collect()
     }
 
     /// Get a vec of files with a known extension
