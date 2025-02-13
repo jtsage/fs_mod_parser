@@ -10,6 +10,12 @@ use std::{
     fs::{self, File}, io::Read, path::{self, Path, PathBuf}
 };
 
+use image::{imageops::FilterType, DynamicImage};
+use image_dds::ddsfile;
+use std::io::Cursor;
+use webp::Encoder;
+use base64ct::{Base64, Encoding};
+
 /// modDesc.xml processing
 pub mod mod_desc;
 /// savegame processing
@@ -202,6 +208,55 @@ impl AbstractFile {
     pub fn get_mod_desc(&mut self) -> Result<mod_desc::DescXML, AbstractFileError> {
         mod_desc::DescXML::from_abstract_file(self, "modDesc.xml")
     }
+
+    /// Load the mod icon, and convert to webp
+    ///
+    /// Returns the webp as a base64 string suitable for use
+    /// with an `<image src="...">` tag.
+    ///
+    /// Supports DDS BC1-BC7 in one pass, in-memory
+    pub fn mod_icon<S: AsRef<str>>(&mut self, needle : S) -> Option<String> {
+        let input_file = self.bin(needle).ok()?;
+        let input_vector = Cursor::new(input_file);
+        let dds = ddsfile::Dds::read(input_vector).ok()?;
+        let original_image = image_dds::image_from_dds(&dds, 0).ok()?;
+        let unscaled_image = DynamicImage::ImageRgba8(original_image);
+        let encoder: Encoder = Encoder::from_image(&unscaled_image).ok()?;
+        let webp = encoder.encode(75_f32);
+        let b64 = Base64::encode_string(webp.as_ref());
+    
+        Some(format!("data:image/webp;base64, {b64}"))
+    }
+
+    /// Load the map image resize, crop, and convert to webp
+    ///
+    /// Returns the webp as a base64 string suitable for use
+    /// with an `<image src="...">` tag.
+    ///
+    /// Supports DDS BC1-BC7 in one pass, in-memory
+    #[must_use]
+    pub fn map_image<S: AsRef<str>>(&mut self, needle : S) -> Option<String> {
+        let input_file = self.bin(needle).ok()?;
+        let input_vector = Cursor::new(input_file);
+        let dds = ddsfile::Dds::read(input_vector).ok()?;
+        let original_image = image_dds::image_from_dds(&dds, 0).ok()?;
+        let mut unscaled_image = DynamicImage::ImageRgba8(original_image);
+
+        let width = unscaled_image.width();
+        let height = unscaled_image.height();
+
+        let cropped_image = unscaled_image
+            .crop(width / 4, height / 4, width / 2, height / 2)
+            .resize(512, 512, FilterType::Nearest);
+
+        let encoder = Encoder::from_image(&cropped_image).ok()?;
+        let webp = encoder.encode(75_f32);
+        let b64 = Base64::encode_string(webp.as_ref());
+
+        Some(format!("data:image/webp;base64, {b64}"))
+    }
+
+
 }
 
 /// Used to represent files contained inside an [`AbstractFile`]

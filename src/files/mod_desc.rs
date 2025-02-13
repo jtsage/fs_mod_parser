@@ -110,7 +110,13 @@ impl XMLReader<Self> for DescXML {
             (_, 0) => Err(AbstractFileError::XmlParseError),
             (b"author", 1) => { self.author = Self::xml_text(e, reader); Ok(0) },
             (b"version", 1) => { self.version = Self::xml_text(e, reader); Ok(0) },
-            (b"iconFilename", 1) => { self.icon_file = Self::xml_text(e, reader); Ok(0) },
+            (b"iconFilename", 1) => {
+                if let Some(filename) = Self::xml_text(e, reader) {
+                    let filename = Self::unwrap_base_path(filename);
+                    self.icon_file = Some(filename.to_dds());
+                }
+                Ok(0)
+            },
             (b"dependency", 2) => {
                 if let Some(v) = Self::xml_text(e, reader) {
                     self.dependencies.push(v);

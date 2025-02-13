@@ -16,19 +16,19 @@ use placeable::Placeable;
 pub struct StoreItem {
     /// item type
     #[serde(rename="itemType")]
-    item_type : StoreItemType,
+    pub item_type : StoreItemType,
     /// vehicle record
     #[serde(skip_serializing_if = "Option::is_none")]
-    vehicle : Option<Vehicle>,
+    pub vehicle : Option<Vehicle>,
     /// placable record
     #[serde(skip_serializing_if = "Option::is_none")]
-    placeable : Option<Placeable>,
+    pub placeable : Option<Placeable>,
 }
 
 /// Known store item types
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all="lowercase")]
-enum StoreItemType {
+pub enum StoreItemType {
     /// trap for unknown
     #[default]
     Unknown,

@@ -101,6 +101,8 @@ pub struct Record {
     pub issues: HashSet<ModError>,
     /// storeItems found (if processed)
     pub include_detail: HashMap<String, StoreItem>,
+    /// storeItem icons loaded
+    pub detail_icons_loaded : bool,
     /// save game record (if processed)
     pub include_save_game: Option<SaveGame>,
     /// L10N data
@@ -230,10 +232,9 @@ impl Record {
         
         if options.contains(&ParseOption::ImageMod) {
             if let Some(filename) = &record.mod_desc.icon_file {
-                if let Ok(_bin) = file.bin(filename) {
-                    //TODO: icon
-                    // record.mod_desc.icon_data = convert_mod_icon(binary_file);
-                } else {
+                record.mod_desc.icon_data = file.mod_icon(filename);
+
+                if record.mod_desc.icon_data.is_none() {
                     record.warn(ModError::ModDescNoModIcon);
                 }
             }
@@ -244,12 +245,21 @@ impl Record {
                 record.l10n = L10n::from_abstract_folder(&mut file, folder);
             }
             for item in record.mod_desc.store_items.clone() {
-                if let Ok(item_record) = StoreItem::from_abstract_file(&mut file, item.clone()) {
+                if let Ok(mut item_record) = StoreItem::from_abstract_file(&mut file, item.clone()) {
+                    if options.contains(&ParseOption::ImageDetail) {
+                        record.detail_icons_loaded = true;
+                        if let Some(vehicle) = &mut item_record.vehicle {
+                            if let Some(filename) = &vehicle.icon_file {
+                                vehicle.icon_data = file.mod_icon(filename);
+                            }
+                        } else if let Some(placable) = &mut item_record.placeable {
+                            if let Some(filename) = &placable.icon_file {
+                                placable.icon_data = file.mod_icon(filename);
+                            }
+                        }
+                    }
                     record.include_detail.insert(item, item_record);
                 }
-            }
-            if options.contains(&ParseOption::ImageDetail) {
-                // TODO: detail icons
             }
         }
 
