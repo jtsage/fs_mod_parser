@@ -55,52 +55,6 @@ impl XMLReader<Self> for Mods {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use assert_json_diff::assert_json_eq;
-
-    #[test]
-    fn good_vehicles() {
-        let mut file_handle = crate::files::AbstractFile::new("tests/test_mods/SAVEGAME_Good.zip");
-
-        let actual = Mods::from_abstract_file(&mut file_handle, "vehicles.xml").expect("read fail");
-
-        // cSpell: disable
-        let expected = serde_json::json!({
-            "FS22_36ftLowLoader": { "farms": [ 1 ], "title": "", "version": "" },
-            "FS22_BackRoadsCounty": { "farms": [ 0 ], "title": "", "version": "" },
-            "FS22_CaseEcoloTil2500": { "farms": [ 2, 4 ], "title": "", "version": "" },
-            "FS22_JDBalers": { "farms": [ 4, 5 ], "title": "", "version": "" },
-            "FS22_JD_HX20": { "farms": [ 1, 5 ], "title": "", "version": "" },
-            "FS22_KroneBigPack120_80": { "farms": [ 1 ], "title": "", "version": "" },
-            "FS22_MX_Pack": { "farms": [ 1 ], "title": "", "version": "" },
-            "FS22_Tanker_Trailer_IMT_525": { "farms": [ 1, 5 ], "title": "", "version": "" }
-        });
-        // cSpell: enable
-
-        assert_json_eq!(serde_json::json!(actual), expected);
-    }
-
-    #[test]
-    fn good_placables() {
-        let mut file_handle = crate::files::AbstractFile::new("tests/test_mods/SAVEGAME_Good.zip");
-
-        let actual = Mods::from_abstract_file(&mut file_handle, "placeables.xml").expect("read fail");
-
-        // cSpell: disable
-        let expected = serde_json::json!({
-            "FS22_BackRoadsCounty": { "version": "", "title": "", "farms": [0,1,4,5,15]},
-            "FS22_ObjectStorage": { "version": "", "title": "", "farms": [1,4]},
-            "FS22_Machinehall_grainstorage": { "version": "", "title": "", "farms": [2]},
-            "FS22_openCowPasture": { "version": "", "title": "", "farms": [1]},
-            "FS22_DutchShedPack": { "version": "", "title": "", "farms": [1]},
-            "FS22_ExtraLargeSheepBarn": { "version": "","title": "", "farms": [4]},
-            "FS22_Large_Metal_Pavilion": { "version": "", "title": "", "farms": [5]},
-            "FS22_Large_Pole_Barn": { "version": "", "title": "", "farms": [5]},
-            "FS22_hydroGreenhouse": { "version": "", "title": "", "farms": [1,5]}
-        });
-        // cSpell: enable
-
-        assert_json_eq!(serde_json::json!(actual), expected);
-    }
 
     #[test]
     fn missing_vehicle_xml() {

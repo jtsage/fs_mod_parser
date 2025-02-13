@@ -1,5 +1,8 @@
+#![allow(dead_code)]
 use std::sync::LazyLock;
 use std::fs;
+
+use pretty_assertions::assert_eq;
 
 use fs_mod_parser::{ParseOption, ParseOptions, parse, parse_with_options};
 use fs_mod_parser::parser::Record;

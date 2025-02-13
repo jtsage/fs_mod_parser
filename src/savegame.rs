@@ -172,45 +172,4 @@ mod tests {
         assert_eq!(actual.error_list.len(), 1);
         assert!(actual.error_list.contains(&SaveError::CareerParseError));
     }
-
-    #[test]
-    fn bad_farms_file() {
-        let actual = parse("tests/test_mods/SAVEGAME_No_Farms.zip");
-        assert_eq!(actual.error_list.len(), 1);
-        assert!(actual.error_list.contains(&SaveError::FarmsMissing));
-
-        let actual = parse("tests/test_mods/SAVEGAME_Broken_Farms.zip");
-        assert_eq!(actual.error_list.len(), 1);
-        assert!(actual.error_list.contains(&SaveError::FarmsParseError));
-    }
-
-    #[test]
-    fn bad_placeable_file() {
-        let actual = parse("tests/test_mods/SAVEGAME_No_Placeable.zip");
-        assert_eq!(actual.error_list.len(), 1);
-        assert!(actual.error_list.contains(&SaveError::PlaceableMissing));
-
-        let actual = parse("tests/test_mods/SAVEGAME_Broken_Placeable.zip");
-        assert_eq!(actual.error_list.len(), 1);
-        assert!(actual.error_list.contains(&SaveError::PlaceableParseError));
-    }
-
-    #[test]
-    fn bad_vehicle_file() {
-        let actual = parse("tests/test_mods/SAVEGAME_No_Vehicles.zip");
-        assert_eq!(actual.error_list.len(), 1);
-        assert!(actual.error_list.contains(&SaveError::VehicleMissing));
-
-        let actual = parse("tests/test_mods/SAVEGAME_Broken_Vehicles.zip");
-        assert_eq!(actual.error_list.len(), 1);
-        assert!(actual.error_list.contains(&SaveError::VehicleParseError));
-    }
-
-    #[test]
-    fn single_farm() {
-        let actual = parse("tests/test_mods/SAVEGAME_Single_Farm.zip");
-        assert_eq!(actual.error_list.len(), 0);
-        assert_eq!(actual.single_farm, true);
-    }
-
 }

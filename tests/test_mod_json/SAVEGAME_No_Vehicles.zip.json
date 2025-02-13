@@ -1,0 +1,72 @@
+{
+  "file": {
+    "ageHash": "",
+    "copyName": null,
+    "extraFiles": [],
+    "fileDate": 1729437551,
+    "fileSize": 217875,
+    "fullPath": "./tests/test_mods/SAVEGAME_No_Vehicles.zip",
+    "i3dFiles": [],
+    "imageDDS": [],
+    "imageNonDDS": [],
+    "isFolder": false,
+    "isSaveGame": true,
+    "isModPack": false,
+    "pngTexture": [],
+    "shortName": "SAVEGAME_No_Vehicles",
+    "spaceFiles": [],
+    "tooBigFiles": [],
+    "zipFiles": [],
+    "luaCount": 0
+  },
+  "ident": "",
+  "badgeArray": [
+    "NotMod",
+    "SaveGame",
+    "FsUnknown"
+  ],
+  "canNotUse": true,
+  "currentCollection": "",
+  "issues": [
+    "FILE_ERROR_LIKELY_SAVE_GAME"
+  ],
+  "includeDetail": {},
+  "detailIconsLoaded": false,
+  "includeSaveGame": {
+    "errorList": [
+      "ERR_SAVE__MISSING_VEHICLE"
+    ],
+    "farms": [],
+    "isValid": false,
+    "mapMod": null,
+    "mapTitle": null,
+    "modCount": 0,
+    "mods": {},
+    "name": null,
+    "playTime": null,
+    "saveDate": null,
+    "singleFarm": false
+  },
+  "l10n": {},
+  "modDesc": {
+    "warnings": [],
+    "title": {},
+    "description": {},
+    "actions": {},
+    "action_binding": {},
+    "author": null,
+    "script_files": false,
+    "store_items": [],
+    "dependencies": [],
+    "desc_version": 0,
+    "game_version": 0,
+    "icon_file": null,
+    "icon_data": null,
+    "map_config_filename": null,
+    "multiplayer": false,
+    "version": null,
+    "l10n_file_prefix": null,
+    "l10n_local": {},
+    "brands": []
+  }
+}

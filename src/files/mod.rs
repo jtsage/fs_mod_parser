@@ -455,6 +455,7 @@ mod tests {
         let file_handle = AbstractFile::new("./foo/bar/foo");
 
         assert!(matches!(file_handle, AbstractFile::Null(AbstractFileError::FileNotFound)));
+        assert_eq!(file_handle.size(), 0);
     }
 
     #[test]

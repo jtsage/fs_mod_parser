@@ -74,7 +74,9 @@ pub struct DescBrand {
     /// icon filename
     pub icon_file : Option<String>,
     /// base game icon
-    pub icon_base : Option<String>
+    pub icon_base : Option<String>,
+    /// icon data (local)
+    pub icon_data : Option<String>
 }
 
 impl XMLReader<Self> for DescXML {
@@ -311,75 +313,6 @@ impl DescXML {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use assert_json_diff::assert_json_eq;
-
-    #[test]
-    fn valid_folder() {
-        let mut file_handle = super::super::AbstractFile::new("tests/test_mods/PASS_Good_Simple_Mod");
-        let actual = DescXML::from_abstract(&mut file_handle).expect("process failed");
-
-        // cSpell: disable
-        let expected = serde_json::json!({
-            "title": {
-                "de": "That, in german",
-                "en": "Totally valid FS22 Mod"
-            },
-            "description": {
-                "de": "This is wrong",
-                "en": "\nDemonstrates how FSModAssist handles a good mod file.\n\n<!-- Some other, commented text (not valid to comment here, still shows) -->\n"
-            },
-            "actions": {
-                "aim_menu": "SYSTEM",
-                "aim_hot1": "SYSTEM",
-                "aim_togg": "ALL"
-            },
-            "action_binding": {
-                "aim_togg": [
-                    "KEY_ralt KEY_KP_0"
-                ],
-                "aim_hot1": [
-                    "KEY_ralt KEY_KP_1"
-                ],
-                "aim_menu": [
-                    "KEY_lshift KEY_slash",
-                    "MOUSE_BUTTON_X1"
-                ]
-            },
-            "author": "FSModAssist Test &amp; Bob",
-            "script_files": true,
-            "store_items": [
-                "Dolly.xml"
-            ],
-            "dependencies": [
-                "FS22_RedBarnPack"
-            ],
-            "desc_version": 69,
-            "game_version": 22,
-            "icon_file": "modIcon.dds",
-            "icon_data": null,
-            "map_config_filename": "map/xml/map.xml",
-            "multiplayer": true,
-            "version": "1.0.0.0",
-            "l10n_file_prefix": "languages/l10n",
-            "l10n_local": {
-                "config_5WHardLocking": {
-                    "fr": "Verrouillage dur",
-                    "de": "Harte Verriegelung"
-                },
-                "config_5WSemiLocking": {
-                    "de": "Teilverriegelung",
-                    "en": "Partial locking"
-                }
-            },
-            "warnings": [],
-            "brands" : []
-        });
-
-        assert_json_eq!(serde_json::json!(actual), expected);
-
-        let re_read:DescXML = serde_json::from_value(expected).expect("deserialize failed");
-        assert_eq!(re_read, actual);
-    }
 
     #[test]
     fn broken_xml() {
@@ -409,71 +342,8 @@ mod tests {
     }
 
     #[test]
-    fn invalid_but_parseable() {
-        let mut file_handle = super::super::AbstractFile::new("tests/test_mods/WARNING_No_Version.zip");
-
-        let actual = DescXML::from_abstract(&mut file_handle).expect("bad file");
-
-        let expected = serde_json::json!({
-            "title": {
-                "en": "Missing Version"
-            },
-            "description": {
-                "en": "Demonstrates a mod that has does not include a version string"
-            },
-            "actions": {
-                "ENGINESTARTER_SHOW_MENU": "ALL"
-            },
-            "action_binding": {
-                "ENGINESTARTER_SHOW_MENU": [
-                    "KEY_lalt KEY_e"
-                ]
-            },
-            "author": "FSModAssist Test",
-            "script_files": true,
-            "store_items": [],
-            "dependencies": [],
-            "desc_version": 69,
-            "game_version": 22,
-            "icon_file": "modIcon.dds",
-            "icon_data": null,
-            "map_config_filename": null,
-            "multiplayer": true,
-            "version": null,
-            "l10n_file_prefix": null,
-            "l10n_local": {
-                "input_ENGINESTARTER_SHOW_MENU": {
-                    "de": "TODO", "cz": "TODO", "pl": "TODO",
-                    "fr": "TODO", "it": "TODO", "ru": "TODO", "es": "TODO",
-                    "en": "Show Engine Starter Menu", "nl": "TODO", "pt": "TODO"
-                },
-                "guiTest": {
-                    "fr": "TODO", "nl": "TODO", "es": "TODO", "en": "Testing GuI", "de": "TODO",
-                    "cz": "TODO", "it": "TODO", "ru": "TODO", "pl": "TODO", "pt": "TODO"
-                },
-                "engineStartNotification": {
-                    "cz": "Startování motoru ...",
-                    "nl": "Motor starten ...",
-                    "pt": "Partida do motor ...",
-                    "it": "Avviamento del motore ...",
-                    "pl": "Uruchomienie silnika ...",
-                    "en": "Engine starting...",
-                    "es": "Arranque del motor ...",
-                    "de": "Motor startet ...",
-                    "ru": "Запуск двигателя ...",
-                    "fr": "Démarrage du moteur ..."
-                }
-            },
-            "warnings": [],
-            "brands": []
-        });
-        assert_json_eq!(serde_json::json!(actual), expected);
-        let re_read:DescXML = serde_json::from_value(expected).expect("deserialize failed");
-        assert_eq!(re_read, actual);
-    }
-
-    #[test]
     fn bad_input_binding() {
+        // cSpell:disable
         let xml = r#"<?xml version="1.0" encoding="utf-8" standalone="no"?>
             <modDesc descVersion="69">
                 <inputBinding>
@@ -489,10 +359,12 @@ mod tests {
                     </actionBinding>
                 </inputBinding>
             </modDesc>"#;
+        // cSpell:enable
 
         let actual = DescXML::from_string(xml).expect("no read");
 
         let mut expected = HashMap::new();
+        // cSpell:disable-next-line
         expected.insert(String::from("aim_menu"), vec![String::from("KEY_lshift KEY_slash")]);
 
         let mut errors = HashSet::new();
@@ -503,6 +375,7 @@ mod tests {
         assert_eq!(actual.action_binding, expected);
         assert_eq!(actual.warnings, errors);
 
+        // cSpell:disable
         let xml = r#"<?xml version="1.0" encoding="utf-8" standalone="no"?>
             <modDesc descVersion="69">
                 <inputBinding>
@@ -510,6 +383,7 @@ mod tests {
                         <binding device="KB_MOUSE_DEFAULT" input="KEY_lshift KEY_slash" />
                 </inputBinding>
             </modDesc>"#;
+        // cSpell:enable
 
         let actual = DescXML::from_string(xml);
         assert_eq!(actual.unwrap_err(), AbstractFileError::XmlParseError);
@@ -517,12 +391,13 @@ mod tests {
 
     #[test]
     fn l10n_text_tests() {
+        //cSpell: disable
         let xml = r#"<?xml version="1.0" encoding="utf-8" standalone="no"?>
             <modDesc descVersion="69">
                 <l10n>
                     <text name="config_5WSemiLocking">
                         <en>Partial locking</en>
-                        <de>Teilverriegelung</de>
+                        <de>German</de>
                         <ru></ru>
                         <xx>Unknown language</xx>
                         Hi
@@ -532,11 +407,12 @@ mod tests {
                     </text>
                 </l10n>
             </modDesc>"#;
+        // cSpell:enable
 
         let actual = DescXML::from_string(xml).expect("read failed");
 
         let mut lang_map:ModL10NMap = HashMap::new();
-        lang_map.insert(String::from("config_5WSemiLocking"), [("en", "Partial locking"), ("de", "Teilverriegelung"), ("ru", "")].into_iter().map(|(a,b)|(a.to_string(), b.to_string())).collect());
+        lang_map.insert(String::from("config_5WSemiLocking"), [("en", "Partial locking"), ("de", "German"), ("ru", "")].into_iter().map(|(a,b)|(a.to_string(), b.to_string())).collect());
 
         let mut errors = HashSet::new();
         errors.insert(ModDescWarnings::L10nInvalidLanguage(String::from("xx"), String::from("config_5WSemiLocking")));
@@ -656,8 +532,8 @@ mod tests {
         let actual = DescXML::from_abstract(&mut file_handle).expect("process failed");
 
         let expected = serde_json::json!([
-            { "name" : "HONEYBEE", "title" : "Honey Bee", "icon_base" : null, "icon_file" : "brand_honeybee.dds" },
-            { "name" : "LIZARDLOGISTICS", "title" : "Lizard Logistics", "icon_base" : "brand_lizardLogistics", "icon_file" : null },
+            { "name" : "HONEYBEE", "title" : "Honey Bee", "icon_base" : null, "icon_file" : "brand_honeybee.dds", "icon_data" : null },
+            { "name" : "LIZARDLOGISTICS", "title" : "Lizard Logistics", "icon_base" : "brand_lizardLogistics", "icon_file" : null, "icon_data" : null },
         ]);
 
         assert_eq!(serde_json::json!(actual.brands), expected);

@@ -19,6 +19,7 @@
 		"inputbinding",
 		"JOHNDEERE",
 		"liquidfertilizer",
+		"LIZARDLOGISTICS",
 		"MODDESC",
 		"notmod",
 		"oilseedradish",
@@ -78,7 +79,8 @@
 		".vscode",
 		".vscode-insiders",
 		"tests/test_mods/**",
-		"tests/test_mod_json/*"
+		"tests/test_mod_json/*",
+		"Cargo*"
 	],
 	"cSpell.spellCheckOnlyWorkspaceFiles": true,
 }

@@ -1,0 +1,83 @@
+{
+  "file": {
+    "ageHash": "",
+    "copyName": null,
+    "extraFiles": [],
+    "fileDate": 1729440292,
+    "fileSize": 186821,
+    "fullPath": "./tests/test_mods/SAVEGAME_Single_Farm.zip",
+    "i3dFiles": [],
+    "imageDDS": [],
+    "imageNonDDS": [],
+    "isFolder": false,
+    "isSaveGame": true,
+    "isModPack": false,
+    "pngTexture": [],
+    "shortName": "SAVEGAME_Single_Farm",
+    "spaceFiles": [],
+    "tooBigFiles": [],
+    "zipFiles": [],
+    "luaCount": 0
+  },
+  "ident": "",
+  "badgeArray": [
+    "NotMod",
+    "SaveGame",
+    "FsUnknown"
+  ],
+  "canNotUse": true,
+  "currentCollection": "",
+  "issues": [
+    "FILE_ERROR_LIKELY_SAVE_GAME"
+  ],
+  "includeDetail": {},
+  "detailIconsLoaded": false,
+  "includeSaveGame": {
+    "errorList": [],
+    "farms": [
+      {
+        "name": "--unowned--",
+        "cash": 0,
+        "loan": 0,
+        "color": 0
+      },
+      {
+        "name": "Moje gospodarstwo",
+        "cash": 13656933,
+        "loan": 0,
+        "color": 1
+      }
+    ],
+    "isValid": true,
+    "mapMod": "MapFR",
+    "mapTitle": "Haut-Beyleron",
+    "modCount": 0,
+    "mods": {},
+    "name": "Mój zapis gry",
+    "playTime": "13330:03",
+    "saveDate": "2024-03-18",
+    "singleFarm": true
+  },
+  "l10n": {},
+  "modDesc": {
+    "warnings": [],
+    "title": {},
+    "description": {},
+    "actions": {},
+    "action_binding": {},
+    "author": null,
+    "script_files": false,
+    "store_items": [],
+    "dependencies": [],
+    "desc_version": 0,
+    "game_version": 0,
+    "icon_file": null,
+    "icon_data": null,
+    "map_config_filename": null,
+    "multiplayer": false,
+    "version": null,
+    "l10n_file_prefix": null,
+    "l10n_local": {},
+    "brands": []
+  }
+}

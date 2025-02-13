@@ -165,6 +165,7 @@ impl Record {
     }
 
     /// Create record from filename
+    #[expect(clippy::too_many_lines)]
     pub fn from_filename<P: AsRef<Path>>(filename: P, options : &ParseOptions) -> Self {
         let mod_ident = Self::get_ident(filename);
 
@@ -259,6 +260,14 @@ impl Record {
             }
         }
 
+        if options.contains(&ParseOption::ImageDetail) {
+            for item in &mut record.mod_desc.brands {
+                if let Some(filename) = &item.icon_file {
+                    item.icon_data = file.mod_icon(filename);
+                }
+            }
+        }
+
         if options.contains(&ParseOption::IncludeDetail) {
             if let Some(folder) = record.mod_desc.l10n_file_prefix.clone() {
                 record.l10n = L10n::from_abstract_folder(&mut file, folder);
@@ -266,6 +275,7 @@ impl Record {
             for item in record.mod_desc.store_items.clone() {
                 if let Ok(mut item_record) = StoreItem::from_abstract_file(&mut file, item.clone()) {
                     if options.contains(&ParseOption::ImageDetail) {
+                        // TODO: also load brand icons!
                         record.detail_icons_loaded = true;
                         if let Some(vehicle) = &mut item_record.vehicle {
                             if let Some(filename) = &vehicle.icon_file {
@@ -276,6 +286,8 @@ impl Record {
                                 placable.icon_data = file.mod_icon(filename);
                             }
                         }
+
+                        
                     }
                     record.include_detail.insert(item, item_record);
                 }

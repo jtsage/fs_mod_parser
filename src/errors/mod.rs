@@ -1,5 +1,4 @@
 //! All error types.
-//! 
 
 /// Possible Detectable Mod Errors
 #[derive(Eq, PartialEq, PartialOrd, Clone, Copy, Debug, Hash, serde::Serialize, serde::Deserialize)]
@@ -119,7 +118,7 @@ impl std::fmt::Display for ModDescWarnings {
 
 //MARK: AbstractFileError
 /// File-Level errors.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(test, derive(strum_macros::EnumCount))]
 pub enum AbstractFileError {
     /// File could not be found
@@ -165,12 +164,8 @@ impl std::fmt::Display for AbstractFileError {
 
 impl std::error::Error for AbstractFileError { }
 impl From<zip::result::ZipError> for AbstractFileError {
-    fn from(value: zip::result::ZipError) -> Self {
-        match value {
-            zip::result::ZipError::Io(_) => Self::FileIoError,
-            zip::result::ZipError::FileNotFound => Self::FileNotFound,
-            _ => Self::ZipReadError,
-        }
+    fn from(_value: zip::result::ZipError) -> Self {
+        Self::FileNotFound
     }
 }
 impl From<std::io::Error> for AbstractFileError {
@@ -201,7 +196,7 @@ pub enum SaveError {
     #[serde(rename="ERR_SAVE__PARSE_PLACABLE")]
     PlaceableParseError,
     /// vehicles.xml missing
-    #[serde(rename="ERR_SAVE__PARSE_VEHICLE")]
+    #[serde(rename="ERR_SAVE__MISSING_VEHICLE")]
     VehicleMissing,
     /// vehicles.xml could not be parsed
     #[serde(rename="ERR_SAVE__PARSE_VEHICLE")]
@@ -286,6 +281,7 @@ pub const BADGE_NOT_MOD: [&ModError; 6] = [
 mod tests {
     use super::*;
     use strum::EnumCount;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn abstract_file_error_ser() {
@@ -299,13 +295,14 @@ mod tests {
             AbstractFileError::XmlWrongFileType,
             AbstractFileError::XmlUndeclared
         ];
+        let expected = r#"["ERR_FILE__FILE_IO_ERROR","ERR_FILE__FILE_NOT_FOUND","ERR_FILE__FILE_NOT_ZIP","ERR_FILE__FOLDER_ERROR","ERR_FILE__XML_PARSE_ERROR","ERR_FILE__ZIP_READ_ERROR","ERR_FILE__XML_WRONG_FILE_TYPE","ERR_FILE__XML_UNDECLARED"]"#;
 
         for e in &errors { assert!(e.to_string().len() > 0); }
         assert_eq!(AbstractFileError::COUNT, errors.len());
-        assert_eq!(
-            serde_json::to_string(&errors).unwrap(),
-            r#"["ERR_FILE__FILE_IO_ERROR","ERR_FILE__FILE_NOT_FOUND","ERR_FILE__FILE_NOT_ZIP","ERR_FILE__FOLDER_ERROR","ERR_FILE__XML_PARSE_ERROR","ERR_FILE__ZIP_READ_ERROR","ERR_FILE__XML_WRONG_FILE_TYPE","ERR_FILE__XML_UNDECLARED"]"#
-        );
+        assert_eq!(serde_json::to_string(&errors).unwrap(), expected);
+
+        let re_read:Vec<AbstractFileError> = serde_json::from_str(expected).unwrap();
+        assert_eq!(errors.to_vec(), re_read);
     }
 
     #[test]
@@ -318,13 +315,14 @@ mod tests {
             ModDescWarnings::ShouldBeL10n(String::from("xx")),
             ModDescWarnings::MaybePiracy()
         ];
+        let expected = r#"[{"MODDESC__ACTION_BIND_INVALID_TAG":"xx"},{"MODDESC__ACTION_BIND_MALFORMED":[]},{"MODDESC__L10N_INVALID_LANGUAGE":["xx","yy"]},{"MODDESC__L10N_MALFORMED":[]},{"MODDESC__SHOULD_BE_L10N":"xx"},{"MODDESC__MAYBE_PIRACY":[]}]"#;
 
         for e in &errors { assert!(e.to_string().len() > 0); }
         assert_eq!(ModDescWarnings::COUNT, errors.len());
-        assert_eq!(
-            serde_json::to_string(&errors).unwrap(),
-            r#"[{"MODDESC__ACTION_BIND_INVALID_TAG":"xx"},{"MODDESC__ACTION_BIND_MALFORMED":[]},{"MODDESC__L10N_INVALID_LANGUAGE":["xx","yy"]},{"MODDESC__L10N_MALFORMED":[]},{"MODDESC__SHOULD_BE_L10N":"xx"},{"MODDESC__MAYBE_PIRACY":[]}]"#
-        );
+        assert_eq!(serde_json::to_string(&errors).unwrap(), expected);
+
+        let re_read:Vec<ModDescWarnings> = serde_json::from_str(expected).unwrap();
+        assert_eq!(errors.to_vec(), re_read);
     }
 
     #[test]
@@ -339,13 +337,14 @@ mod tests {
             SaveError::VehicleMissing,
             SaveError::VehicleParseError
         ];
+        let expected = r#"["ERR_SAVE__MISSING_CAREER","ERR_SAVE__PARSE_CAREER","ERR_SAVE__MISSING_FARMS","ERR_SAVE__PARSE_FARMS","ERR_SAVE__MISSING_PLACEABLE","ERR_SAVE__PARSE_PLACABLE","ERR_SAVE__MISSING_VEHICLE","ERR_SAVE__PARSE_VEHICLE"]"#;
 
         for e in &errors { assert!(e.to_string().len() > 0); }
         assert_eq!(SaveError::COUNT, errors.len());
-        assert_eq!(
-            serde_json::to_string(&errors).unwrap(),
-            r#"["ERR_SAVE__MISSING_CAREER","ERR_SAVE__PARSE_CAREER","ERR_SAVE__MISSING_FARMS","ERR_SAVE__PARSE_FARMS","ERR_SAVE__MISSING_PLACEABLE","ERR_SAVE__PARSE_PLACABLE","ERR_SAVE__PARSE_VEHICLE","ERR_SAVE__PARSE_VEHICLE"]"#
-        );
+        assert_eq!(serde_json::to_string(&errors).unwrap(), expected);
+
+        let re_read:Vec<SaveError> = serde_json::from_str(expected).unwrap();
+        assert_eq!(errors.to_vec(), re_read);
     }
 
     #[test]
@@ -383,11 +382,12 @@ mod tests {
             ModError::PerformanceQuantityPNG,
             ModError::PerformanceQuantityTXT,
         ];
+        let expected = r#"["FILE_ERROR_UNREADABLE","FILE_ERROR_GARBAGE_FILE","FILE_ERROR_LIKELY_COPY","FILE_ERROR_LIKELY_SAVE_GAME","FILE_ERROR_LIKELY_ZIP_PACK","FILE_ERROR_NAME_INVALID","FILE_ERROR_NAME_STARTS_DIGIT","FILE_ERROR_UNREADABLE_ZIP","FILE_ERROR_UNSUPPORTED_ARCHIVE","INFO_LIKELY_PIRACY","INFO_MALICIOUS_CODE","INFO_DANGEROUS_FILE","INFO_NO_MULTIPLAYER_UNZIPPED","MOD_DESC_DAMAGED","MOD_DESC_MISSING","MOD_DESC_NO_MOD_ICON","MOD_DESC_NO_MOD_VERSION","MOD_DESC_PARSE_ERROR","MOD_DESC_VERSION_OLD_OR_MISSING","PERFORMANCE_FILE_SPACES","PERFORMANCE_MISSING_L10N","PERFORMANCE_OVERSIZE_DDS","PERFORMANCE_OVERSIZE_GDM","PERFORMANCE_OVERSIZE_I3D","PERFORMANCE_OVERSIZE_SHAPES","PERFORMANCE_OVERSIZE_XML","PERFORMANCE_QUANTITY_EXTRA","PERFORMANCE_OVERSIZE_GRLE","PERFORMANCE_QUANTITY_PDF","PERFORMANCE_QUANTITY_PNG","PERFORMANCE_QUANTITY_TXT"]"#;
 
         assert_eq!(ModError::COUNT, errors.len());
-        assert_eq!(
-            serde_json::to_string(&errors).unwrap(),
-            r#"["FILE_ERROR_UNREADABLE","FILE_ERROR_GARBAGE_FILE","FILE_ERROR_LIKELY_COPY","FILE_ERROR_LIKELY_SAVE_GAME","FILE_ERROR_LIKELY_ZIP_PACK","FILE_ERROR_NAME_INVALID","FILE_ERROR_NAME_STARTS_DIGIT","FILE_ERROR_UNREADABLE_ZIP","FILE_ERROR_UNSUPPORTED_ARCHIVE","INFO_LIKELY_PIRACY","INFO_MALICIOUS_CODE","INFO_DANGEROUS_FILE","INFO_NO_MULTIPLAYER_UNZIPPED","MOD_DESC_DAMAGED","MOD_DESC_MISSING","MOD_DESC_NO_MOD_ICON","MOD_DESC_NO_MOD_VERSION","MOD_DESC_PARSE_ERROR","MOD_DESC_VERSION_OLD_OR_MISSING","PERFORMANCE_FILE_SPACES","PERFORMANCE_MISSING_L10N","PERFORMANCE_OVERSIZE_DDS","PERFORMANCE_OVERSIZE_GDM","PERFORMANCE_OVERSIZE_I3D","PERFORMANCE_OVERSIZE_SHAPES","PERFORMANCE_OVERSIZE_XML","PERFORMANCE_QUANTITY_EXTRA","PERFORMANCE_OVERSIZE_GRLE","PERFORMANCE_QUANTITY_PDF","PERFORMANCE_QUANTITY_PNG","PERFORMANCE_QUANTITY_TXT"]"#
-        );
+        assert_eq!(serde_json::to_string(&errors).unwrap(), expected);
+
+        let re_read:Vec<ModError> = serde_json::from_str(expected).unwrap();
+        assert_eq!(errors.to_vec(), re_read);
     }
 }

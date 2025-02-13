@@ -1,0 +1,100 @@
+{
+  "file": {
+    "ageHash": "",
+    "copyName": null,
+    "extraFiles": [],
+    "fileDate": 1729961258,
+    "fileSize": 386693,
+    "fullPath": "./tests/test_mods/DETAIL_Internal_Failures.zip",
+    "i3dFiles": [],
+    "imageDDS": [
+      "modIcon.dds",
+      "store/store_example.dds"
+    ],
+    "imageNonDDS": [],
+    "isFolder": false,
+    "isSaveGame": false,
+    "isModPack": false,
+    "pngTexture": [],
+    "shortName": "DETAIL_Internal_Failures",
+    "spaceFiles": [],
+    "tooBigFiles": [],
+    "zipFiles": [],
+    "luaCount": 0
+  },
+  "ident": "",
+  "badgeArray": [
+    "Fs22"
+  ],
+  "canNotUse": false,
+  "currentCollection": "",
+  "issues": [],
+  "includeDetail": {},
+  "detailIconsLoaded": false,
+  "includeSaveGame": null,
+  "l10n": {
+    "de": {
+      "colorConfigJTS_brush_silver": "Blank gebürsteter Stahl",
+      "colorConfigJTS_copper": "Kupfer metallic",
+      "colorConfigJTS_brush_steel": "Dunkel gebürsteter Stahl",
+      "colorConfigJTS_black_steel": "Schwarzer Stahl",
+      "colorConfigJTS_galv_steel": "Verzinkter Stahl",
+      "colorConfigJTS_bronze": "Bronze metallic",
+      "colorConfigJTS_gold": "Gold metallic",
+      "colorConfigJTS_silver_steel": "Silberner Stahl"
+    },
+    "en": {
+      "colorConfigJTS_brush_steel": "Dark Brushed Steel",
+      "colorConfigJTS_copper": "Metallic Copper",
+      "colorConfigJTS_gold": "Metallic Gold",
+      "colorConfigJTS_bronze": "Metallic Bronze",
+      "colorConfigJTS_brush_silver": "Bright Brushed Steel",
+      "colorConfigJTS_silver_steel": "Silver Steel",
+      "colorConfigJTS_galv_steel": "Galvanized Steel",
+      "colorConfigJTS_black_steel": "Black Steel"
+    }
+  },
+  "modDesc": {
+    "warnings": [],
+    "title": {
+      "de": "Sample Store Item Pack (FSG)",
+      "en": "Sample Store Item Pack (FSG)"
+    },
+    "description": {
+      "en": "Sparky Tractor Pack, Includes:\n            \nSparked New Holland Braud e9070L\nSparked Case IH Magnum\nSparked Case IH Steiger 4WD (2.5.0.0)\nSparked Deutz-Fahr Series 7\nSparked Fendt Vario 1000 *\nSparked John Deere Series 6R\nSparked John Deere Series 8RX *\nSparked John Deere Series 9RT *\nSparked John Deere XUV e865M\nSparked Claas Lexion 8000\nSparked Massey Ferguson 7720S\nSparked Mack Superliner 1979\nSparked New Holland TK4.80 Electric Power\nSparked Claas Trion 750\nSparked Krone BigX 1180 *\nSparked JCB Fastrac 4220\nSparked JCB Fastrac 8330\nSparked Hardi Rubicon 9000 w/ Spot Spray & Sensors *\nSparked New Holland T8 (2.5.0.0)\nSparked New Holland T9 (2.5.0.0)\nSparked Valtra T Series (2.5.0.0)\n\n* Added in 2.0.0",
+      "de": "Sparky Tractor Pack, enthält:\n            \nSparked New Holland Braud e9070L\nSparked Case IH Magnum\nSparked Case IH Steiger 4WD (2.5.0.0)\nSparked Deutz-Fahr Series 7\nSparked Fendt Vario 1000 *\nSparked John Deere Series 6R\nSparked John Deere Series 8RX *\nSparked John Deere Series 9RT *\nSparked John Deere XUV e865M\nSparked Claas Lexion 8000\nSparked Massey Ferguson 7720S\nSparked Mack Superliner 1979\nSparked New Holland TK4.80 Electric Power\nSparked Claas Trion 750\nSparked Krone BigX 1180 *\nSparked JCB Fastrac 4220\nSparked JCB Fastrac 8330\nSparked Hardi Rubicon 9000 w/ Spot Spray & Sensors *\nSparked New Holland T8 (2.5.0.0)\nSparked New Holland T9 (2.5.0.0)\nSparked Valtra T Series (2.5.0.0)\n\n* Hinzugefügt in 2.0.0"
+    },
+    "actions": {},
+    "action_binding": {},
+    "author": "FSG Modding - AZSparky",
+    "script_files": false,
+    "store_items": [
+      "xml/example-malformed.xml",
+      "xml/example-missing.xml"
+    ],
+    "dependencies": [],
+    "desc_version": 69,
+    "game_version": 22,
+    "icon_file": "modIcon.dds",
+    "icon_data": "data:image/webp;base64, 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",
+    "map_config_filename": null,
+    "multiplayer": true,
+    "version": "2.5.0.0",
+    "l10n_file_prefix": "languages/l10n",
+    "l10n_local": {},
+    "brands": [
+      {
+        "name": "HONEYBEE",
+        "title": "Honey Bee",
+        "icon_file": "brand_honeybee.dds",
+        "icon_base": null
+      },
+      {
+        "name": "LIZARDLOGISTICS",
+        "title": "Lizard Logistics",
+        "icon_file": null,
+        "icon_base": "brand_lizardLogistics"
+      }
+    ]
+  }
+}

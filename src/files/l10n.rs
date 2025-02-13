@@ -67,8 +67,6 @@ impl XMLReader<Self> for L10nFile {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::files::AbstractFile;
-    use assert_json_diff::assert_json_eq;
 
     fn xml_test(str: &str) -> String {
         format!("<?xml version=\"1.0\" ?>\n{str}")
@@ -104,41 +102,5 @@ mod tests {
         assert_eq!(actual.0.get(&String::from("name_01")), Some(&String::from("value_01")));
         assert_eq!(actual.0.get(&String::from("name_02")), Some(&String::from("value_02")));
         assert_eq!(actual.0.len(), 2);
-    }
-
-    #[test]
-    fn from_good_file() {
-        let filename = "tests/test_mods/DETAIL_Samples.zip";
-        let folder = "languages/l10n";
-
-        let mut file_handle = AbstractFile::new(filename);
-
-        // cSpell:disable
-        let expected = serde_json::json!({
-            "de": {
-                "colorConfigJTS_silver_steel": "Silberner Stahl",
-                "colorConfigJTS_black_steel": "Schwarzer Stahl",
-                "colorConfigJTS_brush_steel": "Dunkel gebürsteter Stahl",
-                "colorConfigJTS_brush_silver": "Blank gebürsteter Stahl",
-                "colorConfigJTS_copper": "Kupfer metallic",
-                "colorConfigJTS_bronze": "Bronze metallic",
-                "colorConfigJTS_gold": "Gold metallic",
-                "colorConfigJTS_galv_steel": "Verzinkter Stahl"
-            },
-            "en": {
-                "colorConfigJTS_gold": "Metallic Gold",
-                "colorConfigJTS_bronze": "Metallic Bronze",
-                "colorConfigJTS_brush_steel": "Dark Brushed Steel",
-                "colorConfigJTS_galv_steel": "Galvanized Steel",
-                "colorConfigJTS_brush_silver": "Bright Brushed Steel",
-                "colorConfigJTS_copper": "Metallic Copper",
-                "colorConfigJTS_silver_steel": "Silver Steel",
-                "colorConfigJTS_black_steel": "Black Steel"
-            }
-        });
-        // cSpell:enable
-        let actual = L10n::from_abstract_folder(&mut file_handle, folder);
-
-        assert_json_eq!(serde_json::json!(actual), expected);
     }
 }

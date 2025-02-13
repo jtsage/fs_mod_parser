@@ -77,27 +77,6 @@ impl XMLReader<Self> for Farms {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use assert_json_diff::assert_json_eq;
-
-    #[test]
-    fn good_file() {
-        let mut file_handle = crate::files::AbstractFile::new("tests/test_mods/SAVEGAME_Good.zip");
-
-        let actual = Farms::from_abstract(&mut file_handle).expect("read fail");
-
-        // cSpell: disable
-        let expected = serde_json::json!([
-            { "name": "--unowned--", "cash": 0, "loan": 0, "color": 0 },
-            { "name": "HENNESSEY ACRES", "cash": 46198, "loan": 230000, "color": 7 },
-            { "name": "joinFSG.gg", "cash": 100000, "loan": 0, "color": 1 },
-            { "name": "PUBLIC", "cash": 878837, "loan": 0, "color": 8 },
-            { "name": "BELLWETHER RANCH", "cash": 110758,"loan": 0,"color": 2 },
-            { "name": "THE CROFT", "cash": 42937, "loan": 0, "color": 6 }
-        ]);
-        // cSpell: enable
-
-        assert_json_eq!(serde_json::json!(actual), expected);
-    }
 
     #[test]
     fn missing_xml() {

@@ -88,7 +88,6 @@ impl XMLReader<Self> for Career {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use assert_json_diff::assert_json_include;
 
     #[test]
     fn missing_xml() {
