@@ -39,7 +39,7 @@ impl XMLReader<Self> for Mods {
 
             (b"vehicle" | b"placeable", 1) => {
                 if let Some(name) = Self::xml_attribute(e, "modName") {
-                    if let Some(farm) = Self::xml_attribute(e, "farmId").and_then(|v| v.parse::<usize>().ok()) {
+                    if let Some(farm) = Self::xml_attribute_number(e, "farmId") {
                         let entry = self.0.entry(name).or_default();
                         entry.farms.insert(farm);
                     }

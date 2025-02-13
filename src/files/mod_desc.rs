@@ -106,7 +106,7 @@ impl XMLReader<Self> for DescXML {
     fn tags_paired(&mut self, e: &BytesStart, depth : i32, reader: &mut quick_xml::Reader<&[u8]>) -> XMLReaderDepth {
         match (e.name().as_ref(), depth) {
             (b"modDesc", 0) => {
-                self.desc_version = Self::xml_attribute(e, "descVersion").and_then(|v| v.parse().ok()).unwrap_or_default();
+                self.desc_version = Self::xml_attribute_number(e, "descVersion").unwrap_or_default();
                 Ok(1)
             },
             (_, 0) => Err(AbstractFileError::XmlParseError),
@@ -401,6 +401,7 @@ mod tests {
                         <ru></ru>
                         <xx>Unknown language</xx>
                         Hi
+                        <yy value="hi" />
                     </text>
                     <text lame="ignored_wrong">
                         <en>Partial locking</en>
@@ -416,6 +417,7 @@ mod tests {
 
         let mut errors = HashSet::new();
         errors.insert(ModDescWarnings::L10nInvalidLanguage(String::from("xx"), String::from("config_5WSemiLocking")));
+        errors.insert(ModDescWarnings::L10nInvalidLanguage(String::from("yy"), String::from("config_5WSemiLocking")));
         errors.insert(ModDescWarnings::L10nMalformed());
 
         assert_eq!(actual.l10n_local, lang_map);

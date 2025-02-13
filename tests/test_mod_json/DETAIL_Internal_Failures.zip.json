@@ -34,31 +34,31 @@
   "includeSaveGame": null,
   "l10n": {
     "de": {
-      "colorConfigJTS_brush_silver": "Blank gebürsteter Stahl",
-      "colorConfigJTS_copper": "Kupfer metallic",
-      "colorConfigJTS_brush_steel": "Dunkel gebürsteter Stahl",
-      "colorConfigJTS_black_steel": "Schwarzer Stahl",
-      "colorConfigJTS_galv_steel": "Verzinkter Stahl",
-      "colorConfigJTS_bronze": "Bronze metallic",
       "colorConfigJTS_gold": "Gold metallic",
-      "colorConfigJTS_silver_steel": "Silberner Stahl"
+      "colorConfigJTS_black_steel": "Schwarzer Stahl",
+      "colorConfigJTS_brush_steel": "Dunkel gebürsteter Stahl",
+      "colorConfigJTS_silver_steel": "Silberner Stahl",
+      "colorConfigJTS_copper": "Kupfer metallic",
+      "colorConfigJTS_brush_silver": "Blank gebürsteter Stahl",
+      "colorConfigJTS_bronze": "Bronze metallic",
+      "colorConfigJTS_galv_steel": "Verzinkter Stahl"
     },
     "en": {
-      "colorConfigJTS_brush_steel": "Dark Brushed Steel",
       "colorConfigJTS_copper": "Metallic Copper",
       "colorConfigJTS_gold": "Metallic Gold",
+      "colorConfigJTS_silver_steel": "Silver Steel",
       "colorConfigJTS_bronze": "Metallic Bronze",
       "colorConfigJTS_brush_silver": "Bright Brushed Steel",
-      "colorConfigJTS_silver_steel": "Silver Steel",
+      "colorConfigJTS_black_steel": "Black Steel",
       "colorConfigJTS_galv_steel": "Galvanized Steel",
-      "colorConfigJTS_black_steel": "Black Steel"
+      "colorConfigJTS_brush_steel": "Dark Brushed Steel"
     }
   },
   "modDesc": {
     "warnings": [],
     "title": {
-      "de": "Sample Store Item Pack (FSG)",
-      "en": "Sample Store Item Pack (FSG)"
+      "en": "Sample Store Item Pack (FSG)",
+      "de": "Sample Store Item Pack (FSG)"
     },
     "description": {
       "en": "Sparky Tractor Pack, Includes:\n            \nSparked New Holland Braud e9070L\nSparked Case IH Magnum\nSparked Case IH Steiger 4WD (2.5.0.0)\nSparked Deutz-Fahr Series 7\nSparked Fendt Vario 1000 *\nSparked John Deere Series 6R\nSparked John Deere Series 8RX *\nSparked John Deere Series 9RT *\nSparked John Deere XUV e865M\nSparked Claas Lexion 8000\nSparked Massey Ferguson 7720S\nSparked Mack Superliner 1979\nSparked New Holland TK4.80 Electric Power\nSparked Claas Trion 750\nSparked Krone BigX 1180 *\nSparked JCB Fastrac 4220\nSparked JCB Fastrac 8330\nSparked Hardi Rubicon 9000 w/ Spot Spray & Sensors *\nSparked New Holland T8 (2.5.0.0)\nSparked New Holland T9 (2.5.0.0)\nSparked Valtra T Series (2.5.0.0)\n\n* Added in 2.0.0",
@@ -87,13 +87,15 @@
         "name": "HONEYBEE",
         "title": "Honey Bee",
         "icon_file": "brand_honeybee.dds",
-        "icon_base": null
+        "icon_base": null,
+        "icon_data": null
       },
       {
         "name": "LIZARDLOGISTICS",
         "title": "Lizard Logistics",
         "icon_file": null,
-        "icon_base": "brand_lizardLogistics"
+        "icon_base": "brand_lizardLogistics",
+        "icon_data": null
       }
     ]
   }

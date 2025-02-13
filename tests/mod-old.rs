@@ -6,7 +6,7 @@ mod common;
 /// result files *must* be hand-checked for correctness if/when used
 #[test]
 #[ignore]
-fn populate_icons() {
+fn populate_old() {
     common::populate_icon_result_file("OLD_FS11.zip");
     common::populate_icon_result_file("OLD_FS13.zip");
     common::populate_icon_result_file("OLD_FS15.zip");

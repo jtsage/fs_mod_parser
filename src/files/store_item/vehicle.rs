@@ -219,7 +219,6 @@ impl XMLReader<Self> for Vehicle {
                 Ok(0)
             },
             (b"price", 2) => { self.sorting.price = Self::xml_number(e, reader); Ok(0) },
-            (b"speedLimit", 2) => { self.sorting.price = Self::xml_attribute(e, "value").map(|v| v.parse().unwrap_or_default()); Ok(0) },
             (b"specs", 2) => { self.tag_specs(reader, e); Ok(0) },
 
             // MARK: ~flags
@@ -279,7 +278,10 @@ impl XMLReader<Self> for Vehicle {
             }
             (b"consumer", _) if self.motor.fuel_type.is_none() => {
                 self.motor.fuel_type = Self::xml_attribute(e, "fillType");
-            }
+            },
+            (b"speedLimit", 2) => {
+                self.sorting.speed_limit = Self::xml_attribute_number(e, "value");
+            },
             _ => (),
         }
     }
@@ -318,7 +320,7 @@ impl Vehicle {
         loop {
             match reader.read_event_into(&mut buf_next) {
                 Ok(Event::Empty(e)) if e.name().as_ref() == b"usageScales" => {
-                    spray.width = Self::xml_attribute(&e, "workingWidth").map(|v| v.parse().unwrap_or_default());
+                    spray.width = Self::xml_attribute_number(&e, "workingWidth");
                 },
                 Ok(Event::End(f)) if f.name() == e.name() => break,
                 _ => (),
@@ -372,7 +374,7 @@ impl Vehicle {
                         b"workingWidth" => self.sorting.working_width = Self::xml_number(&e, reader),
                         b"power"        => self.sorting.power = Self::xml_number(&e, reader),
                         b"neededPower"  => self.sorting.needed_power = Self::xml_number(&e, reader),
-                        b"maxSpeed"     => self.sorting.speed_limit = Self::xml_number(&e, reader),
+                        b"maxSpeed"     => self.sorting.max_speed = Self::xml_number(&e, reader),
                         _ => (),
                     }
                 },
@@ -567,9 +569,20 @@ mod tests {
     use super::*;
     use crate::files::store_item::StoreItem;
     use crate::files::AbstractFile;
+    use pretty_assertions::assert_eq;
 
     fn xml_test(str: &str) -> String {
         format!("<?xml version=\"1.0\" ?>\n{str}")
+    }
+
+    #[test]
+    fn wrong_type() {
+        let xml = xml_test(r#"
+            <garbage>
+                <storeData><image>$data/path/to/data/file.png</image></storeData>
+            </garbage>"#);
+        let actual = Vehicle::from_string(xml.as_ref());
+        assert_eq!(actual.unwrap_err(), AbstractFileError::XmlWrongFileType);
     }
 
     #[test]
@@ -603,6 +616,33 @@ mod tests {
 
         assert_eq!(vehicle.icon_file, Some(String::from("")));
         assert!(vehicle.icon_base.is_none());
+    }
+
+    #[test]
+    fn all_specs() {
+        let xml = xml_test(r#"
+        <vehicle>
+            <storeData>
+                <specs>
+                    <neededPower>360</neededPower>
+                    <workingWidth>17.75</workingWidth>
+                    <power>500</power>
+                    <maxSpeed>320</maxSpeed>
+                    <other>35</other>
+                </specs>
+            </storeData>
+            <base>
+                <speedLimit value="16"/>
+            </base>
+        </vehicle>"#);
+        let actual = StoreItem::from_string(xml.as_ref()).unwrap();
+        let vehicle = actual.vehicle.unwrap();
+
+        assert_eq!(vehicle.sorting.max_speed, Some(320));
+        assert_eq!(vehicle.sorting.needed_power, Some(360));
+        assert_eq!(vehicle.sorting.working_width, Some(17.75));
+        assert_eq!(vehicle.sorting.power, Some(500));
+        assert_eq!(vehicle.sorting.speed_limit, Some(16.0))
     }
 
     #[test]

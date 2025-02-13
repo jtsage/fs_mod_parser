@@ -39,15 +39,15 @@
   "detailIconsLoaded": false,
   "includeSaveGame": null,
   "l10n": {
-    "fr": {
-      "config_5WHardLocking": "Verrouillage dur"
+    "en": {
+      "config_5WSemiLocking": "Partial locking"
     },
     "de": {
       "config_5WHardLocking": "Harte Verriegelung",
       "config_5WSemiLocking": "Teilverriegelung"
     },
-    "en": {
-      "config_5WSemiLocking": "Partial locking"
+    "fr": {
+      "config_5WHardLocking": "Verrouillage dur"
     }
   },
   "modDesc": {
@@ -57,21 +57,21 @@
       "de": "That, in german"
     },
     "description": {
-      "de": "This is wrong",
-      "en": "\nDemonstrates how FSModAssist handles a good mod file.\n\n<!-- Some other, commented text (not valid to comment here, still shows) -->\n"
+      "en": "\nDemonstrates how FSModAssist handles a good mod file.\n\n<!-- Some other, commented text (not valid to comment here, still shows) -->\n",
+      "de": "This is wrong"
     },
     "actions": {
-      "aim_hot1": "SYSTEM",
+      "aim_togg": "ALL",
       "aim_menu": "SYSTEM",
-      "aim_togg": "ALL"
+      "aim_hot1": "SYSTEM"
     },
     "action_binding": {
+      "aim_hot1": [
+        "KEY_ralt KEY_KP_1"
+      ],
       "aim_menu": [
         "KEY_lshift KEY_slash",
         "MOUSE_BUTTON_X1"
-      ],
-      "aim_hot1": [
-        "KEY_ralt KEY_KP_1"
       ],
       "aim_togg": [
         "KEY_ralt KEY_KP_0"

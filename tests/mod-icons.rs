@@ -9,6 +9,7 @@ mod common;
 fn populate_icons() {
     common::populate_icon_result_file("WARNING_Icon_Not_Found.zip");
     common::populate_icon_result_file("FS25_Good.zip");
+    common::populate_icon_result_file("FS25_Good_2.zip");
     common::populate_icon_result_file("PASS_Good_Simple_Mod.zip");
     common::populate_icon_result_file("PASS_Good_Simple_Mod");
     common::populate_icon_result_file("DETAIL_Samples.zip");
@@ -37,6 +38,11 @@ fn good_25() {
 }
 
 #[test]
+fn good_25_2() {
+    common::icon_record_from_file("FS25_Good_2.zip", false);
+}
+
+#[test]
 fn good_22_detail() {
     common::icon_record_from_file("DETAIL_Samples.zip", false);
 }
@@ -45,3 +51,5 @@ fn good_22_detail() {
 fn internal_fail_22_detail() {
     common::icon_record_from_file("DETAIL_Internal_Failures.zip", false);
 }
+
+

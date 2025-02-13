@@ -102,65 +102,65 @@
   "detailIconsLoaded": true,
   "includeSaveGame": null,
   "l10n": {
-    "fr": {
-      "config_fillLights": "Voyant de niveau de remplissage",
-      "config_attach_trailerHigh": "remorque haute",
-      "config_attach_trailerSemi": "Semi-remorques",
-      "config_attach_trailerLow": "Remorque basse"
-    },
-    "it": {
-      "config_attach_trailerHigh": "Rimorchio alto",
-      "config_attach_trailerSemi": "semirimorchio",
-      "config_attach_trailerLow": "Rimorchio basso",
-      "config_fillLights": "Luce di livello di riempimento"
-    },
-    "cz": {
-      "config_attach_trailerLow": "přívěs nízký",
-      "config_attach_trailerSemi": "návěs",
-      "config_fillLights": "Světlo úrovně naplnění",
-      "config_attach_trailerHigh": "přívěs vysoký"
+    "nl": {
+      "config_attach_trailerSemi": "oplegger",
+      "config_attach_trailerHigh": "aanhangwagen hoog",
+      "config_attach_trailerLow": "aanhangwagen laag",
+      "config_fillLights": "Vulniveau licht"
     },
     "de": {
       "config_attach_trailerSemi": "Sattelauflieger",
-      "config_attach_trailerHigh": "Zugöse",
       "config_fillLights": "Füllstandsbeleuchtung",
+      "config_attach_trailerHigh": "Zugöse",
       "config_attach_trailerLow": "Untenanhängung"
     },
-    "ru": {
-      "config_attach_trailerHigh": "трейлер высокий",
-      "config_attach_trailerLow": "прицеп низкий",
-      "config_attach_trailerSemi": "полуприцеп",
-      "config_fillLights": "Свет уровня заполнения"
-    },
-    "es": {
-      "config_attach_trailerSemi": "poolhaagis",
-      "config_attach_trailerLow": "haagis madal",
-      "config_fillLights": "Täitke taseme valgus",
-      "config_attach_trailerHigh": "haagis kõrge"
-    },
-    "pl": {
-      "config_fillLights": "Wypełnij poziom światła",
-      "config_attach_trailerHigh": "przyczepa wysoko",
-      "config_attach_trailerSemi": "naczepa",
-      "config_attach_trailerLow": "przyczepa niska"
-    },
     "en": {
+      "config_attach_trailerLow": "Trailer Low",
       "config_attach_trailerHigh": "Trailer High",
-      "config_fillLights": "Fill Level Light",
       "config_attach_trailerSemi": "Semi/Dolly",
-      "config_attach_trailerLow": "Trailer Low"
+      "config_fillLights": "Fill Level Light"
     },
-    "nl": {
-      "config_attach_trailerLow": "aanhangwagen laag",
-      "config_attach_trailerHigh": "aanhangwagen hoog",
-      "config_attach_trailerSemi": "oplegger",
-      "config_fillLights": "Vulniveau licht"
+    "fr": {
+      "config_attach_trailerHigh": "remorque haute",
+      "config_fillLights": "Voyant de niveau de remplissage",
+      "config_attach_trailerLow": "Remorque basse",
+      "config_attach_trailerSemi": "Semi-remorques"
+    },
+    "cz": {
+      "config_fillLights": "Světlo úrovně naplnění",
+      "config_attach_trailerLow": "přívěs nízký",
+      "config_attach_trailerHigh": "přívěs vysoký",
+      "config_attach_trailerSemi": "návěs"
     },
     "pt": {
-      "config_attach_trailerHigh": "Trailer alto",
+      "config_attach_trailerSemi": "semi-reboque",
       "config_attach_trailerLow": "Trailer baixo",
-      "config_fillLights": "Luz de nível de enchimento",
-      "config_attach_trailerSemi": "semi-reboque"
+      "config_attach_trailerHigh": "Trailer alto",
+      "config_fillLights": "Luz de nível de enchimento"
+    },
+    "es": {
+      "config_fillLights": "Täitke taseme valgus",
+      "config_attach_trailerSemi": "poolhaagis",
+      "config_attach_trailerHigh": "haagis kõrge",
+      "config_attach_trailerLow": "haagis madal"
+    },
+    "ru": {
+      "config_attach_trailerLow": "прицеп низкий",
+      "config_attach_trailerSemi": "полуприцеп",
+      "config_fillLights": "Свет уровня заполнения",
+      "config_attach_trailerHigh": "трейлер высокий"
+    },
+    "pl": {
+      "config_attach_trailerHigh": "przyczepa wysoko",
+      "config_attach_trailerLow": "przyczepa niska",
+      "config_fillLights": "Wypełnij poziom światła",
+      "config_attach_trailerSemi": "naczepa"
+    },
+    "it": {
+      "config_attach_trailerHigh": "Rimorchio alto",
+      "config_attach_trailerLow": "Rimorchio basso",
+      "config_attach_trailerSemi": "semirimorchio",
+      "config_fillLights": "Luce di livello di riempimento"
     }
   },
   "modDesc": {

@@ -95,6 +95,15 @@ impl XMLReader<Self> for StoreItem {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::files::AbstractFile;
+
+    #[test]
+    fn no_good_default() {
+        let mut file = AbstractFile::new("./hi.txt");
+        let actual = StoreItem::from_abstract(&mut file);
+
+        assert_eq!(actual.unwrap_err(), AbstractFileError::FileNotFound);
+    }
 
     #[test]
     fn neither_type() {
@@ -102,5 +111,13 @@ mod tests {
         let actual = StoreItem::from_string(xml);
 
         assert_eq!(actual, Err(AbstractFileError::XmlWrongFileType));
+    }
+
+    #[test]
+    fn capability() {
+        assert_eq!(bool::from(Capability::No), false);
+        assert_eq!(bool::from(Capability::Yes), true);
+        assert_eq!(Capability::from(true), Capability::Yes);
+        assert_eq!(Capability::from(false), Capability::No);
     }
 }

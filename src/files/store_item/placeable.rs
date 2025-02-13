@@ -449,9 +449,20 @@ mod tests {
     use super::*;
     use crate::files::store_item::StoreItem;
     use crate::files::AbstractFile;
+    use pretty_assertions::assert_eq;
 
     fn xml_test(str: &str) -> String {
         format!("<?xml version=\"1.0\" ?>\n{str}")
+    }
+
+    #[test]
+    fn wrong_type() {
+        let xml = xml_test(r#"
+            <garbage>
+                <storeData><image>$data/path/to/data/file.png</image></storeData>
+            </garbage>"#);
+        let actual = Placeable::from_string(xml.as_ref());
+        assert_eq!(actual.unwrap_err(), AbstractFileError::XmlWrongFileType);
     }
 
     #[test]
@@ -628,7 +639,7 @@ mod tests {
         // cSpell:disable
         let xml = xml_test(r#"<placeable>
             <siloExtension>
-                <storage node="storage" fillTypeCategories="farmSilo" capacity="250000" isExtension="true"/>
+                <storage node="storage" fillTypeCategories="farmSilo" fillTypes="wheat barley" capacity="250000" isExtension="true"/>
             </siloExtension>
         </placeable>"#);
         // cSpell:enable
@@ -638,7 +649,7 @@ mod tests {
 
         let expected = vec![
             // cSpell:disable-next-line
-            Storage { is_object: None, capacity: 250_000, categories: vec![String::from("farmsilo")], types: vec![] },
+            Storage { is_object: None, capacity: 250_000, categories: vec![String::from("farmsilo")], types: vec![String::from("wheat"), String::from("barley")] },
         ];
 
         assert_eq!(place.storage, expected);
@@ -659,7 +670,51 @@ mod tests {
         let expected = vec![
             Storage { is_object: Some(ObjectStorage::Both), capacity: 250, categories: vec![], types: vec![] },
         ];
+        assert_eq!(place.storage, expected);
 
+        // cSpell:disable
+        let xml = xml_test(r#"<placeable>
+            <objectStorage supportsBales="true" supportsPallets="false" maxLength="8.5" maxWidth="6" maxHeight="3.5">
+            </objectStorage>
+        </placeable>"#);
+        // cSpell:enable
+
+        let actual = StoreItem::from_string(xml.as_ref()).unwrap();
+        let place = actual.placeable.unwrap();
+
+        let expected = vec![
+            Storage { is_object: Some(ObjectStorage::Bales), capacity: 250, categories: vec![], types: vec![] },
+        ];
+        assert_eq!(place.storage, expected);
+
+        // cSpell:disable
+        let xml = xml_test(r#"<placeable>
+            <objectStorage supportsBales="false" supportsPallets="true" maxLength="8.5" maxWidth="6" maxHeight="3.5">
+            </objectStorage>
+        </placeable>"#);
+        // cSpell:enable
+
+        let actual = StoreItem::from_string(xml.as_ref()).unwrap();
+        let place = actual.placeable.unwrap();
+
+        let expected = vec![
+            Storage { is_object: Some(ObjectStorage::Pallets), capacity: 250, categories: vec![], types: vec![] },
+        ];
+        assert_eq!(place.storage, expected);
+
+        // cSpell:disable
+        let xml = xml_test(r#"<placeable>
+            <objectStorage supportsBales="false" supportsPallets="false" maxLength="8.5" maxWidth="6" maxHeight="3.5">
+            </objectStorage>
+        </placeable>"#);
+        // cSpell:enable
+
+        let actual = StoreItem::from_string(xml.as_ref()).unwrap();
+        let place = actual.placeable.unwrap();
+
+        let expected = vec![
+            Storage { is_object: None, capacity: 250, categories: vec![], types: vec![] },
+        ];
         assert_eq!(place.storage, expected);
     }
 
@@ -711,6 +766,44 @@ mod tests {
         assert_eq!(place.productions[0].recipe[0], vec![Ingredient{ fill_type: String::from("cotton"), quantity : 5, factor: None}]);
     }
 
+    #[test]
+    fn production_cycles() {
+        // cSpell:disable
+        let xml = xml_test(r#"<placeable><productionPoint>
+            <production id="fabric_cotton" name="blah" cyclesPerHour="4" costsPerActiveHour="3"></production>
+        </productionPoint></placeable>"#);
+        // cSpell:enable
+
+        let actual = StoreItem::from_string(xml.as_ref()).unwrap();
+        let place = actual.placeable.unwrap();
+
+        assert_eq!(place.productions[0].cycles_per_hour, 4.0);
+        assert_eq!(place.productions[0].cost_per_hour, 3.0);
+
+        // cSpell:disable
+        let xml = xml_test(r#"<placeable><productionPoint>
+            <production id="fabric_cotton" name="blah" cyclesPerMinute="1" costsPerActiveMinute="2"></production>
+        </productionPoint></placeable>"#);
+        // cSpell:enable
+
+        let actual = StoreItem::from_string(xml.as_ref()).unwrap();
+        let place = actual.placeable.unwrap();
+
+        assert_eq!(place.productions[0].cycles_per_hour, 60.0);
+        assert_eq!(place.productions[0].cost_per_hour, 120.0);
+
+        // cSpell:disable
+        let xml = xml_test(r#"<placeable><productionPoint>
+            <production id="fabric_cotton" name="blah" cyclesPerMonth="48" costsPerActiveMonth="36"></production>
+        </productionPoint></placeable>"#);
+        // cSpell:enable
+
+        let actual = StoreItem::from_string(xml.as_ref()).unwrap();
+        let place = actual.placeable.unwrap();
+
+        assert_eq!(place.productions[0].cycles_per_hour, 2.0);
+        assert_eq!(place.productions[0].cost_per_hour, 1.5);
+    }
 
     #[test]
     fn from_file_husband() {

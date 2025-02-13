@@ -58,6 +58,8 @@ mod tests {
         assert!(mod_map.farms.contains(&4_usize));
         assert!(mod_map.farms.contains(&5_usize));
         assert!(mod_map.farms.contains(&15_usize));
+
+        assert_eq!(serde_json::to_string(&mod_map).unwrap(), String::from(r#"{"version":"1.0.0.2","title":"Back Roads County","farms":[0,1,4,5,15]}"#));
     }
 
 }

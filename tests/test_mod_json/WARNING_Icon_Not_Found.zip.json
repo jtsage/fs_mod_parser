@@ -35,55 +35,55 @@
   "detailIconsLoaded": false,
   "includeSaveGame": null,
   "l10n": {
+    "fr": {
+      "engineStartNotification": "Démarrage du moteur ...",
+      "guiTest": "TODO",
+      "input_ENGINESTARTER_SHOW_MENU": "TODO"
+    },
+    "pt": {
+      "engineStartNotification": "Partida do motor ...",
+      "guiTest": "TODO",
+      "input_ENGINESTARTER_SHOW_MENU": "TODO"
+    },
+    "pl": {
+      "input_ENGINESTARTER_SHOW_MENU": "TODO",
+      "guiTest": "TODO",
+      "engineStartNotification": "Uruchomienie silnika ..."
+    },
+    "en": {
+      "input_ENGINESTARTER_SHOW_MENU": "Show Engine Starter Menu",
+      "guiTest": "Testing GuI",
+      "engineStartNotification": "Engine starting..."
+    },
+    "it": {
+      "input_ENGINESTARTER_SHOW_MENU": "TODO",
+      "guiTest": "TODO",
+      "engineStartNotification": "Avviamento del motore ..."
+    },
+    "nl": {
+      "guiTest": "TODO",
+      "input_ENGINESTARTER_SHOW_MENU": "TODO",
+      "engineStartNotification": "Motor starten ..."
+    },
+    "cz": {
+      "guiTest": "TODO",
+      "engineStartNotification": "Startování motoru ...",
+      "input_ENGINESTARTER_SHOW_MENU": "TODO"
+    },
+    "de": {
+      "guiTest": "TODO",
+      "engineStartNotification": "Motor startet ...",
+      "input_ENGINESTARTER_SHOW_MENU": "TODO"
+    },
     "es": {
       "guiTest": "TODO",
       "engineStartNotification": "Arranque del motor ...",
       "input_ENGINESTARTER_SHOW_MENU": "TODO"
     },
-    "pl": {
-      "engineStartNotification": "Uruchomienie silnika ...",
-      "input_ENGINESTARTER_SHOW_MENU": "TODO",
-      "guiTest": "TODO"
-    },
-    "pt": {
-      "guiTest": "TODO",
-      "input_ENGINESTARTER_SHOW_MENU": "TODO",
-      "engineStartNotification": "Partida do motor ..."
-    },
-    "it": {
-      "guiTest": "TODO",
-      "engineStartNotification": "Avviamento del motore ...",
-      "input_ENGINESTARTER_SHOW_MENU": "TODO"
-    },
-    "en": {
-      "guiTest": "Testing GuI",
-      "engineStartNotification": "Engine starting...",
-      "input_ENGINESTARTER_SHOW_MENU": "Show Engine Starter Menu"
-    },
-    "fr": {
-      "engineStartNotification": "Démarrage du moteur ...",
-      "input_ENGINESTARTER_SHOW_MENU": "TODO",
-      "guiTest": "TODO"
-    },
-    "nl": {
-      "engineStartNotification": "Motor starten ...",
-      "input_ENGINESTARTER_SHOW_MENU": "TODO",
-      "guiTest": "TODO"
-    },
-    "de": {
-      "input_ENGINESTARTER_SHOW_MENU": "TODO",
-      "guiTest": "TODO",
-      "engineStartNotification": "Motor startet ..."
-    },
-    "cz": {
-      "engineStartNotification": "Startování motoru ...",
-      "input_ENGINESTARTER_SHOW_MENU": "TODO",
-      "guiTest": "TODO"
-    },
     "ru": {
       "engineStartNotification": "Запуск двигателя ...",
-      "input_ENGINESTARTER_SHOW_MENU": "TODO",
-      "guiTest": "TODO"
+      "guiTest": "TODO",
+      "input_ENGINESTARTER_SHOW_MENU": "TODO"
     }
   },
   "modDesc": {

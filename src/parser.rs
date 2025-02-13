@@ -73,10 +73,18 @@ pub fn parse_detail<P: AsRef<Path>, S: AsRef<str>>(filename: P, needle : S) -> R
 /// will return an error if either the mod or the indicated store item does not exist
 pub fn parse_detail_with_options<P: AsRef<Path>, S: AsRef<str>>(filename: P, needle: S, options : &ParseOptions) -> Result<StoreItem, AbstractFileError> {
     let mut file = AbstractFile::new(filename);
-    let item = StoreItem::from_abstract_file(&mut file, needle)?;
+    let mut item = StoreItem::from_abstract_file(&mut file, needle)?;
 
     if options.contains(&ParseOption::ImageDetail) {
-        // do stuff
+        if let Some(vehicle) = &mut item.vehicle {
+            if let Some(filename) = &vehicle.icon_file {
+                vehicle.icon_data = file.mod_icon(filename);
+            }
+        } else if let Some(placable) = &mut item.placeable {
+            if let Some(filename) = &placable.icon_file {
+                placable.icon_data = file.mod_icon(filename);
+            }
+        }
     }
 
     Ok(item)
