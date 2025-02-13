@@ -1,0 +1,99 @@
+{
+  "file": {
+    "ageHash": "",
+    "copyName": null,
+    "extraFiles": [],
+    "fileDate": 1729796083,
+    "fileSize": 36502,
+    "fullPath": "./tests/test_mods/PASS_Good_Simple_Mod",
+    "i3dFiles": [],
+    "imageDDS": [
+      "modIcon.dds"
+    ],
+    "imageNonDDS": [],
+    "isFolder": true,
+    "isSaveGame": false,
+    "isModPack": false,
+    "pngTexture": [],
+    "shortName": "PASS_Good_Simple_Mod",
+    "spaceFiles": [],
+    "tooBigFiles": [],
+    "zipFiles": [],
+    "luaCount": 0
+  },
+  "ident": "",
+  "badgeArray": [
+    "NoMp",
+    "PcOnly",
+    "Map",
+    "Keys",
+    "Depend",
+    "Fs22"
+  ],
+  "canNotUse": false,
+  "currentCollection": "",
+  "issues": [
+    "INFO_NO_MULTIPLAYER_UNZIPPED"
+  ],
+  "includeDetail": {},
+  "detailIconsLoaded": false,
+  "includeSaveGame": null,
+  "l10n": {
+    "en": {
+      "config_5WSemiLocking": "Partial locking"
+    },
+    "de": {
+      "config_5WHardLocking": "Harte Verriegelung",
+      "config_5WSemiLocking": "Teilverriegelung"
+    },
+    "fr": {
+      "config_5WHardLocking": "Verrouillage dur"
+    }
+  },
+  "modDesc": {
+    "warnings": [],
+    "title": {
+      "de": "That, in german",
+      "en": "Totally valid FS22 Mod"
+    },
+    "description": {
+      "de": "This is wrong",
+      "en": "\nDemonstrates how FSModAssist handles a good mod file.\n\n<!-- Some other, commented text (not valid to comment here, still shows) -->\n"
+    },
+    "actions": {
+      "aim_hot1": "SYSTEM",
+      "aim_menu": "SYSTEM",
+      "aim_togg": "ALL"
+    },
+    "action_binding": {
+      "aim_togg": [
+        "KEY_ralt KEY_KP_0"
+      ],
+      "aim_menu": [
+        "KEY_lshift KEY_slash",
+        "MOUSE_BUTTON_X1"
+      ],
+      "aim_hot1": [
+        "KEY_ralt KEY_KP_1"
+      ]
+    },
+    "author": "FSModAssist Test &amp; Bob",
+    "script_files": true,
+    "store_items": [
+      "Dolly.xml"
+    ],
+    "dependencies": [
+      "FS22_RedBarnPack"
+    ],
+    "desc_version": 69,
+    "game_version": 22,
+    "icon_file": "modIcon.dds",
+    "icon_data": null,
+    "map_config_filename": "map/xml/map.xml",
+    "multiplayer": true,
+    "version": "1.0.0.0",
+    "l10n_file_prefix": "languages/l10n",
+    "l10n_local": {},
+    "brands": []
+  }
+}

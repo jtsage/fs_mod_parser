@@ -83,8 +83,12 @@ pub fn parse_detail_with_options<P: AsRef<Path>, S: AsRef<str>>(filename: P, nee
 }
 
 
-/// file record
-#[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, Debug, Default)]
+/// Mod file record
+/// 
+/// Note on equality - this will be equal if all of the details match,
+/// ignoring the path to the file, the age hash, file date, and the ident (generated)
+/// from the path
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Record {
     /// Full path to file
@@ -109,6 +113,21 @@ pub struct Record {
     pub l10n: L10n,
     /// modDesc.xml fields
     pub mod_desc: DescXML,
+}
+
+impl PartialEq for Record {
+    fn eq(&self, other: &Self) -> bool {
+        self.file == other.file && 
+        self.badge_array == other.badge_array && 
+        self.can_not_use == other.can_not_use && 
+        self.current_collection == other.current_collection && 
+        self.issues == other.issues && 
+        self.include_detail == other.include_detail && 
+        self.detail_icons_loaded == other.detail_icons_loaded && 
+        self.include_save_game == other.include_save_game && 
+        self.l10n == other.l10n && 
+        self.mod_desc == other.mod_desc
+    }
 }
 
 /// mod file identity
@@ -200,7 +219,7 @@ impl Record {
             Ok(mod_desc) => {
                 record.mod_desc = mod_desc;
             },
-            Err(AbstractFileError::XmlParseError) => {
+            Err(AbstractFileError::XmlParseError | AbstractFileError::XmlUndeclared | AbstractFileError::XmlWrongFileType)  => {
                 record.fail(ModError::ModDescParseError);
                 return record
             },
@@ -518,7 +537,10 @@ impl Record {
 
 
 /// File related metadata for a mod
-#[derive(serde::Serialize, serde::Deserialize, Clone, Eq, Ord, PartialEq, PartialOrd, Debug, Default)]
+/// 
+/// Note on equality - this will be equal if all of the details match,
+/// ignoring the path to the file, file date, and the age hash.
+#[derive(serde::Serialize, serde::Deserialize, Clone, PartialOrd, Debug, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct FileInfo {
     /// Age hash - MD5 of {shortname}-{size}-{date}
@@ -560,6 +582,27 @@ pub struct FileInfo {
     /// has lua files
     pub lua_count: u32,
 }
+
+impl PartialEq for FileInfo {
+    fn eq(&self, other: &Self) -> bool {
+        self.copy_name == other.copy_name &&
+        self.extra_files == other.extra_files &&
+        self.file_size == other.file_size &&
+        self.i3d_files == other.i3d_files &&
+        self.image_dds == other.image_dds &&
+        self.image_non_dds == other.image_non_dds &&
+        self.is_folder == other.is_folder &&
+        self.is_save_game == other.is_save_game &&
+        self.is_mod_pack == other.is_mod_pack &&
+        self.png_texture == other.png_texture &&
+        self.short_name == other.short_name &&
+        self.space_files == other.space_files &&
+        self.too_big_files == other.too_big_files &&
+        self.zip_files == other.zip_files &&
+        self.lua_count == other.lua_count
+    }
+}
+
 
 /// Entry for zip files inside a "mod" file.
 #[derive(serde::Serialize, serde::Deserialize, Clone, PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]

@@ -1,0 +1,70 @@
+{
+  "file": {
+    "ageHash": "",
+    "copyName": null,
+    "extraFiles": [],
+    "fileDate": 1728946888,
+    "fileSize": 24210,
+    "fullPath": "./tests/test_mods/VARIANT_Mod_Pack.zip",
+    "i3dFiles": [],
+    "imageDDS": [],
+    "imageNonDDS": [],
+    "isFolder": false,
+    "isSaveGame": false,
+    "isModPack": true,
+    "pngTexture": [],
+    "shortName": "VARIANT_Mod_Pack",
+    "spaceFiles": [],
+    "tooBigFiles": [],
+    "zipFiles": [
+      {
+        "name": "EXAMPLE_No_DescVersion.zip",
+        "size": 12025
+      },
+      {
+        "name": "EXAMPLE_No_Version.zip",
+        "size": 12033
+      },
+      {
+        "name": "EXAMPLE_Missing_ModDesc.zip",
+        "size": 152
+      }
+    ],
+    "luaCount": 0
+  },
+  "ident": "",
+  "badgeArray": [
+    "NotMod",
+    "FsUnknown"
+  ],
+  "canNotUse": true,
+  "currentCollection": "",
+  "issues": [
+    "FILE_ERROR_LIKELY_ZIP_PACK"
+  ],
+  "includeDetail": {},
+  "detailIconsLoaded": false,
+  "includeSaveGame": null,
+  "l10n": {},
+  "modDesc": {
+    "warnings": [],
+    "title": {},
+    "description": {},
+    "actions": {},
+    "action_binding": {},
+    "author": null,
+    "script_files": false,
+    "store_items": [],
+    "dependencies": [],
+    "desc_version": 0,
+    "game_version": 0,
+    "icon_file": null,
+    "icon_data": null,
+    "map_config_filename": null,
+    "multiplayer": false,
+    "version": null,
+    "l10n_file_prefix": null,
+    "l10n_local": {},
+    "brands": []
+  }
+}

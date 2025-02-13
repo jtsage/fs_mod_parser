@@ -31,11 +31,13 @@
 		"replacen",
 		"roxmltree",
 		"SAVEGAME",
+		"serde",
 		"storeitem",
 		"storeitems",
 		"sugarbeet",
 		"Unpadded",
 		"unseparated",
+		"webp",
 		"zipfile"
 	],
 	"workbench.colorCustomizations": {
@@ -65,8 +67,7 @@
 		"*/src/files/savegame/**": "F:SAVE ${filename}",
 		"*/src/files/store_item/**": "F:STORE ${filename}",
 		"*/src/savegame/**": "SAVE ${filename}",
-		"*/src/mod_basic/**": "BASIC ${filename}",
-		"*/src/mod_detail/**": "DETAIL ${filename}"
+		"*/tests/**": "TEST ${filename}"
 	},
 	"cSpell.ignorePaths": [
 		"package-lock.json",
@@ -76,7 +77,8 @@
 		".git/{index,*refs,*HEAD}",
 		".vscode",
 		".vscode-insiders",
-		"tests/test_mods/**"
+		"tests/test_mods/**",
+		"tests/test_mod_json/*"
 	],
 	"cSpell.spellCheckOnlyWorkspaceFiles": true,
 }

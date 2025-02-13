@@ -1,0 +1,57 @@
+{
+  "file": {
+    "ageHash": "",
+    "copyName": null,
+    "extraFiles": [],
+    "fileDate": 0,
+    "fileSize": 0,
+    "fullPath": "./tests/test_mods/FAILURE_Broken_Zip_File.zip",
+    "i3dFiles": [],
+    "imageDDS": [],
+    "imageNonDDS": [],
+    "isFolder": false,
+    "isSaveGame": false,
+    "isModPack": false,
+    "pngTexture": [],
+    "shortName": "FAILURE_Broken_Zip_File",
+    "spaceFiles": [],
+    "tooBigFiles": [],
+    "zipFiles": [],
+    "luaCount": 0
+  },
+  "ident": "",
+  "badgeArray": [
+    "NotMod",
+    "FsUnknown"
+  ],
+  "canNotUse": true,
+  "currentCollection": "",
+  "issues": [
+    "FILE_ERROR_UNREADABLE_ZIP"
+  ],
+  "includeDetail": {},
+  "detailIconsLoaded": false,
+  "includeSaveGame": null,
+  "l10n": {},
+  "modDesc": {
+    "warnings": [],
+    "title": {},
+    "description": {},
+    "actions": {},
+    "action_binding": {},
+    "author": null,
+    "script_files": false,
+    "store_items": [],
+    "dependencies": [],
+    "desc_version": 0,
+    "game_version": 0,
+    "icon_file": null,
+    "icon_data": null,
+    "map_config_filename": null,
+    "multiplayer": false,
+    "version": null,
+    "l10n_file_prefix": null,
+    "l10n_local": {},
+    "brands": []
+  }
+}

@@ -3,7 +3,7 @@ use crate::files::{AbstractFile, XMLReader, XMLReaderDepth};
 use super::{Mod, items::Mods};
 
 /// Save career
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Default)]
 #[serde(rename_all="camelCase")]
 pub struct Career {
     /// Map mod name (shortname)
@@ -89,30 +89,6 @@ impl XMLReader<Self> for Career {
 mod tests {
     use super::*;
     use assert_json_diff::assert_json_include;
-
-    #[test]
-    fn good_file() {
-        let mut file_handle = crate::files::AbstractFile::new("tests/test_mods/SAVEGAME_Good.zip");
-
-        let actual = Career::from_abstract(&mut file_handle).expect("read fail");
-
-        // cSpell: disable
-        let expected = serde_json::json!({
-            "mapMod": "FS22_BackRoadsCounty",
-            "mapTitle": "Back Roads County",
-            "modCount": 38,
-            "mods": {
-                "FS22_2150_Series": { "farms": [], "title": "Case IH 2150 Early Riser Planters Series", "version": "1.0.0.0" },
-                "FS22_25DU_Trailers": { "farms": [], "title": "Lizard 25DU Trailer", "version": "1.0.0.0" }
-            },
-            "name": "BRC", 
-            "playTime": "306:40",
-            "saveDate": "2022-10-14"
-        });
-        // cSpell: enable
-
-        assert_json_include!(actual : serde_json::json!(actual), expected : expected);
-    }
 
     #[test]
     fn missing_xml() {

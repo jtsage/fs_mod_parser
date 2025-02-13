@@ -75,11 +75,17 @@ impl AbstractFile {
     }
 
     /// Get a file as text
+    ///
+    /// # Errors
+    /// returns [`AbstractFileError::FileIoError`] if file cannot be read
     pub fn text<S: AsRef<str>>(&mut self, filename: S) -> Result<String, AbstractFileError> {
         String::from_utf8(self.bin(filename)?).map_err(|_| AbstractFileError::FileIoError)
     }
 
     /// Get a file as a binary vector
+    /// 
+    /// # Errors
+    /// returns [`AbstractFileError::FileIoError`] if file cannot be read
     pub fn bin<S: AsRef<str>>(&mut self, filename : S) -> Result<Vec<u8>, AbstractFileError> {
         match self {
             Self::Folder(path, _) => {
@@ -157,6 +163,7 @@ impl AbstractFile {
     }
 
     /// Get list of files as [`FileDefinition`]'s
+    #[must_use]
     pub fn list(&self) -> Vec<FileDefinition> {
         match self {
             Self::Zip(_, l)| Self::Folder(_, l) => {
@@ -192,21 +199,18 @@ impl AbstractFile {
     }
 
     /// Is this a folder?
+    #[must_use]
     pub fn is_dir(&self) -> bool {
         matches!(self, Self::Folder(_, _))
     }
 
     /// Size of file?
+    #[must_use]
     pub fn size(&self) -> u64 {
         match self {
             Self::Folder(_, f) | Self::Zip(_, f) => f.size,
             Self::Null(_) => 0,
         }
-    }
-
-    /// Get moddesc file 
-    pub fn get_mod_desc(&mut self) -> Result<mod_desc::DescXML, AbstractFileError> {
-        mod_desc::DescXML::from_abstract_file(self, "modDesc.xml")
     }
 
     /// Load the mod icon, and convert to webp
@@ -308,19 +312,31 @@ pub type XMLReaderDepth = Result<i32, AbstractFileError>;
 /// XML Reader
 pub trait XMLReader<T> {
     /// Get data from an [`AbstractFile`]
+    /// 
+    /// # Errors
+    /// returns [`AbstractFileError`] if file cannot be read
     fn from_abstract_file<S: AsRef<str>>(mod_file : &mut AbstractFile, needle : S) -> Result<T, AbstractFileError> {
         let xml_text = mod_file.text(needle)?;
         Self::from_string(&xml_text)
     }
 
     /// Stub for a default file version of [`XMLReader<T>::from_abstract_file`]
+    /// 
+    /// # Errors
+    /// returns [`AbstractFileError`] if file cannot be read
     #[expect(unused_variables)]
     fn from_abstract(mod_file : &mut AbstractFile) -> Result<T, AbstractFileError> { Err(AbstractFileError::FileNotFound) }
 
     /// Get data from a string
+    /// 
+    /// # Errors
+    /// returns [`AbstractFileError`] if string cannot be parsed
     fn from_string(xml_text: &str) -> Result<T, AbstractFileError>;
 
     /// read the XML
+    /// 
+    /// # Errors
+    /// returns [`AbstractFileError`] if string cannot be parsed
     fn read_xml(&mut self, xml_text: &str) -> Result<&mut Self, AbstractFileError> {
         let mut reader = Reader::from_str(xml_text);
         reader.config_mut().trim_text(true);
@@ -350,6 +366,9 @@ pub trait XMLReader<T> {
     /// Process paired tags
     /// 
     /// return value is the number of unclosed tags we traversed.
+    /// 
+    /// # Errors
+    /// XML parser errors throw to the caller
     #[expect(unused_variables)]
     #[inline]
     fn tags_paired(&mut self, e: &BytesStart, depth : i32, reader: &mut quick_xml::Reader<&[u8]>) -> XMLReaderDepth { Ok(0) }
@@ -363,6 +382,7 @@ pub trait XMLReader<T> {
 
     /// Get an xml attribute from [`BytesStart`] by name
     #[inline]
+    #[must_use]
     fn xml_attribute<'a>(e : &'a BytesStart, name : &'a str) -> Option<String> {
         if let Ok(Some(version)) = e.try_get_attribute(name) {
             version.unescape_value().map_or(None, |text| Some(text.to_string()))
@@ -387,6 +407,7 @@ pub trait XMLReader<T> {
 
     /// Get an xml text node as a number
     #[inline]
+    #[must_use]
     fn xml_attribute_number<U>(e: &BytesStart, name : &str) -> Option<U> where 
     U: std::str::FromStr + std::default::Default
     {
@@ -394,6 +415,9 @@ pub trait XMLReader<T> {
     }
 
     /// Slurp and dump children
+    /// 
+    /// # Errors
+    /// can error on XML parse error
     #[inline]
     fn slurp(e: &BytesStart, reader: &mut quick_xml::Reader<&[u8]>) -> Result<i32, AbstractFileError> {
         reader.read_to_end(e.to_end().name()).map(|_| 0).map_err(|_| AbstractFileError::XmlParseError)
@@ -407,12 +431,14 @@ pub trait XMLReader<T> {
 
     /// Turn a [`BytesStart`] name into a string
     #[inline]
+    #[must_use]
     fn get_key_option(e : &BytesStart) -> Option<String> {
         String::from_utf8(e.name().as_ref().to_vec()).ok()
     }
 
     /// Turn a [`BytesStart`] name into a string (forced)
     #[inline]
+    #[must_use]
     fn get_key(e : &BytesStart) -> String {
         String::from_utf8(e.name().as_ref().to_vec()).unwrap_or_default()
     }
@@ -487,7 +513,6 @@ mod tests {
         let mod_desc_text = file_handle.text("modDesc.xml").expect("file open failed");
         assert!(mod_desc_text.len() > 1000);
 
-        // assert!(file_handle.get_mod_desc().is_ok());
         assert_eq!(file_handle.bin("modDesc.bad"), Err(AbstractFileError::FileNotFound));
     }
 }

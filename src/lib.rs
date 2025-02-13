@@ -2,15 +2,11 @@
 #![allow(dead_code)]
 #![warn(missing_docs)]
 
-// pub mod maps;
-
-// pub mod mod_detail;
 pub mod savegame;
-// pub mod shared;
 pub mod parser;
 
-mod errors;
-mod files;
+pub mod errors;
+pub mod files;
 
 /// Known none malware files that fail the general check
 pub const NOT_MALWARE: [&str; 16] = [
@@ -31,20 +27,6 @@ pub const NOT_MALWARE: [&str; 16] = [
     "FS19_Courseplay",
     "FS19_GlobalCompany",
 ];
-
-#[derive(Default)]
-#[expect(clippy::struct_excessive_bools)]
-/// Parsing options
-pub struct ModParserOptions {
-    /// Include save game parsing in mod output
-    pub include_save_game: bool,
-    /// Include detail parsing in mod output
-    pub include_mod_detail: bool,
-    /// Skip icon processing for detail items
-    pub skip_detail_icons: bool,
-    /// Skip icon processing for mod
-    pub skip_mod_icons: bool,
-}
 
 /// Options for the parsers
 pub struct ParseOptions(Vec<ParseOption>);

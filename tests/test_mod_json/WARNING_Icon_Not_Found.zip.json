@@ -1,0 +1,120 @@
+{
+  "file": {
+    "ageHash": "",
+    "copyName": null,
+    "extraFiles": [],
+    "fileDate": 1728925360,
+    "fileSize": 1599,
+    "fullPath": "./tests/test_mods/WARNING_Icon_Not_Found.zip",
+    "i3dFiles": [],
+    "imageDDS": [],
+    "imageNonDDS": [],
+    "isFolder": false,
+    "isSaveGame": false,
+    "isModPack": false,
+    "pngTexture": [],
+    "shortName": "WARNING_Icon_Not_Found",
+    "spaceFiles": [],
+    "tooBigFiles": [],
+    "zipFiles": [],
+    "luaCount": 0
+  },
+  "ident": "",
+  "badgeArray": [
+    "Problem",
+    "PcOnly",
+    "Keys",
+    "Fs22"
+  ],
+  "canNotUse": false,
+  "currentCollection": "",
+  "issues": [
+    "MOD_DESC_NO_MOD_ICON"
+  ],
+  "includeDetail": {},
+  "detailIconsLoaded": false,
+  "includeSaveGame": null,
+  "l10n": {
+    "pt": {
+      "guiTest": "TODO",
+      "engineStartNotification": "Partida do motor ...",
+      "input_ENGINESTARTER_SHOW_MENU": "TODO"
+    },
+    "cz": {
+      "input_ENGINESTARTER_SHOW_MENU": "TODO",
+      "guiTest": "TODO",
+      "engineStartNotification": "Startování motoru ..."
+    },
+    "ru": {
+      "input_ENGINESTARTER_SHOW_MENU": "TODO",
+      "guiTest": "TODO",
+      "engineStartNotification": "Запуск двигателя ..."
+    },
+    "pl": {
+      "guiTest": "TODO",
+      "engineStartNotification": "Uruchomienie silnika ...",
+      "input_ENGINESTARTER_SHOW_MENU": "TODO"
+    },
+    "fr": {
+      "guiTest": "TODO",
+      "engineStartNotification": "Démarrage du moteur ...",
+      "input_ENGINESTARTER_SHOW_MENU": "TODO"
+    },
+    "de": {
+      "guiTest": "TODO",
+      "input_ENGINESTARTER_SHOW_MENU": "TODO",
+      "engineStartNotification": "Motor startet ..."
+    },
+    "nl": {
+      "input_ENGINESTARTER_SHOW_MENU": "TODO",
+      "guiTest": "TODO",
+      "engineStartNotification": "Motor starten ..."
+    },
+    "en": {
+      "engineStartNotification": "Engine starting...",
+      "guiTest": "Testing GuI",
+      "input_ENGINESTARTER_SHOW_MENU": "Show Engine Starter Menu"
+    },
+    "es": {
+      "guiTest": "TODO",
+      "engineStartNotification": "Arranque del motor ...",
+      "input_ENGINESTARTER_SHOW_MENU": "TODO"
+    },
+    "it": {
+      "input_ENGINESTARTER_SHOW_MENU": "TODO",
+      "guiTest": "TODO",
+      "engineStartNotification": "Avviamento del motore ..."
+    }
+  },
+  "modDesc": {
+    "warnings": [],
+    "title": {
+      "en": "Mod with missing Icon File"
+    },
+    "description": {
+      "en": "Demonstates how FSModAssist handles a missing icon file."
+    },
+    "actions": {
+      "ENGINESTARTER_SHOW_MENU": "ALL"
+    },
+    "action_binding": {
+      "ENGINESTARTER_SHOW_MENU": [
+        "KEY_lalt KEY_e"
+      ]
+    },
+    "author": "FSModAssist Test",
+    "script_files": true,
+    "store_items": [],
+    "dependencies": [],
+    "desc_version": 69,
+    "game_version": 22,
+    "icon_file": "modIcon.dds",
+    "icon_data": null,
+    "map_config_filename": null,
+    "multiplayer": true,
+    "version": "1.0.0.0",
+    "l10n_file_prefix": null,
+    "l10n_local": {},
+    "brands": []
+  }
+}

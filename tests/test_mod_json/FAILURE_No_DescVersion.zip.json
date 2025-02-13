@@ -1,0 +1,121 @@
+{
+  "file": {
+    "ageHash": "",
+    "copyName": null,
+    "extraFiles": [],
+    "fileDate": 1728925360,
+    "fileSize": 34447,
+    "fullPath": "./tests/test_mods/FAILURE_No_DescVersion.zip",
+    "i3dFiles": [],
+    "imageDDS": [
+      "modIcon.dds"
+    ],
+    "imageNonDDS": [],
+    "isFolder": false,
+    "isSaveGame": false,
+    "isModPack": false,
+    "pngTexture": [],
+    "shortName": "FAILURE_No_DescVersion",
+    "spaceFiles": [],
+    "tooBigFiles": [],
+    "zipFiles": [],
+    "luaCount": 0
+  },
+  "ident": "",
+  "badgeArray": [
+    "Broken",
+    "FsUnknown"
+  ],
+  "canNotUse": false,
+  "currentCollection": "",
+  "issues": [
+    "MOD_DESC_VERSION_OLD_OR_MISSING",
+    "MOD_DESC_NO_MOD_VERSION"
+  ],
+  "includeDetail": {},
+  "detailIconsLoaded": false,
+  "includeSaveGame": null,
+  "l10n": {
+    "nl": {
+      "guiTest": "TODO",
+      "input_ENGINESTARTER_SHOW_MENU": "TODO",
+      "engineStartNotification": "Motor starten ..."
+    },
+    "fr": {
+      "guiTest": "TODO",
+      "input_ENGINESTARTER_SHOW_MENU": "TODO",
+      "engineStartNotification": "Démarrage du moteur ..."
+    },
+    "de": {
+      "engineStartNotification": "Motor startet ...",
+      "input_ENGINESTARTER_SHOW_MENU": "TODO",
+      "guiTest": "TODO"
+    },
+    "ru": {
+      "input_ENGINESTARTER_SHOW_MENU": "TODO",
+      "guiTest": "TODO",
+      "engineStartNotification": "Запуск двигателя ..."
+    },
+    "cz": {
+      "input_ENGINESTARTER_SHOW_MENU": "TODO",
+      "engineStartNotification": "Startování motoru ...",
+      "guiTest": "TODO"
+    },
+    "pt": {
+      "engineStartNotification": "Partida do motor ...",
+      "input_ENGINESTARTER_SHOW_MENU": "TODO",
+      "guiTest": "TODO"
+    },
+    "pl": {
+      "engineStartNotification": "Uruchomienie silnika ...",
+      "input_ENGINESTARTER_SHOW_MENU": "TODO",
+      "guiTest": "TODO"
+    },
+    "it": {
+      "guiTest": "TODO",
+      "engineStartNotification": "Avviamento del motore ...",
+      "input_ENGINESTARTER_SHOW_MENU": "TODO"
+    },
+    "en": {
+      "engineStartNotification": "Engine starting...",
+      "input_ENGINESTARTER_SHOW_MENU": "Show Engine Starter Menu",
+      "guiTest": "Testing GuI"
+    },
+    "es": {
+      "engineStartNotification": "Arranque del motor ...",
+      "input_ENGINESTARTER_SHOW_MENU": "TODO",
+      "guiTest": "TODO"
+    }
+  },
+  "modDesc": {
+    "warnings": [],
+    "title": {
+      "en": "Missing Version"
+    },
+    "description": {
+      "en": "Demonstrates a mod that has does not include a version string"
+    },
+    "actions": {
+      "ENGINESTARTER_SHOW_MENU": "ALL"
+    },
+    "action_binding": {
+      "ENGINESTARTER_SHOW_MENU": [
+        "KEY_lalt KEY_e"
+      ]
+    },
+    "author": "FSModAssist Test",
+    "script_files": true,
+    "store_items": [],
+    "dependencies": [],
+    "desc_version": 0,
+    "game_version": 0,
+    "icon_file": "modIcon.dds",
+    "icon_data": null,
+    "map_config_filename": null,
+    "multiplayer": true,
+    "version": null,
+    "l10n_file_prefix": null,
+    "l10n_local": {},
+    "brands": []
+  }
+}

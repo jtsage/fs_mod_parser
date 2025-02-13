@@ -1,0 +1,137 @@
+{
+  "file": {
+    "ageHash": "",
+    "copyName": "FAILURE_Copied_Mod",
+    "extraFiles": [],
+    "fileDate": 1728925360,
+    "fileSize": 35745,
+    "fullPath": "./tests/test_mods/FAILURE_Copied_Mod (2).zip",
+    "i3dFiles": [],
+    "imageDDS": [
+      "modIcon.dds"
+    ],
+    "imageNonDDS": [],
+    "isFolder": false,
+    "isSaveGame": false,
+    "isModPack": false,
+    "pngTexture": [],
+    "shortName": "FAILURE_Copied_Mod (2)",
+    "spaceFiles": [],
+    "tooBigFiles": [],
+    "zipFiles": [],
+    "luaCount": 0
+  },
+  "ident": "",
+  "badgeArray": [
+    "Broken",
+    "Fs22"
+  ],
+  "canNotUse": true,
+  "currentCollection": "",
+  "issues": [
+    "FILE_ERROR_LIKELY_COPY",
+    "FILE_ERROR_NAME_INVALID"
+  ],
+  "includeDetail": {},
+  "detailIconsLoaded": false,
+  "includeSaveGame": null,
+  "l10n": {
+    "cz": {
+      "config_5WGentleLocking": "Jemné zamykání",
+      "config_5WSemiLocking": "Částečné zajištění",
+      "config_5WHardLocking": "Pevné zamykání",
+      "config_5WNoLocking": "Zamykání deaktivováno",
+      "config_5WLocking": "Uzamčení točnice"
+    },
+    "es": {
+      "config_5WSemiLocking": "Bloqueo parcial",
+      "config_5WHardLocking": "Bloqueo duro",
+      "config_5WGentleLocking": "Bloqueo suave",
+      "config_5WNoLocking": "Bloqueo desactivado",
+      "config_5WLocking": "Bloqueo de quinta rueda"
+    },
+    "it": {
+      "config_5WGentleLocking": "Chiusura delicata",
+      "config_5WNoLocking": "Blocco disabilitato",
+      "config_5WLocking": "Quinta ruota di bloccaggio",
+      "config_5WSemiLocking": "Chiusura parziale",
+      "config_5WHardLocking": "Blocco duro"
+    },
+    "pt": {
+      "config_5WLocking": "Travamento da quinta roda",
+      "config_5WHardLocking": "Travamento rígido",
+      "config_5WGentleLocking": "Travamento suave",
+      "config_5WNoLocking": "Bloqueio desativado",
+      "config_5WSemiLocking": "Bloqueio parcial"
+    },
+    "en": {
+      "config_5WNoLocking": "Locking disabled",
+      "config_5WSemiLocking": "Partial locking",
+      "config_5WLocking": "5th Wheel Locking",
+      "config_5WGentleLocking": "Gentle locking",
+      "config_5WHardLocking": "Hard Locking"
+    },
+    "de": {
+      "config_5WLocking": "Sattelkupplung Verriegeln",
+      "config_5WHardLocking": "Harte Verriegelung",
+      "config_5WGentleLocking": "Schonendes Verriegeln",
+      "config_5WNoLocking": "Sperre deaktiviert",
+      "config_5WSemiLocking": "Teilverriegelung"
+    },
+    "pl": {
+      "config_5WSemiLocking": "Częściowe ryglowanie",
+      "config_5WLocking": "Blokada piątego koła",
+      "config_5WGentleLocking": "Delikatne blokowanie",
+      "config_5WNoLocking": "Blokowanie wyłączone",
+      "config_5WHardLocking": "Twarde blokowanie"
+    },
+    "ru": {
+      "config_5WHardLocking": "Жесткая блокировка",
+      "config_5WGentleLocking": "Бережная блокировка",
+      "config_5WLocking": "Блокировка пятого колеса",
+      "config_5WNoLocking": "Блокировка отключена",
+      "config_5WSemiLocking": "Частичная блокировка"
+    },
+    "nl": {
+      "config_5WHardLocking": "Harde vergrendeling",
+      "config_5WGentleLocking": "Zachte vergrendeling",
+      "config_5WNoLocking": "Vergrendeling uitgeschakeld",
+      "config_5WLocking": "Fifth Wheel vergrendeling",
+      "config_5WSemiLocking": "Gedeeltelijke vergrendeling"
+    },
+    "fr": {
+      "config_5WLocking": "Verrouillage de la cinquième roue",
+      "config_5WHardLocking": "Verrouillage dur",
+      "config_5WSemiLocking": "Verrouillage partiel",
+      "config_5WGentleLocking": "Verrouillage doux",
+      "config_5WNoLocking": "Verrouillage désactivé"
+    }
+  },
+  "modDesc": {
+    "warnings": [],
+    "title": {
+      "en": "Totally valid FS22 Mod"
+    },
+    "description": {
+      "en": "Demonstates how FSModAssit handles a good mod file."
+    },
+    "actions": {},
+    "action_binding": {},
+    "author": "FSModAssit Test",
+    "script_files": false,
+    "store_items": [
+      "Dolly.xml"
+    ],
+    "dependencies": [],
+    "desc_version": 69,
+    "game_version": 22,
+    "icon_file": "modIcon.dds",
+    "icon_data": null,
+    "map_config_filename": null,
+    "multiplayer": true,
+    "version": "1.0.0.0",
+    "l10n_file_prefix": null,
+    "l10n_local": {},
+    "brands": []
+  }
+}

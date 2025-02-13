@@ -3,6 +3,7 @@
 
 /// Possible Detectable Mod Errors
 #[derive(Eq, PartialEq, PartialOrd, Clone, Copy, Debug, Hash, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(test, derive(strum_macros::EnumCount))]
 #[serde(rename_all="SCREAMING_SNAKE_CASE")]
 pub enum ModError {
     /// File is unreadable
@@ -344,6 +345,49 @@ mod tests {
         assert_eq!(
             serde_json::to_string(&errors).unwrap(),
             r#"["ERR_SAVE__MISSING_CAREER","ERR_SAVE__PARSE_CAREER","ERR_SAVE__MISSING_FARMS","ERR_SAVE__PARSE_FARMS","ERR_SAVE__MISSING_PLACEABLE","ERR_SAVE__PARSE_PLACABLE","ERR_SAVE__PARSE_VEHICLE","ERR_SAVE__PARSE_VEHICLE"]"#
+        );
+    }
+
+    #[test]
+    fn mod_errors() {
+        let errors:[ModError; 31] = [
+            ModError::FileErrorUnreadable,
+            ModError::FileErrorGarbageFile,
+            ModError::FileErrorLikelyCopy,
+            ModError::FileErrorLikelySaveGame,
+            ModError::FileErrorLikelyZipPack,
+            ModError::FileErrorNameInvalid,
+            ModError::FileErrorNameStartsDigit,
+            ModError::FileErrorUnreadableZip,
+            ModError::FileErrorUnsupportedArchive,
+            ModError::InfoLikelyPiracy,
+            ModError::InfoMaliciousCode,
+            ModError::InfoDangerousFile,
+            ModError::InfoNoMultiplayerUnzipped,
+            ModError::ModDescDamaged,
+            ModError::ModDescMissing,
+            ModError::ModDescNoModIcon,
+            ModError::ModDescNoModVersion,
+            ModError::ModDescParseError,
+            ModError::ModDescVersionOldOrMissing,
+            ModError::PerformanceFileSpaces,
+            ModError::PerformanceMissingL10n,
+            ModError::PerformanceOversizeDDS,
+            ModError::PerformanceOversizeGDM,
+            ModError::PerformanceOversizeI3D,
+            ModError::PerformanceOversizeSHAPES,
+            ModError::PerformanceOversizeXML,
+            ModError::PerformanceQuantityExtra,
+            ModError::PerformanceQuantityGRLE,
+            ModError::PerformanceQuantityPDF,
+            ModError::PerformanceQuantityPNG,
+            ModError::PerformanceQuantityTXT,
+        ];
+
+        assert_eq!(ModError::COUNT, errors.len());
+        assert_eq!(
+            serde_json::to_string(&errors).unwrap(),
+            r#"["FILE_ERROR_UNREADABLE","FILE_ERROR_GARBAGE_FILE","FILE_ERROR_LIKELY_COPY","FILE_ERROR_LIKELY_SAVE_GAME","FILE_ERROR_LIKELY_ZIP_PACK","FILE_ERROR_NAME_INVALID","FILE_ERROR_NAME_STARTS_DIGIT","FILE_ERROR_UNREADABLE_ZIP","FILE_ERROR_UNSUPPORTED_ARCHIVE","INFO_LIKELY_PIRACY","INFO_MALICIOUS_CODE","INFO_DANGEROUS_FILE","INFO_NO_MULTIPLAYER_UNZIPPED","MOD_DESC_DAMAGED","MOD_DESC_MISSING","MOD_DESC_NO_MOD_ICON","MOD_DESC_NO_MOD_VERSION","MOD_DESC_PARSE_ERROR","MOD_DESC_VERSION_OLD_OR_MISSING","PERFORMANCE_FILE_SPACES","PERFORMANCE_MISSING_L10N","PERFORMANCE_OVERSIZE_DDS","PERFORMANCE_OVERSIZE_GDM","PERFORMANCE_OVERSIZE_I3D","PERFORMANCE_OVERSIZE_SHAPES","PERFORMANCE_OVERSIZE_XML","PERFORMANCE_QUANTITY_EXTRA","PERFORMANCE_OVERSIZE_GRLE","PERFORMANCE_QUANTITY_PDF","PERFORMANCE_QUANTITY_PNG","PERFORMANCE_QUANTITY_TXT"]"#
         );
     }
 }

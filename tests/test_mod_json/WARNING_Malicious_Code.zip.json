@@ -1,0 +1,74 @@
+{
+  "file": {
+    "ageHash": "",
+    "copyName": null,
+    "extraFiles": [],
+    "fileDate": 1728925360,
+    "fileSize": 2898,
+    "fullPath": "./tests/test_mods/WARNING_Malicious_Code.zip",
+    "i3dFiles": [],
+    "imageDDS": [],
+    "imageNonDDS": [],
+    "isFolder": false,
+    "isSaveGame": false,
+    "isModPack": false,
+    "pngTexture": [],
+    "shortName": "WARNING_Malicious_Code",
+    "spaceFiles": [],
+    "tooBigFiles": [],
+    "zipFiles": [],
+    "luaCount": 1
+  },
+  "ident": "",
+  "badgeArray": [
+    "Problem",
+    "PcOnly",
+    "Malware",
+    "Fs22"
+  ],
+  "canNotUse": false,
+  "currentCollection": "",
+  "issues": [
+    "INFO_DANGEROUS_FILE"
+  ],
+  "includeDetail": {},
+  "detailIconsLoaded": false,
+  "includeSaveGame": null,
+  "l10n": {},
+  "modDesc": {
+    "warnings": [],
+    "title": {
+      "en": "Western Tornado Salter",
+      "de": "Western Tornado Salter"
+    },
+    "description": {
+      "en": "Western Tornado Salter",
+      "de": "Western Tornado Salter"
+    },
+    "actions": {},
+    "action_binding": {},
+    "author": "GMYK Emergency Vehicle Outfitters",
+    "script_files": true,
+    "store_items": [
+      "Salter_GMYK_Western_Tornado.xml"
+    ],
+    "dependencies": [],
+    "desc_version": 62,
+    "game_version": 22,
+    "icon_file": "\n        <en>GMYK/store_salter1.5.dds</en>\n    .dds",
+    "icon_data": null,
+    "map_config_filename": null,
+    "multiplayer": true,
+    "version": "1.1",
+    "l10n_file_prefix": null,
+    "l10n_local": {},
+    "brands": [
+      {
+        "name": "WESTERN",
+        "title": "Western",
+        "icon_file": "GMYK/western.dds",
+        "icon_base": null
+      }
+    ]
+  }
+}
