@@ -1,4 +1,5 @@
-use fs_mod_parser::{parse_mod_with_options, ModParserOptions};
+use fs_mod_parser::{ParseOption, ParseOptions};
+use fs_mod_parser::parser::parse_with_options;
 use glob::glob;
 use rayon::prelude::*;
 use std::path::{self, PathBuf};
@@ -9,17 +10,18 @@ use std::time::Instant;
 fn scan_test_items() {
     // rayon::ThreadPoolBuilder::new().num_threads(1).build_global().unwrap();
 
-    let options = ModParserOptions {
-        skip_detail_icons: true,
-        skip_mod_icons: true,
-        include_mod_detail: true,
-        include_save_game: true,
-        ..Default::default()
-    };
+    let options:ParseOptions = vec![
+        ParseOption::IncludeDetail,
+        ParseOption::IncludeMap,
+        ParseOption::IncludeSaveGame,
+        ParseOption::ImageMod,
+        ParseOption::ImageMap,
+    ].into();
 
     let start_time = Instant::now();
 
-    let pattern = "C:\\Users\\jtsag\\Documents\\My Games\\FarmingSimulator2022\\mods\\*\\*";
+    // let pattern = "C:\\Users\\jtsag\\Documents\\My Games\\FarmingSimulator2022\\mods\\*\\*";
+    let pattern = "C:\\Users\\jtsag\\Documents\\My Games\\FarmingSimulator2025\\mods\\*\\*";
 
     let file_list: Vec<PathBuf> = glob(pattern).unwrap().filter_map(Result::ok).collect();
     let counter = file_list.len();
@@ -29,7 +31,7 @@ fn scan_test_items() {
 
         match path::absolute(entry.clone()) {
             Ok(abs_path) => {
-                let _output = parse_mod_with_options(abs_path.as_path(), &options).to_json_pretty();
+                let _output = parse_with_options(abs_path.as_path(), &options);
 
                 println!(
                     "{} in {:.2?}",

@@ -1,20 +1,12 @@
-use fs_mod_parser::{parse_mod_with_options, ModParserOptions};
 use glob::glob;
 use rayon::prelude::*;
 use std::path::{self, PathBuf};
 use std::time::Instant;
+use fs_mod_parser::parser::parse;
 
 #[test]
 #[ignore]
 fn scan_test_items() {
-    let options = ModParserOptions {
-        skip_detail_icons: false,
-        skip_mod_icons: false,
-        include_mod_detail: true,
-        include_save_game: true,
-        ..Default::default()
-    };
-
     let start_time = Instant::now();
 
     let pattern = "./tests/test_mods/**/*";
@@ -27,7 +19,7 @@ fn scan_test_items() {
 
         match path::absolute(entry.clone()) {
             Ok(abs_path) => {
-                let _output = parse_mod_with_options(abs_path.as_path(), &options).to_json_pretty();
+                let _output = parse(abs_path.as_path());
 
                 println!(
                     "{} in {:.2?}",
