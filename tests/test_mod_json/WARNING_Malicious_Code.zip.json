@@ -38,8 +38,8 @@
   "modDesc": {
     "warnings": [],
     "title": {
-      "en": "Western Tornado Salter",
-      "de": "Western Tornado Salter"
+      "de": "Western Tornado Salter",
+      "en": "Western Tornado Salter"
     },
     "description": {
       "en": "Western Tornado Salter",
@@ -67,7 +67,8 @@
         "name": "WESTERN",
         "title": "Western",
         "icon_file": "GMYK/western.dds",
-        "icon_base": null
+        "icon_base": null,
+        "icon_data": null
       }
     ]
   }

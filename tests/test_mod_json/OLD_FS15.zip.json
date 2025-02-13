@@ -33,26 +33,26 @@
   "includeSaveGame": null,
   "l10n": {
     "en": {
+      "AutoLoadWood_right": "right side",
+      "AUTOLOADWOOD_TOGGLE_SIDE": "autoload Wood side",
+      "AutoLoadWood_OFF": "stop autoload",
+      "AUTOLOADWOOD_TOGGLE_UNLOAD": "autoload Wood unload",
+      "AutoLoadWood_unload": "start unload",
       "AutoLoadWood_ON": "start autoload",
       "AUTOLOADWOOD_TOGGLE_AUTO": "autoload Wood toggle",
-      "AUTOLOADWOOD_TOGGLE_UNLOAD": "autoload Wood unload",
-      "AutoLoadWood_right": "right side",
       "AutoLoadWood_stopUnload": "stop unload",
-      "AutoLoadWood_unload": "start unload",
-      "AutoLoadWood_OFF": "stop autoload",
-      "AutoLoadWood_left": "left side",
-      "AUTOLOADWOOD_TOGGLE_SIDE": "autoload Wood side"
+      "AutoLoadWood_left": "left side"
     },
     "de": {
-      "AutoLoadWood_unload": "Start Abladen",
-      "AutoLoadWood_ON": "Start Aufladen",
-      "AutoLoadWood_OFF": "Stop Aufladen",
-      "AutoLoadWood_stopUnload": "Stop Abladen",
-      "AutoLoadWood_left": "Linke Seite",
-      "AUTOLOADWOOD_TOGGLE_SIDE": "Holz Seite",
-      "AutoLoadWood_right": "Rechte Seite",
       "AUTOLOADWOOD_TOGGLE_AUTO": "Autoload Ein Aus",
-      "AUTOLOADWOOD_TOGGLE_UNLOAD": "Holz abladen"
+      "AUTOLOADWOOD_TOGGLE_UNLOAD": "Holz abladen",
+      "AutoLoadWood_left": "Linke Seite",
+      "AutoLoadWood_unload": "Start Abladen",
+      "AutoLoadWood_OFF": "Stop Aufladen",
+      "AutoLoadWood_right": "Rechte Seite",
+      "AutoLoadWood_ON": "Start Aufladen",
+      "AUTOLOADWOOD_TOGGLE_SIDE": "Holz Seite",
+      "AutoLoadWood_stopUnload": "Stop Abladen"
     }
   },
   "modDesc": {
@@ -62,8 +62,8 @@
       "en": "Fliegl Timber Runner AL"
     },
     "description": {
-      "en": "Fliegl Timber Runner AL",
-      "de": "Fliegl Timber Runner AL"
+      "de": "Fliegl Timber Runner AL",
+      "en": "Fliegl Timber Runner AL"
     },
     "actions": {},
     "action_binding": {},

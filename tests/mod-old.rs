@@ -11,6 +11,7 @@ fn populate_icons() {
     common::populate_icon_result_file("OLD_FS13.zip");
     common::populate_icon_result_file("OLD_FS15.zip");
     common::populate_icon_result_file("OLD_FS17.zip");
+    common::populate_icon_result_file("OLD_FS19.zip");
 }
 
 #[test]
@@ -26,4 +27,14 @@ fn fs13() {
 #[test]
 fn fs15() {
     common::icon_record_from_file("OLD_FS15.zip", false);
+}
+
+#[test]
+fn fs17() {
+    common::icon_record_from_file("OLD_FS17.zip", false);
+}
+
+#[test]
+fn fs19() {
+    common::icon_record_from_file("OLD_FS19.zip", false);
 }

@@ -302,90 +302,90 @@
   "canNotUse": false,
   "currentCollection": "",
   "issues": [
-    "PERFORMANCE_OVERSIZE_GRLE",
-    "PERFORMANCE_QUANTITY_TXT",
-    "PERFORMANCE_FILE_SPACES",
-    "PERFORMANCE_OVERSIZE_GDM",
+    "PERFORMANCE_OVERSIZE_SHAPES",
+    "PERFORMANCE_OVERSIZE_XML",
     "PERFORMANCE_QUANTITY_PNG",
     "PERFORMANCE_OVERSIZE_I3D",
-    "PERFORMANCE_QUANTITY_PDF",
     "PERFORMANCE_OVERSIZE_DDS",
-    "PERFORMANCE_OVERSIZE_XML",
-    "PERFORMANCE_OVERSIZE_SHAPES"
+    "PERFORMANCE_FILE_SPACES",
+    "PERFORMANCE_QUANTITY_PDF",
+    "PERFORMANCE_OVERSIZE_GDM",
+    "PERFORMANCE_QUANTITY_TXT",
+    "PERFORMANCE_OVERSIZE_GRLE"
   ],
   "includeDetail": {},
   "detailIconsLoaded": false,
   "includeSaveGame": null,
   "l10n": {
+    "ru": {
+      "config_5WGentleLocking": "Бережная блокировка",
+      "config_5WLocking": "Блокировка пятого колеса",
+      "config_5WNoLocking": "Блокировка отключена",
+      "config_5WHardLocking": "Жесткая блокировка",
+      "config_5WSemiLocking": "Частичная блокировка"
+    },
     "de": {
-      "config_5WHardLocking": "Harte Verriegelung",
       "config_5WGentleLocking": "Schonendes Verriegeln",
-      "config_5WSemiLocking": "Teilverriegelung",
+      "config_5WHardLocking": "Harte Verriegelung",
       "config_5WNoLocking": "Sperre deaktiviert",
+      "config_5WSemiLocking": "Teilverriegelung",
       "config_5WLocking": "Sattelkupplung Verriegeln"
+    },
+    "pt": {
+      "config_5WLocking": "Travamento da quinta roda",
+      "config_5WHardLocking": "Travamento rígido",
+      "config_5WGentleLocking": "Travamento suave",
+      "config_5WNoLocking": "Bloqueio desativado",
+      "config_5WSemiLocking": "Bloqueio parcial"
+    },
+    "cz": {
+      "config_5WHardLocking": "Pevné zamykání",
+      "config_5WGentleLocking": "Jemné zamykání",
+      "config_5WNoLocking": "Zamykání deaktivováno",
+      "config_5WSemiLocking": "Částečné zajištění",
+      "config_5WLocking": "Uzamčení točnice"
     },
     "en": {
       "config_5WHardLocking": "Hard Locking",
       "config_5WLocking": "5th Wheel Locking",
-      "config_5WNoLocking": "Locking disabled",
+      "config_5WSemiLocking": "Partial locking",
       "config_5WGentleLocking": "Gentle locking",
-      "config_5WSemiLocking": "Partial locking"
-    },
-    "pt": {
-      "config_5WLocking": "Travamento da quinta roda",
-      "config_5WSemiLocking": "Bloqueio parcial",
-      "config_5WGentleLocking": "Travamento suave",
-      "config_5WNoLocking": "Bloqueio desativado",
-      "config_5WHardLocking": "Travamento rígido"
-    },
-    "it": {
-      "config_5WLocking": "Quinta ruota di bloccaggio",
-      "config_5WNoLocking": "Blocco disabilitato",
-      "config_5WGentleLocking": "Chiusura delicata",
-      "config_5WSemiLocking": "Chiusura parziale",
-      "config_5WHardLocking": "Blocco duro"
-    },
-    "es": {
-      "config_5WGentleLocking": "Bloqueo suave",
-      "config_5WNoLocking": "Bloqueo desactivado",
-      "config_5WSemiLocking": "Bloqueo parcial",
-      "config_5WLocking": "Bloqueo de quinta rueda",
-      "config_5WHardLocking": "Bloqueo duro"
-    },
-    "ru": {
-      "config_5WHardLocking": "Жесткая блокировка",
-      "config_5WSemiLocking": "Частичная блокировка",
-      "config_5WNoLocking": "Блокировка отключена",
-      "config_5WLocking": "Блокировка пятого колеса",
-      "config_5WGentleLocking": "Бережная блокировка"
-    },
-    "nl": {
-      "config_5WHardLocking": "Harde vergrendeling",
-      "config_5WGentleLocking": "Zachte vergrendeling",
-      "config_5WSemiLocking": "Gedeeltelijke vergrendeling",
-      "config_5WNoLocking": "Vergrendeling uitgeschakeld",
-      "config_5WLocking": "Fifth Wheel vergrendeling"
+      "config_5WNoLocking": "Locking disabled"
     },
     "fr": {
-      "config_5WHardLocking": "Verrouillage dur",
-      "config_5WNoLocking": "Verrouillage désactivé",
-      "config_5WGentleLocking": "Verrouillage doux",
       "config_5WSemiLocking": "Verrouillage partiel",
-      "config_5WLocking": "Verrouillage de la cinquième roue"
+      "config_5WGentleLocking": "Verrouillage doux",
+      "config_5WHardLocking": "Verrouillage dur",
+      "config_5WLocking": "Verrouillage de la cinquième roue",
+      "config_5WNoLocking": "Verrouillage désactivé"
+    },
+    "it": {
+      "config_5WGentleLocking": "Chiusura delicata",
+      "config_5WHardLocking": "Blocco duro",
+      "config_5WLocking": "Quinta ruota di bloccaggio",
+      "config_5WNoLocking": "Blocco disabilitato",
+      "config_5WSemiLocking": "Chiusura parziale"
+    },
+    "es": {
+      "config_5WLocking": "Bloqueo de quinta rueda",
+      "config_5WNoLocking": "Bloqueo desactivado",
+      "config_5WHardLocking": "Bloqueo duro",
+      "config_5WSemiLocking": "Bloqueo parcial",
+      "config_5WGentleLocking": "Bloqueo suave"
+    },
+    "nl": {
+      "config_5WGentleLocking": "Zachte vergrendeling",
+      "config_5WSemiLocking": "Gedeeltelijke vergrendeling",
+      "config_5WLocking": "Fifth Wheel vergrendeling",
+      "config_5WNoLocking": "Vergrendeling uitgeschakeld",
+      "config_5WHardLocking": "Harde vergrendeling"
     },
     "pl": {
-      "config_5WLocking": "Blokada piątego koła",
+      "config_5WHardLocking": "Twarde blokowanie",
+      "config_5WNoLocking": "Blokowanie wyłączone",
       "config_5WGentleLocking": "Delikatne blokowanie",
       "config_5WSemiLocking": "Częściowe ryglowanie",
-      "config_5WNoLocking": "Blokowanie wyłączone",
-      "config_5WHardLocking": "Twarde blokowanie"
-    },
-    "cz": {
-      "config_5WHardLocking": "Pevné zamykání",
-      "config_5WSemiLocking": "Částečné zajištění",
-      "config_5WLocking": "Uzamčení točnice",
-      "config_5WGentleLocking": "Jemné zamykání",
-      "config_5WNoLocking": "Zamykání deaktivováno"
+      "config_5WLocking": "Blokada piątego koła"
     }
   },
   "modDesc": {
