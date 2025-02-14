@@ -12,6 +12,7 @@ fn populate_warnings() {
     common::populate_result_file("WARNING_Malicious_Code.zip");
     common::populate_result_file("WARNING_No_Version.zip");
     common::populate_result_file("PASS_Invalid_XML.zip");
+    common::populate_result_file("WARNING_L10n.zip");
 }
 
 #[test]
@@ -33,6 +34,11 @@ fn malicious_lua() {
 #[test]
 fn missing_version() {
     common::record_from_file("WARNING_No_Version.zip", false);
+}
+
+#[test]
+fn missing_l10n() {
+    common::record_from_file("WARNING_L10n.zip", false);
 }
 
 #[test]

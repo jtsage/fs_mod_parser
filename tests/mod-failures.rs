@@ -19,6 +19,9 @@ fn populate_failures() {
     common::populate_result_file("FAILURE_Invalid_Folder");
     common::populate_result_file("FAILURE_Invalid_ModDesc");
     common::populate_result_file("VARIANT_Mod_Pack.zip");
+    common::populate_result_file("VARIANT_Mod_Pack_unzip.zip");
+    common::populate_result_file("FAILURE_Unsupported.rar");
+    common::populate_result_file("FAILURE_Unsupported.7z");
 }
 
 #[test]
@@ -78,5 +81,14 @@ fn invalid_folder() {
 
 #[test]
 fn mod_pack() {
+    // detected from content
     common::record_from_file("VARIANT_Mod_Pack.zip", false);
+    // guessed from name (although it isn't really)
+    common::record_from_file("VARIANT_Mod_Pack_unzip.zip", false);
+}
+
+#[test]
+fn invalid_archive() {
+    common::record_from_file("FAILURE_Unsupported.rar", false);
+    common::record_from_file("FAILURE_Unsupported.7z", false);
 }

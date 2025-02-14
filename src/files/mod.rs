@@ -24,6 +24,8 @@ pub mod savegame;
 pub mod store_item;
 /// extra l10n process
 pub mod l10n;
+/// maps
+pub mod map22;
 
 
 /// Abstract file implementation
