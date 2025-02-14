@@ -1,12 +1,14 @@
+use std::fmt;
+use quick_xml::events::BytesStart;
 use crate::errors::AbstractFileError;
 use crate::files::{XMLReader, XMLReaderDepth};
 
-use quick_xml::events::BytesStart;
-
+/// Environment (weather)
+pub mod environment;
 
 /// Map Definition
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize, Default)]
-pub struct Map22 {
+pub struct Config {
     /// overview image data
     pub image_data : Option<String>,
     /// overview image filename
@@ -31,10 +33,10 @@ pub struct Map22 {
     pub growth_base: Option<String>,
 }
 
-impl XMLReader<Self> for Map22 {
+impl XMLReader<Self> for Config {
     /// Load the modDesc.xml from an already decoded string
     fn from_string(xml_text: &str) -> Result<Self, AbstractFileError> {
-        Self::default().read_xml(xml_text).cloned()
+        Self::new().read_xml(xml_text).cloned()
     }
 
     fn tags_paired(&mut self, e: &BytesStart, depth : i32, _reader: &mut quick_xml::Reader<&[u8]>) -> XMLReaderDepth {
@@ -73,8 +75,7 @@ impl XMLReader<Self> for Map22 {
     }
 }
 
-
-impl Map22 {
+impl Config {
     /// Make new map record
     fn new() -> Self {
         Self {
@@ -98,18 +99,139 @@ impl Map22 {
     }
 }
 
+/// Period mask
+/// 
+/// Used specifically to store month-based period data
+/// notes:
+/// - the bit order is intentionally reversed so that `0b0000_0000_0001` is period #12
+/// - periods are 1-based, as in the FS xml
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, serde::Serialize, serde::Deserialize)]
+#[serde(into="Vec<u8>", from="Vec<u8>")]
+pub struct PeriodMask(u16);
+
+impl PeriodMask {
+    /// Set a bit (1-based, chainable)
+    #[inline]
+    pub fn set(&mut self, n:u8) -> &mut Self {
+        self.0 |= 1 << (12-n);
+        self
+    }
+    /// get a bit (1-based)
+    #[must_use]
+    #[inline]
+    pub fn get(&self, n:u8) -> bool {
+        self.0 & (1 << (n-1)) != 0
+    }
+}
+
+impl fmt::Debug for PeriodMask {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "PeriodMask({:#014b})", self.0)
+    }
+}
+impl From<PeriodMask> for Vec<bool> {
+    fn from(value: PeriodMask) -> Self {
+        (1..=12).rev().map(|y| value.get(y)).collect()
+    }
+}
+impl From<PeriodMask> for Vec<u8> {
+    fn from(value: PeriodMask) -> Self {
+        #[expect(clippy::cast_possible_truncation)]
+        (1..=12).rev()
+            .map(|y| value.get(y))
+            .enumerate()
+            .filter(|&v| v.1)
+            .map(|v| (v.0 + 1) as u8)
+            .collect()
+    }
+}
+impl From<Vec<u8>> for PeriodMask {
+    fn from(value: Vec<u8>) -> Self {
+        let mut period = Self::default();
+        for i in value { period.set(i); }
+        period
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::files::AbstractFile;
+    use pretty_assertions::assert_eq;
 
-    #[test]
-    fn working() {
-        let mut file = AbstractFile::new("./tests/test_mods/MAP_NoCustoms");
-
-        let map = Map22::from_abstract_file(&mut file, "maps/map.xml");
-
-        println!("{map:?}")
+    fn xml_test(str: &str) -> String {
+        format!("<?xml version=\"1.0\" ?>\n{str}")
     }
 
+    #[test]
+    fn wrong_type() {
+        let xml = xml_test(r#"
+            <garbage>
+                <storeData><image>$data/path/to/data/file.png</image></storeData>
+            </garbage>"#);
+        let actual = Config::from_string(xml.as_ref());
+        assert_eq!(actual.unwrap_err(), AbstractFileError::XmlWrongFileType);
+    }
+
+    #[test]
+    fn base_game_all() {
+        let xml = xml_test(r#"
+            <map imageFilename="maps/overview.png">
+                <environment filename="$data/maps/mapAlpine/environment.xml" />
+                <growth filename="$data/maps/mapFR/maps_fruitTypes.xml" />
+                <fruitTypes filename="$data/maps/mapUS/maps_fruitTypes.xml" />
+            </map>
+        "#);
+
+        let actual = Config::from_string(&xml).unwrap();
+        
+        assert_eq!(actual.image_file, Some(String::from("maps/overview.dds")));
+        assert_eq!(actual.environment_base, Some(String::from("mapAlpine")));
+        assert_eq!(actual.growth_base, Some(String::from("mapFR")));
+        assert_eq!(actual.fruit_types_base, Some(String::from("mapUS")));
+        assert_eq!(actual.environment_file, None);
+        assert_eq!(actual.growth_file, None);
+        assert_eq!(actual.fruit_types_file, None);
+    }
+
+    #[test]
+    fn custom_all() {
+        let xml = xml_test(r#"
+            <map imageFilename="maps/overview.png">
+                <environment filename="map/environment.xml" />
+                <growth filename="map/maps_fruitTypes.xml" />
+                <fruitTypes filename="map/maps_fruitTypes.xml" />
+            </map>
+        "#);
+
+        let actual = Config::from_string(&xml).unwrap();
+        
+        assert_eq!(actual.image_file, Some(String::from("maps/overview.dds")));
+        assert_eq!(actual.environment_file, Some(String::from("map/environment.xml")));
+        assert_eq!(actual.growth_file, Some(String::from("map/maps_fruitTypes.xml")));
+        assert_eq!(actual.fruit_types_file, Some(String::from("map/maps_fruitTypes.xml")));
+        assert_eq!(actual.environment_base, None);
+        assert_eq!(actual.growth_base, None);
+        assert_eq!(actual.fruit_types_base, None);
+    }
+
+
+    #[test]
+    fn bit_mask() {
+        let mut bits = PeriodMask::default();
+
+        bits.set(4).set(12);
+
+        assert_eq!(bits.0, 0b0001_0000_0001);
+        
+        let bools:Vec<bool> = bits.into();
+        let months:Vec<u8> = bits.into();
+
+        assert_eq!(bools, vec![false, false, false, true, false, false, false, false, false, false, false, true]);
+        assert_eq!(months, vec![4,12]);
+
+        assert_eq!(&format!("{bits:?}"), "PeriodMask(0b000100000001)");
+        assert_eq!(serde_json::to_string(&bits).unwrap(), String::from("[4,12]"));
+        let re_read:PeriodMask = serde_json::from_str("[4,12]").unwrap();
+        assert_eq!(re_read, bits);
+    }
 }
