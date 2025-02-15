@@ -153,6 +153,7 @@ pub struct ModIdent {
 
 impl Record {
     /// make a new record
+    #[inline]
     fn new(mod_ident: ModIdent) -> Self {
         Self {
             ident : mod_ident.ident,
@@ -651,6 +652,7 @@ pub const DEFAULT_HASH:&str = "ERR-HASH-NOT-COMPUTED--";
 
 impl FileInfo {
     /// Create a new fileinfo (from abs path)
+    #[inline]
     fn new<P: AsRef<Path>>(filename : P, age_hash : String) -> Self {
         Self {
             full_path  : filename.as_ref().to_string_lossy().to_string(),
@@ -662,11 +664,13 @@ impl FileInfo {
     }
 
     /// Get a hash from a filename
+    #[inline]
     pub fn make_hash<P: AsRef<Path>>(filename : P) -> String {
         Self::hash_from_file(filename).unwrap_or_else(|_| DEFAULT_HASH.to_owned())
     }
 
     /// compute hash from filename
+    #[inline]
     fn hash_from_file<P: AsRef<Path>>(filename : P) -> Result<String, std::io::Error>{
         let Some(name) = filename.as_ref().file_name() else { return Ok(DEFAULT_HASH.to_owned()) };
         let stats = std::fs::metadata(&filename)?;

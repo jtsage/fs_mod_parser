@@ -130,6 +130,7 @@ impl XMLReader<Self> for Config {
 
 impl Config {
     /// Make new map record
+    #[inline]
     fn new() -> Self {
         Self {
             fruit_types_base: Some(String::from("mapUS")),

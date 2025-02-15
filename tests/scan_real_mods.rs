@@ -14,14 +14,15 @@ fn scan_test_items() {
         ParseOption::IncludeDetail,
         ParseOption::IncludeMap,
         ParseOption::IncludeSaveGame,
-        ParseOption::ImageMod,
-        ParseOption::ImageMap,
+        // ParseOption::ImageMod,
+        // ParseOption::ImageMap,
+        // ParseOption::ImageDetail,
     ].into();
 
     let start_time = Instant::now();
 
-    // let pattern = "C:\\Users\\jtsag\\Documents\\My Games\\FarmingSimulator2022\\mods\\*\\*";
-    let pattern = "C:\\Users\\jtsag\\Documents\\My Games\\FarmingSimulator2025\\mods\\*\\*";
+    let pattern = "C:\\Users\\jtsag\\Documents\\My Games\\FarmingSimulator2022\\mods\\*\\*";
+    // let pattern = "C:\\Users\\jtsag\\Documents\\My Games\\FarmingSimulator2025\\mods\\*\\*";
 
     let file_list: Vec<PathBuf> = glob(pattern).unwrap().filter_map(Result::ok).collect();
     let counter = file_list.len();

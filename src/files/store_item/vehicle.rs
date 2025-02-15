@@ -516,6 +516,7 @@ struct MotorBuild {
 
 impl MotorBuild {
     /// Create a new motor builder
+    #[inline]
     fn new() -> Self {
         Self {
             rpm : 1800_f32,

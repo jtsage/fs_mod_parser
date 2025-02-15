@@ -21,6 +21,7 @@ pub struct Mod {
 }
 
 /// Order the farm set
+#[inline]
 fn ordered_set<S: Serializer, K: Ord + Serialize>(value: &HashSet<K>, serializer: S) -> Result<S::Ok, S::Error> {
     let mut ordered: Vec<_> = value.iter().collect();
     ordered.sort();

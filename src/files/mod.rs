@@ -115,6 +115,7 @@ impl AbstractFile {
     }
 
     /// List files in a folder
+    #[inline]
     fn list_folder(path: &PathBuf) -> FileDefinitions {
         let mut files: Vec<FileDefinition> = vec![];
         let mut name_index: Vec<String> = vec![];
@@ -143,6 +144,7 @@ impl AbstractFile {
     }
 
     /// List files in a zip
+    #[inline]
     fn list_zip(archive : &mut zip::ZipArchive<File>) -> FileDefinitions {
         let mut files: Vec<FileDefinition> = vec![];
         let mut size = 0;
