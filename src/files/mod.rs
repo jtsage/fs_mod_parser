@@ -16,8 +16,6 @@ use std::io::Cursor;
 use webp::Encoder;
 use base64ct::{Base64, Encoding};
 
-use std::time::{Duration, SystemTime};
-
 
 /// modDesc.xml processing
 pub mod mod_desc;
