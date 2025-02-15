@@ -7,7 +7,7 @@ use crate::errors::AbstractFileError;
 use glob::glob;
 use quick_xml::{events::{BytesStart, Event}, Reader};
 use std::{
-    fs::{self, File}, io::Read, path::{self, Path, PathBuf}
+    fmt, ops::BitOrAssign, fs::{self, File}, io::Read, path::{self, Path, PathBuf}
 };
 
 use image::{imageops::FilterType, DynamicImage};
@@ -15,6 +15,9 @@ use image_dds::ddsfile;
 use std::io::Cursor;
 use webp::Encoder;
 use base64ct::{Base64, Encoding};
+
+use std::time::{Duration, SystemTime};
+
 
 /// modDesc.xml processing
 pub mod mod_desc;
@@ -244,6 +247,7 @@ impl AbstractFile {
     pub fn map_image<S: AsRef<str>>(&mut self, needle : S) -> Option<String> {
         let input_file = self.bin(needle).ok()?;
         let input_vector = Cursor::new(input_file);
+
         let dds = ddsfile::Dds::read(input_vector).ok()?;
         let original_image = image_dds::image_from_dds(&dds, 0).ok()?;
         let mut unscaled_image = DynamicImage::ImageRgba8(original_image);
@@ -257,6 +261,7 @@ impl AbstractFile {
 
         let encoder = Encoder::from_image(&cropped_image).ok()?;
         let webp = encoder.encode(75_f32);
+
         let b64 = Base64::encode_string(webp.as_ref());
 
         Some(format!("data:image/webp;base64, {b64}"))
@@ -448,6 +453,68 @@ pub trait XMLReader<T> {
 
 
 
+/// Period mask
+/// 
+/// Used specifically to store month-based period data
+/// notes:
+/// - the bit order is intentionally reversed so that `0b0000_0000_0001` is period #12
+/// - periods are 1-based, as in the FS xml
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, serde::Serialize, serde::Deserialize)]
+#[serde(into="Vec<usize>", from="Vec<usize>")]
+pub struct PeriodMask(u16);
+
+impl PeriodMask {
+    /// Set a bit (1-based, chainable)
+    #[inline]
+    pub fn set(&mut self, n:usize) -> &mut Self {
+        self.0 |= 1 << (12-n);
+        self
+    }
+    /// get a bit (1-based)
+    #[must_use]
+    #[inline]
+    pub fn get(&self, n:usize) -> bool {
+        self.0 & (1 << (n-1)) != 0
+    }
+}
+
+impl BitOrAssign for PeriodMask {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.0 |= rhs.0;
+    }
+}
+
+impl fmt::Debug for PeriodMask {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "PeriodMask({:#014b})", self.0)
+    }
+}
+impl From<PeriodMask> for Vec<bool> {
+    fn from(value: PeriodMask) -> Self {
+        (1..=12).rev().map(|y| value.get(y)).collect()
+    }
+}
+impl From<PeriodMask> for Vec<usize> {
+    fn from(value: PeriodMask) -> Self {
+        (1..=12).rev()
+            .map(|y| value.get(y))
+            .enumerate()
+            .filter(|&v| v.1)
+            .map(|v| (v.0 + 1))
+            .collect()
+    }
+}
+impl From<Vec<usize>> for PeriodMask {
+    fn from(value: Vec<usize>) -> Self {
+        let mut period = Self::default();
+        for i in value { period.set(i); }
+        period
+    }
+}
+
+
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -517,5 +584,26 @@ mod tests {
         assert!(mod_desc_text.len() > 1000);
 
         assert_eq!(file_handle.bin("modDesc.bad"), Err(AbstractFileError::FileNotFound));
+    }
+
+    
+    #[test]
+    fn bit_mask() {
+        let mut bits = PeriodMask::default();
+
+        bits.set(4).set(12);
+
+        assert_eq!(bits.0, 0b0001_0000_0001);
+        
+        let bools:Vec<bool> = bits.into();
+        let months:Vec<usize> = bits.into();
+
+        assert_eq!(bools, vec![false, false, false, true, false, false, false, false, false, false, false, true]);
+        assert_eq!(months, vec![4,12]);
+
+        assert_eq!(&format!("{bits:?}"), "PeriodMask(0b000100000001)");
+        assert_eq!(serde_json::to_string(&bits).unwrap(), String::from("[4,12]"));
+        let re_read:PeriodMask = serde_json::from_str("[4,12]").unwrap();
+        assert_eq!(re_read, bits);
     }
 }

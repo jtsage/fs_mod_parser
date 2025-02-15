@@ -1,12 +1,65 @@
-use std::fmt;
 use quick_xml::events::BytesStart;
 use crate::errors::AbstractFileError;
-use crate::files::{XMLReader, XMLReaderDepth};
+use crate::files::{XMLReader, XMLReaderDepth, AbstractFile};
 
 /// Environment (weather)
 pub mod environment;
+/// Fruit types
+pub mod fruit_types;
+/// Growth file
+pub mod growth;
+/// Crop records
+pub mod crops;
+
 
 /// Map Definition
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, Default)]
+pub struct Map22 {
+    /// config data
+    pub config : Config,
+    /// crop data
+    pub crops : crops::Crops,
+    /// weather data
+    pub environment : environment::Weather,
+}
+
+impl Map22 {
+    /// Get map definition from mod file
+    pub fn from_abstract_file<S: AsRef<str>>(mod_file : &mut AbstractFile, needle : S) -> Option<Self> {
+        let mut record = Self {
+            config: Config::from_abstract_file(mod_file, needle).ok()?,
+            ..Default::default()
+        };
+
+        if let Some(base_weather) = &record.config.environment_base {
+            record.environment = environment::Weather::from_base(base_weather);
+        } else if let Some(local_weather) = &record.config.environment_file {
+            record.environment = environment::Weather::from_abstract_file(mod_file, local_weather).ok()?;
+        }
+
+        if record.config.growth_base.is_some() {
+            record.crops = crops::Crops::from_base();
+        } else {
+            let fruits = if let Some(fruit_file) = &record.config.fruit_types_file {
+                fruit_types::FruitTypes::from_abstract_file(mod_file, fruit_file).ok()?
+            } else {
+                fruit_types::FruitTypes::from_base()
+            };
+
+            if let Some(growth_file) = &record.config.growth_file {
+                let growth = growth::Growth::from_abstract_file(mod_file, growth_file).ok()?;
+
+                record.crops = crops::Crops::from_files(&fruits, &growth);
+            } else {
+                return None
+            };
+        }
+
+        Some(record)
+    }
+}
+
+/// Map config
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize, Default)]
 pub struct Config {
     /// overview image data
@@ -99,59 +152,6 @@ impl Config {
     }
 }
 
-/// Period mask
-/// 
-/// Used specifically to store month-based period data
-/// notes:
-/// - the bit order is intentionally reversed so that `0b0000_0000_0001` is period #12
-/// - periods are 1-based, as in the FS xml
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, serde::Serialize, serde::Deserialize)]
-#[serde(into="Vec<u8>", from="Vec<u8>")]
-pub struct PeriodMask(u16);
-
-impl PeriodMask {
-    /// Set a bit (1-based, chainable)
-    #[inline]
-    pub fn set(&mut self, n:u8) -> &mut Self {
-        self.0 |= 1 << (12-n);
-        self
-    }
-    /// get a bit (1-based)
-    #[must_use]
-    #[inline]
-    pub fn get(&self, n:u8) -> bool {
-        self.0 & (1 << (n-1)) != 0
-    }
-}
-
-impl fmt::Debug for PeriodMask {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "PeriodMask({:#014b})", self.0)
-    }
-}
-impl From<PeriodMask> for Vec<bool> {
-    fn from(value: PeriodMask) -> Self {
-        (1..=12).rev().map(|y| value.get(y)).collect()
-    }
-}
-impl From<PeriodMask> for Vec<u8> {
-    fn from(value: PeriodMask) -> Self {
-        #[expect(clippy::cast_possible_truncation)]
-        (1..=12).rev()
-            .map(|y| value.get(y))
-            .enumerate()
-            .filter(|&v| v.1)
-            .map(|v| (v.0 + 1) as u8)
-            .collect()
-    }
-}
-impl From<Vec<u8>> for PeriodMask {
-    fn from(value: Vec<u8>) -> Self {
-        let mut period = Self::default();
-        for i in value { period.set(i); }
-        period
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -212,26 +212,5 @@ mod tests {
         assert_eq!(actual.environment_base, None);
         assert_eq!(actual.growth_base, None);
         assert_eq!(actual.fruit_types_base, None);
-    }
-
-
-    #[test]
-    fn bit_mask() {
-        let mut bits = PeriodMask::default();
-
-        bits.set(4).set(12);
-
-        assert_eq!(bits.0, 0b0001_0000_0001);
-        
-        let bools:Vec<bool> = bits.into();
-        let months:Vec<u8> = bits.into();
-
-        assert_eq!(bools, vec![false, false, false, true, false, false, false, false, false, false, false, true]);
-        assert_eq!(months, vec![4,12]);
-
-        assert_eq!(&format!("{bits:?}"), "PeriodMask(0b000100000001)");
-        assert_eq!(serde_json::to_string(&bits).unwrap(), String::from("[4,12]"));
-        let re_read:PeriodMask = serde_json::from_str("[4,12]").unwrap();
-        assert_eq!(re_read, bits);
     }
 }

@@ -135,7 +135,7 @@ mod tests {
     }
 
     #[test]
-    fn from_file_prod_deep() {
+    fn from_file() {
         let filename = "tests/test_mods/MAP_CustomGrowthAndEnvironment.zip";
         let item = "map/xml/environment.xml";
         let dump = false;

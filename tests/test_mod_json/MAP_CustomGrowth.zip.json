@@ -1,0 +1,356 @@
+{
+  "file": {
+    "ageHash": "",
+    "copyName": null,
+    "extraFiles": [],
+    "fileDate": 1729532339,
+    "fileSize": 16850894,
+    "fullPath": "./tests/test_mods/MAP_CustomGrowth.zip",
+    "i3dFiles": [],
+    "imageDDS": [
+      "icon.dds",
+      "maps/overview.dds"
+    ],
+    "imageNonDDS": [],
+    "isFolder": false,
+    "isSaveGame": false,
+    "isModPack": false,
+    "pngTexture": [],
+    "shortName": "MAP_CustomGrowth",
+    "spaceFiles": [],
+    "tooBigFiles": [
+      "maps/overview.dds"
+    ],
+    "zipFiles": [],
+    "luaCount": 0
+  },
+  "ident": "",
+  "badgeArray": [
+    "Performance",
+    "Map",
+    "Fs22"
+  ],
+  "canNotUse": false,
+  "currentCollection": "",
+  "issues": [
+    "PERFORMANCE_OVERSIZE_DDS"
+  ],
+  "includeDetail": {},
+  "detailIconsLoaded": false,
+  "includeSaveGame": null,
+  "l10n": {},
+  "modDesc": {
+    "warnings": [],
+    "title": {
+      "en": "Dunalka"
+    },
+    "description": {
+      "fr": "Bienvenue à Dunalka ! Une carte de 4 km sur 4 avec de nombreuses terres agricoles et des champs.\n-Un total de 100 jouets cachés sur la carte et prêts à être collectés.\n-Cent et un champs qui attendent que vous les travailliez.\n-Il y a trois grandes forêts et de nombreuses petites zones où poussent des arbres.\n-10 points de vente et possibilité de vendre tout ce que vous produisez.\n-Ajout d'angles de terrain supplémentaires.\n-Il est possible d'utiliser les étangs et les rivières pour se réapprovisionner en eau.\n\nChangelog 1.1.0.0\n\n-Amélioration de la navigation des travailleurs AI.\n-Ajout de la circulation.\n-Correction des buissons qui poussaient sur les routes.\n-Suppression de l'herbe dans les zones de production.\n-Quelques ajustements aux terres agricoles achetables.\n-Ajout d'une carte des sols personnalisée pour l'agriculture de précision.\n-Ajout de textures supplémentaires à l'outil de peinture en mode aménagement paysager.\n-Ajout d'un calendrier des cultures personnalisé.\n-Extension des terres agricoles ovées en mode facile et moyen.\n-Certains points de production achètent désormais aussi des terres agricoles.\n\nJournal des modifications 1.1.0.1 (Mise à jour fournie par la Team ModHub):\n- Version du modDesc augmentée\n- Correction des shaders de terrain",
+      "en": "Welcome to Dunalka! A 4 by 4 Km map with plently of farmlands and fields.\n-A total of 100 toys hidden across the map and ready to be collected.\n-A hundred and one field waiting for You to work on them.\n-There are three larger forests and many smaller areas with trees growing.\n-10 sell points and possibility to sell anything You produce.\n-Added extra terrain angles.\n-It is possible to use ponds and river to refill water.\n\nChangelog 1.1.0.0\n\n-Improved AI worker navigation.\n-Added traffic.\n-Fixed bushes that were growing out on roads.\n-Removed grass from production point areas.\n-Some adjustments to buyable farmlands.\n-Custom soilmap added for Precision Farming.\n-Added more textures to painting tool in lanscaping mode.\n-Added custom crop calendar.\n-Expanded ovned farmlands on easy and medium modes.\n-Some production points now also buys farmland.\n\nChangelog 1.1.0.1 (Update provided by ModHub Team):\n- Increased modDesc version\n- Fixed terrainShader",
+      "de": "Willkommen in Dunalka! Eine 4 x 4 km große Karte mit vielen Feldern und Äckern.\n-Insgesamt 100 Spielzeuge sind auf der Karte versteckt und warten darauf, von dir eingesammelt zu werden.\n-Hunderte von Feldern, die darauf warten, dass du sie bearbeitest.\n-Es gibt drei größere Wälder und viele kleinere Gebiete, in denen Bäume wachsen.\n-10 Verkaufspunkte und die Möglichkeit, alles zu verkaufen, was du produzierst.\n-Zusätzliche Geländewinkel wurden hinzugefügt.\n-Es ist möglich, Teiche und Flüsse zu nutzen, um Wasser aufzufüllen.\n\nChangelog 1.1.0.0\n\n-Verbesserte KI-Arbeiter-Navigation.\n-Verkehr hinzugefügt.\n-Büsche, die auf Straßen wuchsen, wurden korrigiert.\n-Entfernen von Gras aus den Bereichen der Produktionspunkte.\n-Einige Anpassungen an kaufbarem Ackerland.\n-Benutzerdefinierte Bodenkarte für Precision Farming hinzugefügt.\n-Mehr Texturen für das Malwerkzeug im Landscaping-Modus hinzugefügt.\n-Benutzerdefinierter Erntekalender hinzugefügt.\n-Erweiterung der gekauften Ackerflächen im leichten und mittleren Modus.\n-Einige Produktionsstätten kaufen jetzt auch Ackerland.\n\nChangelog 1.1.0.1 (Update vom ModHub Team bereitgestellt):\n- ModDesc Version erhöht\n- Terrainshader angepasst"
+    },
+    "actions": {},
+    "action_binding": {},
+    "author": "strauts6",
+    "script_files": false,
+    "store_items": [
+      "maps/placeables/farmShed.xml",
+      "maps/placeables/farmBuilding.xml",
+      "maps/placeables/farmHouse02.xml",
+      "maps/placeables/farmGarage01.xml",
+      "maps/placeables/farmBarn02.xml",
+      "maps/placeables/sellingStationBales.xml",
+      "maps/placeables/sawmill.xml",
+      "maps/placeables/sellingStationWoodHeatingPlant.xml",
+      "maps/placeables/productionPointGrainMill.xml",
+      "maps/placeables/sellingStationFarmersMarket.xml",
+      "maps/placeables/sellingStationMainGrainSilo.xml",
+      "maps/placeables/sellingStationBowlingCenter.xml",
+      "maps/placeables/sellingStationShoppingMall.xml",
+      "maps/placeables/gasStation.xml",
+      "maps/placeables/sellingStationVehicles.xml",
+      "maps/placeables/waterFillTriggers.xml",
+      "maps/placeables/bakeryEU.xml",
+      "maps/placeables/carpenterEU.xml",
+      "maps/placeables/cerealFactory.xml",
+      "maps/placeables/dairyEU.xml",
+      "maps/placeables/fastFoodRestaurant.xml",
+      "maps/placeables/oilPlant.xml",
+      "maps/placeables/raisinFactory.xml",
+      "maps/placeables/spinneryUS.xml",
+      "maps/placeables/limeStation.xml",
+      "maps/placeables/wardrobeTrigger.xml",
+      "maps/placeables/debrisCrusher.xml",
+      "maps/placeables/farma400.xml",
+      "maps/placeables/sellingStationWool.xml",
+      "maps/placeables/sellingStationCheeseDairy.xml"
+    ],
+    "dependencies": [],
+    "desc_version": 74,
+    "game_version": 22,
+    "icon_file": "icon.dds",
+    "icon_data": null,
+    "map_config_filename": "maps/map.xml",
+    "multiplayer": true,
+    "version": "1.1.0.1",
+    "l10n_file_prefix": null,
+    "l10n_local": {},
+    "brands": []
+  },
+  "map22": {
+    "config": {
+      "image_data": null,
+      "image_file": "maps/overview.dds",
+      "fruit_types_file": null,
+      "fruit_types_base": "mapUS",
+      "environment_file": null,
+      "environment_base": "mapUS",
+      "growth_file": "maps/maps_growth.xml",
+      "growth_base": null
+    },
+    "crops": {
+      "sunflower": {
+        "plant": [
+          1,
+          2
+        ],
+        "harvest": [
+          8,
+          9
+        ]
+      },
+      "cotton": {
+        "plant": [
+          1,
+          12
+        ],
+        "harvest": [
+          8,
+          9
+        ]
+      },
+      "sugarcane": {
+        "plant": [
+          1,
+          2
+        ],
+        "harvest": [
+          8,
+          9
+        ]
+      },
+      "olive": {
+        "plant": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "harvest": [
+          8
+        ]
+      },
+      "soybean": {
+        "plant": [
+          3,
+          4
+        ],
+        "harvest": [
+          8,
+          9
+        ]
+      },
+      "grape": {
+        "plant": [
+          1,
+          2,
+          3
+        ],
+        "harvest": [
+          7,
+          8
+        ]
+      },
+      "sorghum": {
+        "plant": [
+          2,
+          3
+        ],
+        "harvest": [
+          6,
+          7
+        ]
+      },
+      "sugarbeet": {
+        "plant": [
+          1,
+          2
+        ],
+        "harvest": [
+          8,
+          9
+        ]
+      },
+      "grass": {
+        "plant": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "harvest": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ]
+      },
+      "maize": {
+        "plant": [
+          2,
+          3
+        ],
+        "harvest": [
+          8,
+          9
+        ]
+      },
+      "poplar": {
+        "plant": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "harvest": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ]
+      },
+      "wheat": {
+        "plant": [
+          2,
+          3,
+          7,
+          8
+        ],
+        "harvest": [
+          5,
+          6
+        ]
+      },
+      "oilseedradish": {
+        "plant": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "harvest": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ]
+      },
+      "canola": {
+        "plant": [
+          3,
+          6,
+          7
+        ],
+        "harvest": [
+          5,
+          6,
+          8
+        ]
+      },
+      "oat": {
+        "plant": [
+          1,
+          2
+        ],
+        "harvest": [
+          5,
+          6
+        ]
+      },
+      "potato": {
+        "plant": [
+          2,
+          3
+        ],
+        "harvest": [
+          7,
+          8
+        ]
+      },
+      "barley": {
+        "plant": [
+          2,
+          3,
+          7,
+          8
+        ],
+        "harvest": [
+          4
+        ]
+      }
+    },
+    "environment": {
+      "spring": {
+        "min": 6,
+        "max": 18
+      },
+      "summer": {
+        "min": 13,
+        "max": 34
+      },
+      "autumn": {
+        "min": 5,
+        "max": 25
+      },
+      "winter": {
+        "min": -11,
+        "max": 10
+      }
+    }
+  }
+}

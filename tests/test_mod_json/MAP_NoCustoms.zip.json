@@ -1,0 +1,350 @@
+{
+  "file": {
+    "ageHash": "",
+    "copyName": null,
+    "extraFiles": [],
+    "fileDate": 1729806304,
+    "fileSize": 16823378,
+    "fullPath": "./tests/test_mods/MAP_NoCustoms.zip",
+    "i3dFiles": [],
+    "imageDDS": [
+      "icon.dds",
+      "maps/overview.dds"
+    ],
+    "imageNonDDS": [],
+    "isFolder": false,
+    "isSaveGame": false,
+    "isModPack": false,
+    "pngTexture": [],
+    "shortName": "MAP_NoCustoms",
+    "spaceFiles": [],
+    "tooBigFiles": [
+      "maps/overview.dds"
+    ],
+    "zipFiles": [],
+    "luaCount": 0
+  },
+  "ident": "",
+  "badgeArray": [
+    "Performance",
+    "Map",
+    "Fs22"
+  ],
+  "canNotUse": false,
+  "currentCollection": "",
+  "issues": [
+    "PERFORMANCE_OVERSIZE_DDS"
+  ],
+  "includeDetail": {},
+  "detailIconsLoaded": false,
+  "includeSaveGame": null,
+  "l10n": {},
+  "modDesc": {
+    "warnings": [],
+    "title": {
+      "en": "Dunalka"
+    },
+    "description": {
+      "en": "Welcome to Dunalka! A 4 by 4 Km map with plently of farmlands and fields.\n-A total of 100 toys hidden across the map and ready to be collected.\n-A hundred and one field waiting for You to work on them.\n-There are three larger forests and many smaller areas with trees growing.\n-10 sell points and possibility to sell anything You produce.\n-Added extra terrain angles.\n-It is possible to use ponds and river to refill water.\n\nChangelog 1.1.0.0\n\n-Improved AI worker navigation.\n-Added traffic.\n-Fixed bushes that were growing out on roads.\n-Removed grass from production point areas.\n-Some adjustments to buyable farmlands.\n-Custom soilmap added for Precision Farming.\n-Added more textures to painting tool in lanscaping mode.\n-Added custom crop calendar.\n-Expanded ovned farmlands on easy and medium modes.\n-Some production points now also buys farmland.\n\nChangelog 1.1.0.1 (Update provided by ModHub Team):\n- Increased modDesc version\n- Fixed terrainShader",
+      "de": "Willkommen in Dunalka! Eine 4 x 4 km große Karte mit vielen Feldern und Äckern.\n-Insgesamt 100 Spielzeuge sind auf der Karte versteckt und warten darauf, von dir eingesammelt zu werden.\n-Hunderte von Feldern, die darauf warten, dass du sie bearbeitest.\n-Es gibt drei größere Wälder und viele kleinere Gebiete, in denen Bäume wachsen.\n-10 Verkaufspunkte und die Möglichkeit, alles zu verkaufen, was du produzierst.\n-Zusätzliche Geländewinkel wurden hinzugefügt.\n-Es ist möglich, Teiche und Flüsse zu nutzen, um Wasser aufzufüllen.\n\nChangelog 1.1.0.0\n\n-Verbesserte KI-Arbeiter-Navigation.\n-Verkehr hinzugefügt.\n-Büsche, die auf Straßen wuchsen, wurden korrigiert.\n-Entfernen von Gras aus den Bereichen der Produktionspunkte.\n-Einige Anpassungen an kaufbarem Ackerland.\n-Benutzerdefinierte Bodenkarte für Precision Farming hinzugefügt.\n-Mehr Texturen für das Malwerkzeug im Landscaping-Modus hinzugefügt.\n-Benutzerdefinierter Erntekalender hinzugefügt.\n-Erweiterung der gekauften Ackerflächen im leichten und mittleren Modus.\n-Einige Produktionsstätten kaufen jetzt auch Ackerland.\n\nChangelog 1.1.0.1 (Update vom ModHub Team bereitgestellt):\n- ModDesc Version erhöht\n- Terrainshader angepasst",
+      "fr": "Bienvenue à Dunalka ! Une carte de 4 km sur 4 avec de nombreuses terres agricoles et des champs.\n-Un total de 100 jouets cachés sur la carte et prêts à être collectés.\n-Cent et un champs qui attendent que vous les travailliez.\n-Il y a trois grandes forêts et de nombreuses petites zones où poussent des arbres.\n-10 points de vente et possibilité de vendre tout ce que vous produisez.\n-Ajout d'angles de terrain supplémentaires.\n-Il est possible d'utiliser les étangs et les rivières pour se réapprovisionner en eau.\n\nChangelog 1.1.0.0\n\n-Amélioration de la navigation des travailleurs AI.\n-Ajout de la circulation.\n-Correction des buissons qui poussaient sur les routes.\n-Suppression de l'herbe dans les zones de production.\n-Quelques ajustements aux terres agricoles achetables.\n-Ajout d'une carte des sols personnalisée pour l'agriculture de précision.\n-Ajout de textures supplémentaires à l'outil de peinture en mode aménagement paysager.\n-Ajout d'un calendrier des cultures personnalisé.\n-Extension des terres agricoles ovées en mode facile et moyen.\n-Certains points de production achètent désormais aussi des terres agricoles.\n\nJournal des modifications 1.1.0.1 (Mise à jour fournie par la Team ModHub):\n- Version du modDesc augmentée\n- Correction des shaders de terrain"
+    },
+    "actions": {},
+    "action_binding": {},
+    "author": "strauts6",
+    "script_files": false,
+    "store_items": [
+      "maps/placeables/farmShed.xml",
+      "maps/placeables/farmBuilding.xml",
+      "maps/placeables/farmHouse02.xml",
+      "maps/placeables/farmGarage01.xml",
+      "maps/placeables/farmBarn02.xml",
+      "maps/placeables/sellingStationBales.xml",
+      "maps/placeables/sawmill.xml",
+      "maps/placeables/sellingStationWoodHeatingPlant.xml",
+      "maps/placeables/productionPointGrainMill.xml",
+      "maps/placeables/sellingStationFarmersMarket.xml",
+      "maps/placeables/sellingStationMainGrainSilo.xml",
+      "maps/placeables/sellingStationBowlingCenter.xml",
+      "maps/placeables/sellingStationShoppingMall.xml",
+      "maps/placeables/gasStation.xml",
+      "maps/placeables/sellingStationVehicles.xml",
+      "maps/placeables/waterFillTriggers.xml",
+      "maps/placeables/bakeryEU.xml",
+      "maps/placeables/carpenterEU.xml",
+      "maps/placeables/cerealFactory.xml",
+      "maps/placeables/dairyEU.xml",
+      "maps/placeables/fastFoodRestaurant.xml",
+      "maps/placeables/oilPlant.xml",
+      "maps/placeables/raisinFactory.xml",
+      "maps/placeables/spinneryUS.xml",
+      "maps/placeables/limeStation.xml",
+      "maps/placeables/wardrobeTrigger.xml",
+      "maps/placeables/debrisCrusher.xml",
+      "maps/placeables/farma400.xml",
+      "maps/placeables/sellingStationWool.xml",
+      "maps/placeables/sellingStationCheeseDairy.xml"
+    ],
+    "dependencies": [],
+    "desc_version": 74,
+    "game_version": 22,
+    "icon_file": "icon.dds",
+    "icon_data": "data:image/webp;base64, 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",
+    "map_config_filename": "maps/map.xml",
+    "multiplayer": true,
+    "version": "1.1.0.1",
+    "l10n_file_prefix": null,
+    "l10n_local": {},
+    "brands": []
+  },
+  "map22": {
+    "config": {
+      "image_data": "data:image/webp;base64, UklGRggCAABXRUJQVlA4IPwBAABQOgCdASoAAgACPpFIoU0lpCMiIAgAsBIJaW7hd2EbQAnsA99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych77ZOQ99snIe+2TkPfbJyHvtk5D32ych6wAAP7/3giqsgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "image_file": "maps/overview.dds",
+      "fruit_types_file": null,
+      "fruit_types_base": "mapUS",
+      "environment_file": null,
+      "environment_base": "mapUS",
+      "growth_file": null,
+      "growth_base": "mapUS"
+    },
+    "crops": {
+      "cotton": {
+        "plant": [
+          1,
+          12
+        ],
+        "harvest": [
+          8,
+          9
+        ]
+      },
+      "grape": {
+        "plant": [
+          1,
+          2
+        ],
+        "harvest": [
+          7,
+          8
+        ]
+      },
+      "oilseedradish": {
+        "plant": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "harvest": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ]
+      },
+      "olive": {
+        "plant": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "harvest": [
+          8
+        ]
+      },
+      "sunflower": {
+        "plant": [
+          1,
+          2
+        ],
+        "harvest": [
+          8,
+          9
+        ]
+      },
+      "sugarcane": {
+        "plant": [
+          1,
+          2
+        ],
+        "harvest": [
+          8,
+          9
+        ]
+      },
+      "wheat": {
+        "plant": [
+          7,
+          8
+        ],
+        "harvest": [
+          5,
+          6
+        ]
+      },
+      "poplar": {
+        "plant": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "harvest": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ]
+      },
+      "sugarbeet": {
+        "plant": [
+          1,
+          2
+        ],
+        "harvest": [
+          8,
+          9
+        ]
+      },
+      "barley": {
+        "plant": [
+          7,
+          8
+        ],
+        "harvest": [
+          4,
+          5
+        ]
+      },
+      "maize": {
+        "plant": [
+          2,
+          3
+        ],
+        "harvest": [
+          8,
+          9
+        ]
+      },
+      "soybean": {
+        "plant": [
+          2,
+          3
+        ],
+        "harvest": [
+          8,
+          9
+        ]
+      },
+      "potato": {
+        "plant": [
+          1,
+          2
+        ],
+        "harvest": [
+          6,
+          7
+        ]
+      },
+      "canola": {
+        "plant": [
+          6,
+          7
+        ],
+        "harvest": [
+          5,
+          6
+        ]
+      },
+      "grass": {
+        "plant": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "harvest": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ]
+      },
+      "oat": {
+        "plant": [
+          1,
+          2
+        ],
+        "harvest": [
+          5,
+          6
+        ]
+      },
+      "sorghum": {
+        "plant": [
+          2,
+          3
+        ],
+        "harvest": [
+          6,
+          7
+        ]
+      }
+    },
+    "environment": {
+      "spring": {
+        "min": 6,
+        "max": 18
+      },
+      "summer": {
+        "min": 13,
+        "max": 34
+      },
+      "autumn": {
+        "min": 5,
+        "max": 25
+      },
+      "winter": {
+        "min": -11,
+        "max": 10
+      }
+    }
+  }
+}

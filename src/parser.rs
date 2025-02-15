@@ -10,6 +10,7 @@ use crate::files::{AbstractFile, XMLReader};
 use crate::files::mod_desc::DescXML;
 use crate::files::store_item::StoreItem;
 use crate::files::l10n::L10n;
+use crate::files::map22::Map22;
 use crate::savegame::SaveGame;
 
 
@@ -121,6 +122,8 @@ pub struct Record {
     pub l10n: L10n,
     /// modDesc.xml fields
     pub mod_desc: DescXML,
+    /// Map22 fields
+    pub map22 : Option<Map22>,
 }
 
 impl PartialEq for Record {
@@ -255,9 +258,19 @@ impl Record {
 
         record.check_lua(&mut file);
 
-        //TODO: maps
+        if options.contains(&ParseOption::IncludeMap) && record.mod_desc.game_version == 22 {
+            if let Some(map_config) = &record.mod_desc.map_config_filename {
+                record.map22 = Map22::from_abstract_file(&mut file, map_config);
+                if options.contains(&ParseOption::ImageMap) {
+                    if let Some(map_record) = &mut record.map22 {
+                        if let Some(map_image) = &map_record.config.image_file {
+                            map_record.config.image_data = file.map_image(map_image);
+                        }
+                    }
+                }
+            }
+        }
 
-        
         if options.contains(&ParseOption::ImageMod) {
             if let Some(filename) = &record.mod_desc.icon_file {
                 record.mod_desc.icon_data = file.mod_icon(filename);

@@ -1,0 +1,382 @@
+{
+  "file": {
+    "ageHash": "",
+    "copyName": null,
+    "extraFiles": [],
+    "fileDate": 1729825430,
+    "fileSize": 16970722,
+    "fullPath": "./tests/test_mods/MAP_AddedCrops.zip",
+    "i3dFiles": [],
+    "imageDDS": [
+      "icon.dds",
+      "maps/overview.dds"
+    ],
+    "imageNonDDS": [],
+    "isFolder": false,
+    "isSaveGame": false,
+    "isModPack": false,
+    "pngTexture": [],
+    "shortName": "MAP_AddedCrops",
+    "spaceFiles": [],
+    "tooBigFiles": [
+      "maps/overview.dds"
+    ],
+    "zipFiles": [],
+    "luaCount": 0
+  },
+  "ident": "",
+  "badgeArray": [
+    "Performance",
+    "Map",
+    "Fs22"
+  ],
+  "canNotUse": false,
+  "currentCollection": "",
+  "issues": [
+    "PERFORMANCE_OVERSIZE_DDS"
+  ],
+  "includeDetail": {},
+  "detailIconsLoaded": false,
+  "includeSaveGame": null,
+  "l10n": {
+    "en": {
+      "fillType_scorn": "Silage Corn"
+    }
+  },
+  "modDesc": {
+    "warnings": [],
+    "title": {
+      "de": "Chilliwack BC 4X",
+      "en": "Chilliwack BC 4X"
+    },
+    "description": {
+      "en": "This Map is loosely based around Chilliwack, BC",
+      "de": "Diese Karte basiert lose auf Chilliwack, BC"
+    },
+    "actions": {},
+    "action_binding": {},
+    "author": "The Chumpy Farmer",
+    "script_files": false,
+    "store_items": [],
+    "dependencies": [],
+    "desc_version": 73,
+    "game_version": 22,
+    "icon_file": "icon.dds",
+    "icon_data": null,
+    "map_config_filename": "maps/map.xml",
+    "multiplayer": true,
+    "version": "2.4.0.0",
+    "l10n_file_prefix": null,
+    "l10n_local": {},
+    "brands": []
+  },
+  "map22": {
+    "config": {
+      "image_data": null,
+      "image_file": "maps/overview.dds",
+      "fruit_types_file": "maps/xml/maps_fruitTypes.xml",
+      "fruit_types_base": null,
+      "environment_file": "maps/xml/environment.xml",
+      "environment_base": null,
+      "growth_file": "maps/xml/maps_growth.xml",
+      "growth_base": null
+    },
+    "crops": {
+      "poplar": {
+        "plant": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "harvest": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ]
+      },
+      "cotton": {
+        "plant": [
+          1,
+          12
+        ],
+        "harvest": [
+          8,
+          9
+        ]
+      },
+      "sunflower": {
+        "plant": [
+          1,
+          2
+        ],
+        "harvest": [
+          8,
+          9
+        ]
+      },
+      "sorghum": {
+        "plant": [
+          2,
+          3
+        ],
+        "harvest": [
+          6,
+          7
+        ]
+      },
+      "sugarcane": {
+        "plant": [
+          1,
+          2
+        ],
+        "harvest": [
+          8,
+          9
+        ]
+      },
+      "potato": {
+        "plant": [
+          1,
+          2
+        ],
+        "harvest": [
+          6,
+          7
+        ]
+      },
+      "clover": {
+        "plant": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "harvest": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ]
+      },
+      "maize": {
+        "plant": [
+          2,
+          3
+        ],
+        "harvest": [
+          8,
+          9
+        ]
+      },
+      "olive": {
+        "plant": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "harvest": [
+          8
+        ]
+      },
+      "silage_corn": {
+        "plant": [
+          2,
+          3
+        ],
+        "harvest": [
+          8,
+          9,
+          10,
+          11
+        ]
+      },
+      "soybean": {
+        "plant": [
+          2,
+          3
+        ],
+        "harvest": [
+          8,
+          9
+        ]
+      },
+      "grass": {
+        "plant": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "harvest": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ]
+      },
+      "barley": {
+        "plant": [
+          7,
+          8
+        ],
+        "harvest": [
+          4,
+          5
+        ]
+      },
+      "sugarbeet": {
+        "plant": [
+          1,
+          2
+        ],
+        "harvest": [
+          8,
+          9
+        ]
+      },
+      "grape": {
+        "plant": [
+          1,
+          2,
+          3
+        ],
+        "harvest": [
+          7,
+          8
+        ]
+      },
+      "wheat": {
+        "plant": [
+          7,
+          8
+        ],
+        "harvest": [
+          5,
+          6
+        ]
+      },
+      "oat": {
+        "plant": [
+          1,
+          2
+        ],
+        "harvest": [
+          5,
+          6
+        ]
+      },
+      "alfalfa": {
+        "plant": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "harvest": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ]
+      },
+      "canola": {
+        "plant": [
+          6,
+          7
+        ],
+        "harvest": [
+          5,
+          6
+        ]
+      },
+      "oilseedradish": {
+        "plant": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "harvest": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ]
+      }
+    },
+    "environment": {
+      "spring": {
+        "min": 6,
+        "max": 18
+      },
+      "summer": {
+        "min": 13,
+        "max": 34
+      },
+      "autumn": {
+        "min": 5,
+        "max": 25
+      },
+      "winter": {
+        "min": -11,
+        "max": 10
+      }
+    }
+  }
+}

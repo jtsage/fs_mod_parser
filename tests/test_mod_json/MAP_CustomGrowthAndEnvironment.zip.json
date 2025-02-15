@@ -1,0 +1,330 @@
+{
+  "file": {
+    "ageHash": "",
+    "copyName": null,
+    "extraFiles": [],
+    "fileDate": 1729483413,
+    "fileSize": 16880358,
+    "fullPath": "./tests/test_mods/MAP_CustomGrowthAndEnvironment.zip",
+    "i3dFiles": [],
+    "imageDDS": [
+      "icon_BRC.dds",
+      "map/overview.dds"
+    ],
+    "imageNonDDS": [],
+    "isFolder": false,
+    "isSaveGame": false,
+    "isModPack": false,
+    "pngTexture": [],
+    "shortName": "MAP_CustomGrowthAndEnvironment",
+    "spaceFiles": [],
+    "tooBigFiles": [
+      "map/overview.dds"
+    ],
+    "zipFiles": [],
+    "luaCount": 0
+  },
+  "ident": "",
+  "badgeArray": [
+    "Performance",
+    "PcOnly",
+    "Map",
+    "Depend",
+    "Fs22"
+  ],
+  "canNotUse": false,
+  "currentCollection": "",
+  "issues": [
+    "PERFORMANCE_OVERSIZE_DDS"
+  ],
+  "includeDetail": {},
+  "detailIconsLoaded": false,
+  "includeSaveGame": null,
+  "l10n": {},
+  "modDesc": {
+    "warnings": [],
+    "title": {
+      "en": "Back Roads County 4x"
+    },
+    "description": {
+      "en": "Welcome to Back Roads County 4x.\n\nA fictional 4x USA/Canadian inspired map placed out in the back roads farming industry. There you will find 1 prebuilt farm surrounded with farm land and forestry.\n\n- 1 Prebuilt Farm\n- Lime Buy Point\n- Woodland for Forestry\n- Sawmill\n- 81 Fields\n- Precision Farming ready\n- Stone quarry\n- 2 Train Silos\n\n\nChangelog 1.0.0.1:\n- Fixed Field 64 for not being in a field ready state.\n- Removed Starter Farm Lights And Fencing.\n\n",
+      "de": "Willkommen in Back Roads County 4x.\n\nEine fiktive 4x von den USA/Kanada inspirierte Karte, die in den Nebenstraßen der Landwirtschaftsindustrie platziert ist. Dort finden Sie 1 vorgefertigten Bauernhof, umgeben von Ackerland und Forstwirtschaft.\n- 1 vorgefertigte Farm\n- Lime Buy Point\n- Wald für die Forstwirtschaft\n- Sägewerk\n- 81 Felder\n- Precision Farming ready\n- Steinbruch\n- 2 Zugsilos\n\n\nChangelog 1.0.0.1:\n- Problem behoben, bei dem sich Feld 64 nicht im feldbereiten Zustand befand.\n- Starter-Farmlichter und Zäune entfernt.\n\n"
+    },
+    "actions": {},
+    "action_binding": {},
+    "author": "FSG Modding - FSG TAZ_MAN",
+    "script_files": true,
+    "store_items": [],
+    "dependencies": [
+      "FS22_RedBarnPack"
+    ],
+    "desc_version": 79,
+    "game_version": 22,
+    "icon_file": "icon_BRC.dds",
+    "icon_data": null,
+    "map_config_filename": "map/xml/map.xml",
+    "multiplayer": true,
+    "version": "1.0.0.1",
+    "l10n_file_prefix": "map/lang/l10n",
+    "l10n_local": {},
+    "brands": []
+  },
+  "map22": {
+    "config": {
+      "image_data": null,
+      "image_file": "map/overview.dds",
+      "fruit_types_file": null,
+      "fruit_types_base": "mapUS",
+      "environment_file": "map/xml/environment.xml",
+      "environment_base": null,
+      "growth_file": "map/xml/maps_growth.xml",
+      "growth_base": null
+    },
+    "crops": {
+      "oat": {
+        "plant": [
+          1,
+          2
+        ],
+        "harvest": [
+          5,
+          6
+        ]
+      },
+      "potato": {
+        "plant": [
+          1,
+          2
+        ],
+        "harvest": [
+          6,
+          7
+        ]
+      },
+      "cotton": {
+        "plant": [
+          1,
+          12
+        ],
+        "harvest": [
+          8,
+          9
+        ]
+      },
+      "maize": {
+        "plant": [
+          2,
+          3
+        ],
+        "harvest": [
+          8,
+          9,
+          10,
+          11,
+          12
+        ]
+      },
+      "soybean": {
+        "plant": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "harvest": [
+          8,
+          9,
+          10,
+          11
+        ]
+      },
+      "poplar": {
+        "plant": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "harvest": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ]
+      },
+      "grass": {
+        "plant": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "harvest": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ]
+      },
+      "sunflower": {
+        "plant": [
+          1,
+          2
+        ],
+        "harvest": [
+          8,
+          9
+        ]
+      },
+      "barley": {
+        "plant": [
+          7,
+          8
+        ],
+        "harvest": [
+          4,
+          5
+        ]
+      },
+      "oilseedradish": {
+        "plant": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "harvest": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ]
+      },
+      "sugarcane": {
+        "plant": [
+          1,
+          2
+        ],
+        "harvest": [
+          8,
+          9
+        ]
+      },
+      "sugarbeet": {
+        "plant": [
+          1,
+          2
+        ],
+        "harvest": [
+          8,
+          9
+        ]
+      },
+      "wheat": {
+        "plant": [
+          8,
+          9
+        ],
+        "harvest": [
+          5,
+          6
+        ]
+      },
+      "grape": {
+        "plant": [
+          1,
+          2,
+          3
+        ],
+        "harvest": [
+          7,
+          8
+        ]
+      },
+      "olive": {
+        "plant": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "harvest": [
+          8
+        ]
+      },
+      "canola": {
+        "plant": [
+          6,
+          7
+        ],
+        "harvest": [
+          5,
+          6
+        ]
+      },
+      "sorghum": {
+        "plant": [
+          2,
+          3
+        ],
+        "harvest": [
+          6,
+          7
+        ]
+      }
+    },
+    "environment": {
+      "spring": {
+        "min": 6,
+        "max": 18
+      },
+      "summer": {
+        "min": 13,
+        "max": 34
+      },
+      "autumn": {
+        "min": 5,
+        "max": 25
+      },
+      "winter": {
+        "min": -35,
+        "max": 30
+      }
+    }
+  }
+}
